@@ -3,6 +3,7 @@
 用户类
 """
 import re
+import string
 
 from django.db import models
 from django.utils.crypto import get_random_string
@@ -27,6 +28,10 @@ class User(models.Model):
         'avatar': 1024,
         'phone': 20,
     }
+    MIN_L = {
+        'username': 3,
+        'password': 6,
+    }
     email = models.EmailField(
         null=True,
         blank=True,
@@ -41,6 +46,9 @@ class User(models.Model):
     username = models.CharField(
         max_length=L['username'],
         unique=True,
+        blank=True,
+        null=True,
+        default=None,
     )
     password = models.CharField(
         max_length=L['password'],
@@ -69,6 +77,8 @@ class User(models.Model):
     @staticmethod
     def _valid_username(username):
         """验证用户名合法"""
+        if username[0] not in string.ascii_lowercase + string.ascii_uppercase:
+            return Ret(Error.INVALID_USERNAME_FIRST)
         valid_chars = '^[A-Za-z0-9_]{3,32}$'
         if re.match(valid_chars, username) is None:
             return Ret(Error.INVALID_USERNAME)

@@ -48,7 +48,7 @@ def validate_params(r_param_valid_list, g_params):
         if isinstance(r_param_valid, str):  # 如果rpv只是个字符串，则符合例子中的'b'情况
             r_param = r_param_valid
 
-        elif isinstance(r_param_valid, tuple):  # 如果rpv是tuple，则依次为变量名、验证方式、默认值
+        elif isinstance(r_param_valid, tuple):  # 如果rpv是tuple，则依次为变量名、验证方式、默认值 'c'
             if not r_param_valid:  # 忽略
                 continue
             r_param = r_param_valid[0]  # 得到变量名
@@ -57,7 +57,7 @@ def validate_params(r_param_valid_list, g_params):
                 if len(r_param_valid) > 2:
                     # has_default_value = True
                     g_params.setdefault(r_param, r_param_valid[2])
-        elif isinstance(r_param_valid, dict):  # 忽略
+        elif isinstance(r_param_valid, dict):  # 'd'
             r_param = r_param_valid.get('value', None)
             if r_param is None:
                 continue
@@ -67,7 +67,7 @@ def validate_params(r_param_valid_list, g_params):
             if default:
                 g_params.setdefault(r_param, default_value)
             process = r_param_valid.get('process', None)
-        else:
+        else:  # 忽略
             continue
 
         if r_param not in g_params:  # 如果传入数据中没有变量名
@@ -100,6 +100,7 @@ def field_validator(dict_, cls):
     针对model的验证函数
     事先需要FIELD_LIST存放需要验证的属性
     需要L字典存放CharField类型字段的最大长度
+    可选MIN_L字典存放CharField字段最小长度
     可选创建_valid_<param>函数进行自校验
     """
     field_list = getattr(cls, 'FIELD_LIST', None)
@@ -111,6 +112,7 @@ def field_validator(dict_, cls):
     len_list = getattr(cls, 'L', None)
     if len_list is None:
         return Ret(Error.ERROR_VALIDATION_FUNC, append_msg='，不存在长度字典L')
+    min_len_list = getattr(cls, 'MIN_L', None)
 
     for k in dict_.keys():
         if k in getattr(cls, 'FIELD_LIST'):
@@ -120,6 +122,11 @@ def field_validator(dict_, cls):
                         return Ret(
                             Error.ERROR_PARAM_FORMAT,
                             append_msg='，%s的长度不应超过%s个字符' % (k, len_list[k])
+                        )
+                    if min_len_list and k in min_len_list and len(dict_[k]) < min_len_list[k]:
+                        return Ret(
+                            Error.ERROR_PARAM_FORMAT,
+                            append_msg=',%s的长度不应少于%s个字符' % (k, min_len_list[k])
                         )
                 except TypeError as err:
                     deprint(str(err))

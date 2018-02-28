@@ -9,7 +9,7 @@ import jwt
 from Base.common import deprint
 from Base.error import Error
 from Base.response import Ret
-from disk.settings import SECRET_KEY, JWT_ENCODE_ALGO
+from account.settings import SECRET_KEY, JWT_ENCODE_ALGO
 
 
 def jwt_e(dict_, replace=True, expire_second=7 * 60 * 60 * 24):

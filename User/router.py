@@ -6,8 +6,7 @@ from django.views.decorators.gzip import gzip_page
 
 from Base.error import Error
 from Base.response import error_response, response, Method
-from User.views import create_user, auth_token, upload_avatar_token, \
-    get_user_info, delete_user, modify_user, get_my_info, upload_avatar_callback
+from User.controller import UserController as Controller
 
 
 @gzip_page
@@ -27,11 +26,11 @@ def rt_user(request):
         return response(body=options, allow=True)
 
     if request.method == Method.GET:
-        return get_my_info(request)
+        return Controller.get_my_info(request)
     if request.method == Method.POST:
-        return create_user(request)
+        return Controller.create_user(request)
     if request.method == Method.PUT:
-        return modify_user(request)
+        return Controller.modify_user(request)
     return error_response(Error.ERROR_METHOD)
 
 
@@ -48,7 +47,7 @@ def rt_user_token(request):
         return response(body=options, allow=True)
 
     if request.method == Method.POST:
-        return auth_token(request)
+        return Controller.auth_token(request)
     return error_response(Error.ERROR_METHOD)
 
 
@@ -67,9 +66,9 @@ def rt_user_avatar(request):
         return response(body=options, allow=True)
 
     if request.method == Method.GET:
-        return upload_avatar_token(request)
+        return Controller.upload_avatar_token(request)
     if request.method == Method.POST:
-        return upload_avatar_callback(request)
+        return Controller.upload_avatar_callback(request)
     return error_response(Error.ERROR_METHOD)
 
 
@@ -88,7 +87,7 @@ def rt_username(request, username):
         return response(body=options, allow=True)
 
     if request.method == Method.GET:
-        return get_user_info(request, username)
+        return Controller.get_user_info(request, username)
     if request.method == Method.DELETE:
-        return delete_user(request, username)
+        return Controller.delete_user(request, username)
     return error_response(Error.ERROR_METHOD)

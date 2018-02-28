@@ -1,6 +1,8 @@
+import json
+
 from geetest import GeetestLib
 
-from Base import session
+from Base.session import Session
 from Config.models import Config
 
 GEETEST_ID = Config.get_value_by_key('geetest-id', 'YOUR-GEETEST-ID').body
@@ -14,12 +16,12 @@ class Captcha:
         status = GT.pre_process()
         if not status:
             status = 2
-        session.save_session(request, GT.GT_STATUS_SESSION_KEY, status)
-        return GT.get_response_str()
+        Session.save(request, GT.GT_STATUS_SESSION_KEY, status)
+        return json.loads(GT.get_response_str())
 
     @staticmethod
     def verify(request, challenge, validate, seccode):
-        status = session.load_session(request, GT.GT_STATUS_SESSION_KEY)
+        status = Session.load(request, GT.GT_STATUS_SESSION_KEY)
         if status == 1:
             result = GT.success_validate(challenge, validate, seccode)
         else:
