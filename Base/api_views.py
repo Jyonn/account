@@ -1,20 +1,23 @@
+from django.views import View
+
 from Base import country
 from Base.decorator import require_get
 from Base.error import Error
 from Base.response import response
 
 
-class BaseController:
+class ErrorView(View):
+    @staticmethod
+    def get(request):
+        return response(body=Error.get_error_dict())
+
+
+class RegionView(View):
     @staticmethod
     def process_lang(lang):
         if lang not in ['cn', 'en']:
             return 'cn'
         return lang
-
-    @staticmethod
-    @require_get()
-    def get_error_dict(request):
-        return response(body=Error.get_error_dict())
 
     @staticmethod
     @require_get([{
@@ -23,7 +26,7 @@ class BaseController:
         'default_value': 'cn',
         'process': process_lang,
     }])
-    def get_regions(request):
+    def get(request):
         lang = request.d.lang
         lang_cn = lang == country.LANG_CN
         regions = [

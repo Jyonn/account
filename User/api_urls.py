@@ -4,11 +4,11 @@
 """
 from django.urls import path
 
-from User.router import rt_user, rt_user_token, rt_user_avatar, rt_username
+from User.api_views import UserView, UsernameView, TokenView, AvatarView
 
 urlpatterns = [
-    path('', rt_user),
-    path('@<str:username>', rt_username),
-    path('token', rt_user_token),
-    path('avatar', rt_user_avatar),
+    path('', UserView.as_view()),
+    path('@<str:username>', UsernameView.as_view()),
+    path('token', TokenView.as_view()),
+    path('avatar', AvatarView.as_view()),
 ]
