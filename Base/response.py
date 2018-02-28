@@ -2,7 +2,6 @@
 
 函数返回、方法返回、错误返回类
 """
-
 import json
 
 from django.http import HttpResponse

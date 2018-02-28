@@ -27,20 +27,25 @@ class Config(models.Model):
     )
     FIELD_LIST = ['key', 'value']
 
+    class __ConfigNone:
+        pass
+
     @classmethod
     def _validate(cls, dict_):
         """验证传入参数是否合法"""
         return field_validator(dict_, Config)
 
     @classmethod
-    def get_config_by_key(cls, key):
+    def get_value_by_key(cls, key, default=__ConfigNone()):
         ret = cls._validate(locals())
+        if ret.error is not Error.OK:
+            return ret
         try:
             o_config = cls.objects.get(key=key)
-        except Config.DoesNotExist as err:
-            deprint(str(err))
-            return Ret(Error.NOT_FOUND_CONFIG)
         except Exception as err:
             deprint(str(err))
-            return Ret(Error.NOT_FOUND_CONFIG)
-        return Ret(o_config)
+            if isinstance(default, cls.__ConfigNone):
+                return Ret(Error.NOT_FOUND_CONFIG)
+            else:
+                return Ret(default)
+        return Ret(o_config.value)

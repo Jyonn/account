@@ -13,27 +13,13 @@ from Base.response import Ret
 from Config.models import Config
 from account.settings import HOST, CDN_HOST
 
-ret = Config.get_config_by_key('qiniu-access-key')
-if ret.error is not Error.OK:
-    ACCESS_KEY = 'ACCESSKEY'
-else:
-    ACCESS_KEY = ret.body.value
-
-ret = Config.get_config_by_key('qiniu-secret-key')
-if ret.error is not Error.OK:
-    SECRET_KEY = 'SECRETKEY'
-else:
-    SECRET_KEY = ret.body.value
-
-ret = Config.get_config_by_key('qiniu-bucket')
-if ret.error is not Error.OK:
-    BUCKET = 'BUCKET'
-else:
-    BUCKET = ret.body.value
+ACCESS_KEY = Config.get_value_by_key('qiniu-access-key', 'YOUR-ACCESS-KEY').body
+SECRET_KEY = Config.get_value_by_key('qiniu-secret-key', 'YOUR-SECRET-KEY').body
+BUCKET = Config.get_value_by_key('qiniu-bucket', 'YOUR-BUCKET').body
 
 _AUTH = qiniu.Auth(access_key=ACCESS_KEY, secret_key=SECRET_KEY)
 _HOST = HOST
-_KEY_PREFIX = 'disk/'
+_KEY_PREFIX = 'account/'
 
 QINIU_MANAGE_HOST = "https://rs.qiniu.com"
 

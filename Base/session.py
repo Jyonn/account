@@ -4,6 +4,8 @@
 import datetime
 
 from Base.common import deprint
+from Base.error import Error
+from Base.response import Ret
 
 
 def save_session(request, key, value):
@@ -23,7 +25,6 @@ def save_captcha(request, captcha_type, code, last=300):
     request.session["saved_" + captcha_type + "_code"] = str(code)
     request.session["saved_" + captcha_type + "_time"] = int(datetime.datetime.now().timestamp())
     request.session["saved_" + captcha_type + "_last"] = last
-    return None
 
 
 def check_captcha(request, captcha_type, code):
@@ -31,7 +32,6 @@ def check_captcha(request, captcha_type, code):
     correct_time = request.session.get("saved_" + captcha_type + "_time")
     correct_last = request.session.get("saved_" + captcha_type + "_last")
     current_time = int(datetime.datetime.now().timestamp())
-    # print(correct_time, correct_last, correct_code, current_time)
     try:
         del request.session["saved_" + captcha_type + "_code"]
         del request.session["saved_" + captcha_type + "_time"]
@@ -39,7 +39,9 @@ def check_captcha(request, captcha_type, code):
     except KeyError as err:
         deprint(str(err))
     if None in [correct_code, correct_time, correct_last]:
-        return False
+        return Ret(Error.GET_CAPTCHA_ERROR, append_msg=captcha_type)
     if current_time - correct_time > correct_last:
-        return False
-    return correct_code.upper() == str(code).upper()
+        return Ret(Error.CAPTCHA_EXPIRED)
+    if correct_code.upper() != str(code).upper():
+        return Ret(Error.ERROR_CAPTCHA)
+    return Ret()

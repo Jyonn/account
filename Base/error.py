@@ -47,6 +47,10 @@ class Error:
     ERROR_PASSWORD = E("错误的用户名或密码")
     NOT_FOUND_USER = E("不存在的用户")
 
+    GET_CAPTCHA_ERROR = E("获取验证码失败")
+    CAPTCHA_EXPIRED = E("验证码过期")
+    ERROR_CAPTCHA = E("错误的验证码")
+
     @classmethod
     def get_error_dict(cls):
         error_dict = dict()

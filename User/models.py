@@ -5,6 +5,7 @@
 import re
 
 from django.db import models
+from django.utils.crypto import get_random_string
 
 from Base.common import deprint
 from Base.decorator import field_validator
@@ -21,8 +22,10 @@ class User(models.Model):
     L = {
         'username': 32,
         'password': 32,
+        'salt': 10,
         'nickname': 10,
         'avatar': 1024,
+        'phone': 20,
     }
     email = models.EmailField(
         null=True,
@@ -33,6 +36,7 @@ class User(models.Model):
     phone = models.CharField(
         default=None,
         unique=True,
+        max_length=L['phone'],
     )
     username = models.CharField(
         max_length=L['username'],
@@ -40,6 +44,10 @@ class User(models.Model):
     )
     password = models.CharField(
         max_length=L['password'],
+    )
+    salt = models.CharField(
+        max_length=L['salt'],
+        default=None,
     )
     pwd_change_time = models.FloatField(
         null=True,
@@ -56,7 +64,7 @@ class User(models.Model):
         max_length=L['nickname'],
         default=None,
     )
-    FIELD_LIST = ['email', 'username', 'password', 'avatar', 'nickname']
+    FIELD_LIST = ['email', 'username', 'password', 'avatar', 'nickname', 'phone']
 
     @staticmethod
     def _valid_username(username):
@@ -79,6 +87,13 @@ class User(models.Model):
         """验证传入参数是否合法"""
         return field_validator(dict_, cls)
 
+    @staticmethod
+    def hash_password(raw_password, salt=None):
+        if not salt:
+            salt = get_random_string(length=6)
+        hash_password = User._hash(raw_password+salt)
+        return salt, hash_password
+
     @classmethod
     def create(cls, username, password):
         """ 创建用户
@@ -91,14 +106,15 @@ class User(models.Model):
         if ret.error is not Error.OK:
             return ret
 
-        hash_password = User._hash(password)
+        salt, hashed_password = User.hash_password(password)
         ret = User.get_user_by_username(username)
         if ret.error is Error.OK:
             return Ret(Error.USERNAME_EXIST)
         try:
             o_user = cls(
                 username=username,
-                password=hash_password,
+                password=hashed_password,
+                salt=salt,
                 email=None,
                 avatar=None,
                 nickname='',
@@ -116,8 +132,7 @@ class User(models.Model):
             return ret
         if self.password != User._hash(old_password):
             return Ret(Error.ERROR_PASSWORD)
-        hash_password = User._hash(password)
-        self.password = hash_password
+        self.salt, self.password = User.hash_password(password)
         import datetime
         self.pwd_change_time = datetime.datetime.now().timestamp()
         self.save()
@@ -175,7 +190,8 @@ class User(models.Model):
         except User.DoesNotExist as err:
             deprint(str(err))
             return Ret(Error.NOT_FOUND_USER)
-        if User._hash(password) == o_user.password:
+        salt, hashed_password = User.hash_password(password, o_user.salt)
+        if hashed_password == o_user.password:
             return Ret(o_user)
         return Ret(Error.ERROR_PASSWORD)
 
