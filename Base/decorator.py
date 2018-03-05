@@ -95,7 +95,7 @@ def validate_params(r_param_valid_list, g_params):
     return Ret(g_params)
 
 
-def field_validator(dict_, cls):
+def field_validator(dict_, cls, allow_none=False):
     """
     针对model的验证函数
     事先需要FIELD_LIST存放需要验证的属性
@@ -116,6 +116,8 @@ def field_validator(dict_, cls):
 
     for k in dict_.keys():
         if k in getattr(cls, 'FIELD_LIST'):
+            if allow_none and dict_[k] is None:
+                continue
             if isinstance(_meta.get_field(k), models.CharField):
                 try:
                     if len(dict_[k]) > len_list[k]:

@@ -51,6 +51,13 @@ class Error:
     GET_CAPTCHA_ERROR = E("获取验证码失败")
     CAPTCHA_EXPIRED = E("验证码过期")
     ERROR_CAPTCHA = E("错误的验证码")
+    ERROR_CREATE_SCOPE = E("创建权限错误")
+    NOT_FOUND_APP = E("不存在的应用")
+    ERROR_CREATE_APP = E("创建应用错误")
+    EXIST_APP_NAME = E("已存在的应用名")
+    NOT_FOUND_SCOPE = E("不存在的权限")
+    APP_NOT_BELONG = E("不是你的应用")
+    ERROR_MODIFY_APP = E("修改应用信息错误")
 
     @classmethod
     def get_error_dict(cls):

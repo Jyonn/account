@@ -1,0 +1,23 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.img-fit {
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  display: inherit;
+}
+
+@bg-blur: 8px;
+.bg-blur {
+  position: absolute;
+  top: -@bg-blur;
+  left: -@bg-blur;
+  width: calc(~'100% + 2*@{bg-blur}');
+  height: calc(~'100% + 2*@{bg-blur}');
+  filter: brightness(70%) blur(@bg-blur);
+  background-color: black;
+}

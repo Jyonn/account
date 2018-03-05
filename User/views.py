@@ -4,4 +4,4 @@ from django.shortcuts import render
 class UserView:
     @staticmethod
     def register(request):
-        return render(request, 'user/register.html')
+        return render(request, 'base.html')
