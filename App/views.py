@@ -1,10 +1,10 @@
 from django.views import View
 
 from App.models import App, Scope
-from Base.decorator import require_get, require_login, require_post, require_put, require_delete
+from Base.decorator import require_get, require_login, require_post, require_put, require_delete, \
+    require_json
 from Base.error import Error
 from Base.response import error_response, response
-from User.models import User
 
 
 class AppView(View):
@@ -23,6 +23,7 @@ class AppView(View):
         return response(body=app_list)
 
     @staticmethod
+    @require_json
     @require_post([
         'name',
         'redirect_uri',
@@ -44,7 +45,10 @@ class AppView(View):
         o_app = ret.body
         return response(o_app.to_dict())
 
+
+class AppIDView(View):
     @staticmethod
+    @require_json
     @require_put([('name', None, None), ('redirect_uri', None, None)])
     @require_login
     def put(request, app_id):

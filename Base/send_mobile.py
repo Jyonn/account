@@ -4,9 +4,12 @@ from urllib.parse import urlencode
 import requests
 from django.utils.crypto import get_random_string
 
+from Base.error import Error
+from Base.response import Ret
+from Base.session import Session
 from Config.models import Config
 
-yunpian_appkey = Config.get_value_by_key('yunpian-appkey')
+yunpian_appkey = Config.get_value_by_key('yunpian-appkey').body
 
 
 class SendMobile:
@@ -23,9 +26,11 @@ class SendMobile:
             '【Six79】Code for retrieving password is #code#, valid within 5 minutes.',
         ]
     ]
+    PHONE = 'phone'
+    PHONE_NUMBER = 'phone_number'
 
     @staticmethod
-    def send_captcha(mobile, type_):
+    def send_captcha(request, mobile, type_):
         if mobile.startswith('+86'):
             region = SendMobile.CHINA
         else:
@@ -33,11 +38,21 @@ class SendMobile:
         text = SendMobile.texts[region][type_]
         code = get_random_string(length=6, allowed_chars="1234567890")
         text = text.replace("#code#", code)
-        SendMobile.send_sms(yunpian_appkey, text, mobile)
-        return code
+
+        SendMobile._send_sms(yunpian_appkey, text, mobile)
+        Session.save_captcha(request, SendMobile.PHONE, code)
+        Session.save(request, SendMobile.PHONE_NUMBER, mobile)
 
     @staticmethod
-    def send_sms(apikey, text, mobile):
+    def check_captcha(request, code):
+        ret = Session.check_captcha(request, SendMobile.PHONE, code)
+        if ret.error is not Error.OK:
+            return ret
+        phone = Session.load(request, SendMobile.PHONE_NUMBER)
+        return Ret(phone)
+
+    @staticmethod
+    def _send_sms(apikey, text, mobile):
         """
         云片短信发送API
         :param apikey: 云片应用密钥
@@ -52,7 +67,6 @@ class SendMobile:
         response = requests.post(url, params, headers=headers)
         response_str = response.text
         response.close()
-        # print(response_str)
         return json.loads(response_str)
 
 # print(SendMobile.send_captcha("17816871961"))

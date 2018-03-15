@@ -39,7 +39,7 @@ class Error:
     INVALID_USERNAME_FIRST = E("用户名首字符只能是字母")
     INVALID_USERNAME = E("用户名只能包含字母数字和下划线")
     UNAUTH_CALLBACK = E("未经授权的回调函数")
-    USERNAME_EXIST = E("已存在的用户名")
+    PHONE_EXIST = E("手机号已注册")
     JWT_EXPIRED = E("身份认证过期")
     ERROR_JWT_FORMAT = E("身份认证token错误")
     JWT_PARAM_INCOMPLETE = E("身份认证token缺少参数")
@@ -58,6 +58,7 @@ class Error:
     NOT_FOUND_SCOPE = E("不存在的权限")
     APP_NOT_BELONG = E("不是你的应用")
     ERROR_MODIFY_APP = E("修改应用信息错误")
+    ERROR_INTERACTION = E("操作失败，请再试一次")
 
     @classmethod
     def get_error_dict(cls):

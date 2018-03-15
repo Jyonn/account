@@ -2,6 +2,7 @@ import json
 
 from geetest import GeetestLib
 
+from Base.common import deprint
 from Base.session import Session
 from Config.models import Config
 
@@ -21,10 +22,13 @@ class Captcha:
 
     @staticmethod
     def verify(request, challenge, validate, seccode):
-        status = Session.load(request, GT.GT_STATUS_SESSION_KEY)
-        if status == 1:
-            result = GT.success_validate(challenge, validate, seccode)
-        else:
-            result = GT.failback_validate(challenge, validate, seccode)
-        print(result)
+        try:
+            status = Session.load(request, GT.GT_STATUS_SESSION_KEY)
+            if status == 1:
+                result = GT.success_validate(challenge, validate, seccode)
+            else:
+                result = GT.failback_validate(challenge, validate, seccode)
+        except Exception as err:
+            deprint(str(err))
+            return False
         return True if result else False

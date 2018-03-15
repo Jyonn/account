@@ -1,0 +1,147 @@
+@import "../base";
+
+@title-box-height: 106px;
+div.title-box {
+  position: absolute;
+  width: 100%;
+  height: @title-box-height;
+  top: 0;
+  //left: 0;
+  span.back {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    color: white;
+    &:before {
+      font-size: 24px;
+    }
+  }
+  span.back.inactive {
+    display: none;
+  }
+  div.mask {
+    background: black;
+    filter: opacity(0.5);
+  }
+  div#title {
+    position: absolute;
+    bottom: 0;
+    right: 10px;
+    color: white;
+    font-size: 40px;
+  }
+}
+
+@saying-height: 30px;
+div.saying-box {
+  position: absolute;
+  width: 100%;
+  height: @saying-height;
+  top: @title-box-height;
+  div.mask {
+    background: white;
+    filter: opacity(0.2);
+  }
+  div#saying {
+    line-height: @saying-height;
+    vertical-align: middle;
+    letter-spacing: 1px;
+    color: black;
+    font-size: 12px;
+    padding-left: 10px;
+  }
+}
+
+@qa-box-height: calc(~'100% - @{title-box-height} - @{saying-height} - @{footer-height}');
+div.qa-box {
+  &:extend(.animate);
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  justify-content: center;
+  width: 100%;
+  height: @qa-box-height;
+  top: @title-box-height + @saying-height;
+  @qa-item-height: 80px;
+  @qa-item-width: 310px;
+  div.qa-item {
+    position: relative;
+    display: inline-block;
+    width: @qa-item-width;
+    height: @qa-item-height;
+    left: calc(~"50% - @{qa-item-width} / 2");
+    div.title {
+      position: absolute;
+      top: 7px;
+      color: white;
+      filter: opacity(0.8);
+      font-size: 14px;
+    }
+    @qa-item-main-height: 34px;
+    .main {
+      position: absolute;
+      top: 39px;
+      height: @qa-item-main-height;
+      line-height: @qa-item-main-height;
+      font-size: 27px;
+      color: white;
+      vertical-align: middle;
+      font-family: "Courier New", serif;
+    }
+    input {
+      background: none;
+      border: none;
+      outline: none;
+      &::placeholder {
+        color: white;
+        filter: opacity(0.6);
+        font-family: "PingFang SC", serif;
+      }
+      width: 100%;
+    }
+  }
+}
+
+div.qa-box.active {
+  left: 0;
+}
+
+div.qa-box.phone.inactive {
+  left: -100%;
+}
+
+div.qa-box.inactive {
+  left: 100%;
+}
+
+@footer-height: 180px;
+div.footer {
+  position: absolute;
+  width: 100%;
+  height: @footer-height;
+  bottom: 0;
+  span {
+    display: block;
+  }
+  span.next{
+    padding-top: 40px;
+    &:before {
+      color: white;
+      font-size: 64px;
+    }
+  }
+  span.text {
+    margin-top: 16px;
+    color: white;
+    font-size: 14px;
+  }
+}
+
+div.footer.active {
+  left: 0;
+}
+
+div.footer.inactive {
+  left: -100%;
+}

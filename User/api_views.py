@@ -11,6 +11,7 @@ from Base.jtoken import jwt_e
 from Base.policy import get_avatar_policy
 from Base.qn import get_upload_token, qiniu_auth_callback
 from Base.response import response, error_response
+from Base.send_mobile import SendMobile
 
 from User.models import User
 
@@ -39,16 +40,21 @@ class UserView(View):
 
     @staticmethod
     @require_json
-    @require_post(['username', 'password'])
+    @require_post(['password', 'code'])
     def post(request):
         """ POST /api/user/
 
         创建用户
         """
-        username = request.d.username
+        code = request.d.code
         password = request.d.password
 
-        ret = User.create(username, password)
+        ret = SendMobile.check_captcha(request, code)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        phone = ret.body
+
+        ret = User.create(phone, password)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_user = ret.body
@@ -95,7 +101,7 @@ class UsernameView(View):
 
         获取用户信息
         """
-        ret = User.get_user_by_username(username)
+        ret = User.get_user_by_phone(username)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_user = ret.body
@@ -115,7 +121,7 @@ class UsernameView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
-        ret = User.get_user_by_username(username)
+        ret = User.get_user_by_phone(username)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_user = ret.body

@@ -1,11 +1,29 @@
+{% load staticfiles %}
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8" lang="zh-CN">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>{% block title %}齐天簿{% endblock %}</title>
+    <link rel="stylesheet" href="{% static "css/base.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/flaticon-solid.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/flaticon-line.css" %}"/>
+
+    <script src="{% static "js/base.js" %}"></script>
+    <script src="{% static "js/base/info.js" %}"></script>
+    <script src="{% static "js/service.js" %}"></script>
 </head>
 <body>
 {% block main %}
 {% endblock %}
+<div class="info-center" id="info-center"></div>
 </body>
+<script>
+    Info.staticConstructor();
+    InfoCenter.staticConstructor('info-center');
+    {#InfoCenter.push(new Info('登录失败'));#}
+    {#InfoCenter.push(new Info('登录失败', Info.TYPE_SUCC, 10));#}
+    {#InfoCenter.push(new Info('登录失败全都怪我不该沉默时沉默看到是非得失肌肤', Info.TYPE_WARN, -1));#}
+
+</script>
 </html>

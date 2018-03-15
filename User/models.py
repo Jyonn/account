@@ -3,7 +3,6 @@
 用户类
 """
 import re
-import string
 
 from django.db import models
 from django.utils.crypto import get_random_string
@@ -21,7 +20,6 @@ class User(models.Model):
     """
     ROOT_ID = 1
     L = {
-        'username': 32,
         'password': 32,
         'salt': 10,
         'nickname': 10,
@@ -29,7 +27,6 @@ class User(models.Model):
         'phone': 20,
     }
     MIN_L = {
-        'username': 3,
         'password': 6,
     }
     email = models.EmailField(
@@ -42,13 +39,6 @@ class User(models.Model):
         default=None,
         unique=True,
         max_length=L['phone'],
-    )
-    username = models.CharField(
-        max_length=L['username'],
-        unique=True,
-        blank=True,
-        null=True,
-        default=None,
     )
     password = models.CharField(
         max_length=L['password'],
@@ -72,17 +62,7 @@ class User(models.Model):
         max_length=L['nickname'],
         default=None,
     )
-    FIELD_LIST = ['email', 'username', 'password', 'avatar', 'nickname', 'phone']
-
-    @staticmethod
-    def _valid_username(username):
-        """验证用户名合法"""
-        if username[0] not in string.ascii_lowercase + string.ascii_uppercase:
-            return Ret(Error.INVALID_USERNAME_FIRST)
-        valid_chars = '^[A-Za-z0-9_]{3,32}$'
-        if re.match(valid_chars, username) is None:
-            return Ret(Error.INVALID_USERNAME)
-        return Ret()
+    FIELD_LIST = ['email', 'password', 'avatar', 'nickname', 'phone']
 
     @staticmethod
     def _valid_password(password):
@@ -105,10 +85,10 @@ class User(models.Model):
         return salt, hash_password
 
     @classmethod
-    def create(cls, username, password):
+    def create(cls, phone, password):
         """ 创建用户
 
-        :param username: 用户名
+        :param phone: 手机号
         :param password: 密码
         :return: Ret对象，错误返回错误代码，成功返回用户对象
         """
@@ -117,12 +97,12 @@ class User(models.Model):
             return ret
 
         salt, hashed_password = User.hash_password(password)
-        ret = User.get_user_by_username(username)
+        ret = User.get_user_by_phone(phone)
         if ret.error is Error.OK:
-            return Ret(Error.USERNAME_EXIST)
+            return Ret(Error.PHONE_EXIST)
         try:
             o_user = cls(
-                username=username,
+                phone=phone,
                 password=hashed_password,
                 salt=salt,
                 email=None,
@@ -154,10 +134,10 @@ class User(models.Model):
         return md5(s)
 
     @staticmethod
-    def get_user_by_username(username):
+    def get_user_by_phone(phone):
         """根据用户名获取用户对象"""
         try:
-            o_user = User.objects.get(username=username)
+            o_user = User.objects.get(phone=phone)
         except User.DoesNotExist as err:
             deprint(str(err))
             return Ret(Error.NOT_FOUND_USER)
@@ -177,7 +157,6 @@ class User(models.Model):
         """把用户对象转换为字典"""
         return dict(
             user_id=self.pk,
-            username=self.username,
             avatar=self.get_avatar_url(),
             nickname=self.nickname,
         )
@@ -185,18 +164,18 @@ class User(models.Model):
     def to_base_dict(self):
         """基本字典信息"""
         return dict(
-            nickname=self.username[:-3]+'***',
+            nickname=self.nickname[:-3]+'***',
             avatar=self.get_avatar_url(),
         )
 
     @staticmethod
-    def authenticate(username, password):
-        """验证用户名和密码是否匹配"""
+    def authenticate(phone, password):
+        """验证手机号和密码是否匹配"""
         ret = User._validate(locals())
         if ret.error is not Error.OK:
             return ret
         try:
-            o_user = User.objects.get(username=username)
+            o_user = User.objects.get(phone=phone)
         except User.DoesNotExist as err:
             deprint(str(err))
             return Ret(Error.NOT_FOUND_USER)
