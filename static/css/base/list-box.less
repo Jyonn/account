@@ -1,0 +1,124 @@
+@import "../color";
+
+div.list-box {
+  @item-height: 40px;
+  @section-margin-bottom: 24px;
+  section {
+    position: relative;
+    width: 100%;
+    height: auto;
+    margin-bottom: @section-margin-bottom;
+
+    @item-font-size: 13px;
+    div.item {
+      &:before {
+        position: absolute;
+        content: "";
+        top: 0;
+        left: 0;
+        width: 100%;
+        border-bottom: solid 1px #AAAAAA;
+      }
+      &:nth-child(1):before {
+        border-bottom: none;
+      }
+      position: relative;
+      width: 100%;
+      height: @item-height;
+      div.mask {
+        background: #888888;
+        filter: opacity(0.6);
+      }
+    }
+    div.item.form {
+      div.key {
+        position: absolute;
+        left: 20px;
+        top: 0;
+        height: @item-height;
+        line-height: @item-height;
+        vertical-align: middle;
+        color: white;
+        filter: opacity(0.6);
+        font-weight: bold;
+        font-size: @item-font-size;
+      }
+      .value {
+        position: absolute;
+        left: 80px;
+        top: 0;
+        height: @item-height;
+        line-height: @item-height;
+        vertical-align: middle;
+        width: calc(~'100% - 100px');
+        white-space: nowrap;
+        overflow: hidden;
+        outline: none;
+        border: none;
+        background: none;
+        color: white;
+        font-size: @item-font-size;
+        &::placeholder {
+          color: white;
+          filter: opacity(0.6);
+        }
+      }
+    }
+    div.item.button {
+      cursor: pointer;
+      div.button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        line-height: @item-height;
+        vertical-align: middle;
+        text-align: center;
+        font-size: 16px;
+        color: white;
+        filter: opacity(0.6);
+      }
+    }
+    div.item.button.confirm {
+      div.mask {
+        background: @redder;
+      }
+      div.button {
+        font-weight: bold;
+        filter: none;
+      }
+    }
+    div.item.jump {
+      cursor: pointer;
+      div.text {
+        position: absolute;
+        left: 20px;
+        top: 0;
+        height: @item-height;
+        line-height: @item-height;
+        vertical-align: middle;
+        color: white;
+        font-size: @item-font-size;
+      }
+      span.jump {
+        position: absolute;
+        right: 24px;
+        color: white;
+        &:before {
+          top: 0;
+          height: @item-height;
+          line-height: @item-height;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+  section.b0 {
+    position: absolute;
+    bottom: -@section-margin-bottom;
+  }
+  section.b1 {
+    position: absolute;
+    bottom: @item-height;
+  }
+}

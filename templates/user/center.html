@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block title %}齐天簿 - 用户中心{% endblock %}
+{% block main %}
+    <link rel="stylesheet" href="{% static "css/user/center.css" %}"/>
+    <div class="full img-fit img-random fit-body"></div>
+    <div class="center-container">
+        <div class="full mask"></div>
+        <div class="title-box">
+            <div class="full mask"></div>
+            <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit img-random"></div></a>
+            <div class="middle">
+                <div class="nickname">工刀</div>
+                <div class="info">地窖里的蛇和老酒，把时间泡醇厚。</div>
+            </div>
+            <a href="{% url 'user-settings' %}">
+                <span class="setting solid flaticon-configuration-gross-black-cogwheel-symbol-of-interface hover-strong"></span>
+            </a>
+        </div>
+        <div class="saying-box">
+            <div class="full mask"></div>
+            <div id="saying">浮华褪尽，人比烟花寂寞。</div>
+        </div>
+        <div class="app-box">
+            <div class="app-item">
+                <div class="main">
+                    <div class="full mask"></div>
+                    <div class="logo img-fit img-random inactive"></div>
+                    <div class="app-name">褶天言</div>
+                    <div class="description">四平八稳，五光十色。史可法个就是的看发。</div>
+                    <div class="btn-box">
+                        <span class="remove solid flaticon-trash-can-black-symbol hover-strong"></span>
+                        <span class="getin solid flaticon-arrow-angle-pointing-to-right hover-strong"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-item">
+                <div class="main">
+                    <div class="full mask"></div>
+                    <div class="logo img-fit img-random inactive"></div>
+                    <div class="app-name">浑天匣</div>
+                    <div class="description">离自由更近一点。</div>
+                    <div class="btn-box">
+                        <span class="remove solid flaticon-trash-can-black-symbol hover-strong"></span>
+                        <span class="getin solid flaticon-arrow-angle-pointing-to-right hover-strong"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

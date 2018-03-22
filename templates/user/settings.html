@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block title %}齐天簿 - 个人信息{% endblock %}
+{% block main %}
+    <link rel="stylesheet" href="{% static "css/base/list-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/user/settings.css" %}"/>
+    <div class="full img-fit img-random fit-body"></div>
+    <div class="center-container">
+        <div class="full mask"></div>
+        <div class="title-box">
+            <div class="full mask"></div>
+            <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit img-random"></div></a>
+            <div class="middle">
+                <div class="nickname">工刀</div>
+                <div class="info">地窖里的蛇和老酒，把时间泡醇厚。</div>
+            </div>
+        </div>
+        <div class="saying-box">
+            <div class="full mask"></div>
+            <div id="saying">浮华褪尽，人比烟花寂寞。</div>
+        </div>
+        <div class="list-box main active">
+            <section>
+                <a href="{% url "user-info-modify" %}">
+                    <div class="item jump">
+                        <div class="full mask"></div>
+                        <div class="text">修改个人信息</div>
+                        <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
+                    </div>
+                </a>
+            </section>
+            <section>
+                <div class="item jump">
+                    <div class="full mask"></div>
+                    <div class="text">我的应用</div>
+                    <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
+                </div>
+                <div class="item jump">
+                    <div class="full mask"></div>
+                    <div class="text">申请应用</div>
+                    <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
+                </div>
+            </section>
+            <section>
+                <div class="item jump">
+                    <div class="full mask"></div>
+                    <div class="text">代码开源</div>
+                    <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
+                </div>
+                <div class="item jump">
+                    <div class="full mask"></div>
+                    <div class="text">关于齐天簿</div>
+                    <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
+                </div>
+            </section>
+            <section class="b1">
+                <div class="item button">
+                    <div class="full mask"></div>
+                    <div class="button">返回</div>
+                </div>
+            </section>
+            <section class="b0">
+                <div class="item button confirm">
+                    <div class="full mask"></div>
+                    <div class="button">退出登录</div>
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}

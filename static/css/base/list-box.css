@@ -1,0 +1,112 @@
+div.list-box section {
+  position: relative;
+  width: 100%;
+  height: auto;
+  margin-bottom: 24px;
+}
+div.list-box section div.item {
+  position: relative;
+  width: 100%;
+  height: 40px;
+}
+div.list-box section div.item:before {
+  position: absolute;
+  content: "";
+  top: 0;
+  left: 0;
+  width: 100%;
+  border-bottom: solid 1px #AAAAAA;
+}
+div.list-box section div.item:nth-child(1):before {
+  border-bottom: none;
+}
+div.list-box section div.item div.mask {
+  background: #888888;
+  filter: opacity(0.6);
+}
+div.list-box section div.item.form div.key {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+  color: white;
+  filter: opacity(0.6);
+  font-weight: bold;
+  font-size: 13px;
+}
+div.list-box section div.item.form .value {
+  position: absolute;
+  left: 80px;
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+  width: calc(100% - 100px);
+  white-space: nowrap;
+  overflow: hidden;
+  outline: none;
+  border: none;
+  background: none;
+  color: white;
+  font-size: 13px;
+}
+div.list-box section div.item.form .value::placeholder {
+  color: white;
+  filter: opacity(0.6);
+}
+div.list-box section div.item.button {
+  cursor: pointer;
+}
+div.list-box section div.item.button div.button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  line-height: 40px;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 16px;
+  color: white;
+  filter: opacity(0.6);
+}
+div.list-box section div.item.button.confirm div.mask {
+  background: #E8343B;
+}
+div.list-box section div.item.button.confirm div.button {
+  font-weight: bold;
+  filter: none;
+}
+div.list-box section div.item.jump {
+  cursor: pointer;
+}
+div.list-box section div.item.jump div.text {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+  color: white;
+  font-size: 13px;
+}
+div.list-box section div.item.jump span.jump {
+  position: absolute;
+  right: 24px;
+  color: white;
+}
+div.list-box section div.item.jump span.jump:before {
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+}
+div.list-box section.b0 {
+  position: absolute;
+  bottom: -24px;
+}
+div.list-box section.b1 {
+  position: absolute;
+  bottom: 40px;
+}

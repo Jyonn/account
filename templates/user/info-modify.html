@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block title %}齐天簿 - 个人信息{% endblock %}
+{% block main %}
+    <link rel="stylesheet" href="{% static "css/base/list-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/user/info-modify.css" %}"/>
+    <div class="full img-fit img-random fit-body"></div>
+    <div class="center-container">
+        <div class="full mask"></div>
+        <div class="title-box">
+            <div class="full mask"></div>
+            <div class="avatar img-fit img-random"></div>
+            <div class="text">点击更换头像</div>
+        </div>
+        <div class="list-box main active">
+            <section>
+                <div class="item form">
+                    <div class="full mask"></div>
+                    <div class="key">昵称</div>
+                    <input class="value" value="工刀" placeholder="昵称可以随时更改"/>
+                </div>
+                <div class="item form">
+                    <div class="full mask"></div>
+                    <div class="key">签名</div>
+                    <input class="value" value="地窖里的蛇和老酒，把时间泡醇厚。" placeholder="个性签名可以随时更改"/>
+                </div>
+            </section>
+            <section>
+                <div class="item form">
+                    <div class="full mask"></div>
+                    <div class="key">齐天号</div>
+                    <input class="value" placeholder="齐天号由数字、字母和下划线组成，只能设置一次">
+                </div>
+                <div class="item form">
+                    <div class="full mask"></div>
+                    <div class="key">密码</div>
+                    <div class="value ptr">修改密码</div>
+                </div>
+                <div class="item form">
+                    <div class="full mask"></div>
+                    <div class="key">手机号</div>
+                    <a class="value" href="{% url 'user-bind-phone' %}">绑定手机号</a>
+                </div>
+            </section>
+            <section class="b1">
+                <div class="item button">
+                    <div class="full mask"></div>
+                    <div class="button">返回</div>
+                </div>
+            </section>
+            <section class="b0">
+                <div class="item button confirm">
+                    <div class="full mask"></div>
+                    <div class="button">确认修改</div>
+                </div>
+            </section>
+        </div>
+        <div class="list-box password inactive">
+            <section>
+                <div class="item form">
+                    <div class="full mask"></div>
+                    <div class="key">旧密码</div>
+                    <input class="value" type="password" placeholder="此处填入旧密码">
+                </div>
+                <div class="item form">
+                    <div class="full mask"></div>
+                    <div class="key">新密码</div>
+                    <input class="value" type="password" placeholder="此处填入新密码">
+                </div>
+            </section>
+            <section class="b1">
+                <div class="item button">
+                    <div class="full mask"></div>
+                    <div class="button">返回</div>
+                </div>
+            </section>
+            <section class="b0">
+                <div class="item button confirm">
+                    <div class="full mask"></div>
+                    <div class="button">确认修改</div>
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}

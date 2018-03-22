@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 from django.utils.crypto import get_random_string
 
@@ -110,6 +112,11 @@ class App(models.Model):
         on_delete=models.CASCADE,
         db_index=True,
     )
+    field_change_time = models.FloatField(
+        null=True,
+        blank=True,
+        default=0,
+    )
 
     FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope']
 
@@ -168,7 +175,7 @@ class App(models.Model):
             return Ret(Error.ERROR_CREATE_APP, append_msg=str(err))
         return Ret(o_app)
 
-    def modify(self, name, redirect_uri):
+    def modify(self, name, redirect_uri, scopes):
         ret = self._validate(locals(), allow_none=True)
         if ret.error is not Error.OK:
             return ret
@@ -176,6 +183,10 @@ class App(models.Model):
             self.name = name
         if redirect_uri:
             self.redirect_uri = redirect_uri
+        if scopes:
+            self.scopes.remove()
+            self.scopes.add(*scopes)
+        self.field_change_time = datetime.datetime.now().timestamp()
         try:
             self.save()
         except Exception as err:

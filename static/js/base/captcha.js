@@ -1,4 +1,4 @@
-function captchaHandler({captchaObj, bindBtnId, phoneInputId, regionId, type}) {
+function captchaHandler({captchaObj, bindBtnId, phoneInputId, regionId, type, successCallback}) {
     let bindBtn = document.getElementById(bindBtnId);
     let phoneInput = document.getElementById(phoneInputId);
     let region = document.getElementById(regionId);
@@ -22,7 +22,7 @@ function captchaHandler({captchaObj, bindBtnId, phoneInputId, regionId, type}) {
         })
             .then(() => {
                 bindBtn.removeEventListener('click', captchaVerify);
-                Register.switchToPasswordBox();
+                successCallback();
             })
             .catch(() => {
                 window.reload();

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load staticfiles %}
-{% block title %}齐天簿 - 用户注册{% endblock %}
+{% block title %}齐天簿 - 绑定手机号{% endblock %}
 {% block main %}
     <link rel="stylesheet" href="{% static "css/user/register.css" %}"/>
     <div class="full img-fit img-random fit-body"></div>
@@ -27,37 +27,32 @@
 {#            <div class="qa-item" id="captcha"></div>#}
         </div>
         <div class="qa-box region inactive" id="region-box"></div>
-        <div class="qa-box password inactive" id="password-box">
+        <div class="qa-box password inactive" id="captcha-box">
             <div class="qa-item">
                 <div class="title">验证手机</div>
                 <input class="main" id="captcha-input" type="number" placeholder="输入短信验证码">
             </div>
-            <div class="qa-item">
-                <div class="title">设置密码</div>
-                <input class="main" id="password-input" type="password" placeholder="设置登录密码">
-            </div>
         </div>
         <div class="footer center" id="footer-box">
             <span class="solid flaticon-right-arrow-in-black-circular-button next" id="next-btn"></span>
-            <span class="text">继续以完成注册</span>
+            <span class="text">继续以完成绑定</span>
         </div>
     </div>
-    <script src="{% static "js/user/register.js" %}"></script>
+    <script src="{% static "js/user/bind-phone.js" %}"></script>
     <script src="{% static "js/base/saying.js" %}"></script>
     <script src="{% static "js/base/gt.js" %}"></script>
     <script src="{% static "js/base/captcha.js" %}"></script>
     <script>
-        Register.staticConstructor({
+        BindPhone.staticConstructor({
             phoneBoxId: 'phone-box',
             regionBoxId: 'region-box',
             footerBoxId: 'footer-box',
             switchRegionBtnId: 'switch-region-btn',
             regionId: 'region',
             backBtnId: 'back-btn',
-            passwordBoxId: 'password-box',
+            captchaBoxId: 'captcha-box',
             titleId: 'title',
             captchaInputId: 'captcha-input',
-            passwordInputId: 'password-input',
             nextBtnId: 'next-btn',
         });
         Saying.staticConstructor('saying');
@@ -74,7 +69,7 @@
                 regionId: 'region',
                 phoneInputId: 'phone-input',
                 type: 0,
-                successCallback: Register.switchToCaptchaBox,
+                successCallback: BindPhone.switchToCaptchaBox,
             });
         })
     </script>

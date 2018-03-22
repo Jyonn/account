@@ -1,4 +1,4 @@
-class Register {
+class BindPhone {
     static staticConstructor({
             phoneBoxId,
             regionBoxId,
@@ -6,10 +6,9 @@ class Register {
             switchRegionBtnId,
             regionId,
             backBtnId,
-            passwordBoxId,
+            captchaBoxId,
             titleId,
             captchaInputId,
-            passwordInputId,
             nextBtnId,
         }) {
         this.phoneBox = document.getElementById(phoneBoxId);
@@ -19,13 +18,12 @@ class Register {
         this.region = document.getElementById(regionId);
         this.backBtn = document.getElementById(backBtnId);
         this.nextBtn = document.getElementById(nextBtnId);
-        this.captchaBox = document.getElementById(passwordBoxId);
+        this.captchaBox = document.getElementById(captchaBoxId);
         this.title = document.getElementById(titleId);
         this.captchaInput = document.getElementById(captchaInputId);
-        this.passwordInput = document.getElementById(passwordInputId);
         this.switchToPhoneBox();
 
-        this.regionTemplate=template`<div class="region-item" onclick="Register.changeRegion('${0}', '${1}')">${2}</div>`;
+        this.regionTemplate=template`<div class="region-item" onclick="BindPhone.changeRegion('${0}', '${1}')">${2}</div>`;
         this.initRegionBox();
         this.switchRegionBtn.addEventListener('click', this.switchToRegionBox);
         this.backBtn.addEventListener('click', this.switchToPhoneBox);
@@ -44,31 +42,31 @@ class Register {
     }
 
     static switchToRegionBox() {
-        Register.title.innerText = '选择国家或地区';
-        deactivate(Register.phoneBox);
-        deactivate(Register.footerBox);
-        deactivate(Register.captchaBox);
-        activate(Register.regionBox);
-        activate(Register.backBtn);
+        BindPhone.title.innerText = '选择国家或地区';
+        deactivate(BindPhone.phoneBox);
+        deactivate(BindPhone.footerBox);
+        deactivate(BindPhone.captchaBox);
+        activate(BindPhone.regionBox);
+        activate(BindPhone.backBtn);
     }
 
     static switchToPhoneBox() {
-        Register.title.innerText = '注册齐天簿';
-        activate(Register.phoneBox);
-        activate(Register.footerBox);
-        deactivate(Register.regionBox);
-        deactivate(Register.backBtn);
-        deactivate(Register.captchaBox);
+        BindPhone.title.innerText = '注册齐天簿';
+        activate(BindPhone.phoneBox);
+        activate(BindPhone.footerBox);
+        deactivate(BindPhone.regionBox);
+        deactivate(BindPhone.backBtn);
+        deactivate(BindPhone.captchaBox);
     }
 
     static switchToCaptchaBox() {
-        Register.title.innerText = '手机号注册';
-        activate(Register.captchaBox);
-        activate(Register.footerBox);
-        deactivate(Register.regionBox);
-        deactivate(Register.backBtn);
-        deactivate(Register.phoneBox);
-        Register.nextBtn.addEventListener('click', Register.register);
+        BindPhone.title.innerText = '手机号注册';
+        activate(BindPhone.captchaBox);
+        activate(BindPhone.footerBox);
+        deactivate(BindPhone.regionBox);
+        deactivate(BindPhone.backBtn);
+        deactivate(BindPhone.phoneBox);
+        // BindPhone.nextBtn.addEventListener('click', BindPhone.BindPhone);
     }
 
     static changeRegion(regionCode, region) {
@@ -77,13 +75,13 @@ class Register {
         this.switchToPhoneBox();
     }
 
-    static register() {
-        let captcha = Register.captchaInput.value;
-        let password = Register.passwordInput.value;
-        Service.registerAPI({password: password, code: captcha})
-            .then((body) => {
-                Request.saveToken(body.token);
-                InfoCenter.push(new Info('注册成功，正在跳转……', Info.TYPE_SUCC));
-            })
-    }
+    // static BindPhone() {
+    //     let captcha = BindPhone.captchaInput.value;
+    //     let password = BindPhone.passwordInput.value;
+    //     Service.BindPhoneAPI({password: password, code: captcha})
+    //         .then((body) => {
+    //             Request.saveToken(body.token);
+    //             InfoCenter.push(new Info('注册成功，正在跳转……', Info.TYPE_SUCC));
+    //         })
+    // }
 }

@@ -1,7 +1,13 @@
+@import "color";
+
 * {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+}
+
+a {
+  text-decoration: none;
 }
 
 @page-min-height: 600px;
@@ -101,15 +107,12 @@ body {
   transition: 0.2s;
 }
 
-@red: #D04B4B;
 @error-bg: @red;
-@orange: #F38B40;
 @warn-bg: @orange;
-@blue: #2699FB;
 @succ-bg: @blue;
 
 @info-center-width: 240px;
-@info-center-top: 150px;
+@info-center-top: 100px;
 .info-center {
   position: fixed;
   width: @info-center-width;
@@ -146,4 +149,16 @@ body {
 
 .geetest_copyright {
   display: none;
+}
+
+.hover-strong {
+  //transition: 0.5s;
+  filter: opacity(0.4);
+  &:hover {
+    filter: opacity(1);
+  }
+}
+
+.ptr {
+  cursor: pointer;
 }
