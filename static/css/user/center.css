@@ -81,6 +81,8 @@ body {
 .animate,
 .info-center > div,
 div.qa-box,
+div.qa-box div.qa-item,
+div.qa-box div.qa-item div.title,
 div.app-box div.app-item div.main div.logo,
 div.list-box {
   transition: 0.2s;
@@ -128,6 +130,7 @@ div.list-box {
 .ptr,
 div.title-box div.avatar,
 div.title-box span.setting,
+div.qa-box div.qa-item.inactive div.title,
 div.app-box div.app-item div.main div.logo,
 div.app-box div.app-item div.main div.btn-box span {
   cursor: pointer;
@@ -261,6 +264,16 @@ div.qa-box div.qa-item input::placeholder {
   color: white;
   filter: opacity(0.6);
   font-family: "PingFang SC", serif;
+}
+div.qa-box div.qa-item.inactive {
+  height: 40px;
+  overflow: hidden;
+}
+div.qa-box div.qa-item.inactive div.title {
+  filter: opacity(0.4);
+}
+div.qa-box div.qa-item.inactive div.title:after {
+  content: "？";
 }
 div.qa-box.active {
   left: 0;

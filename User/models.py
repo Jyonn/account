@@ -29,12 +29,6 @@ class User(models.Model):
     MIN_L = {
         'password': 6,
     }
-    email = models.EmailField(
-        null=True,
-        blank=True,
-        default=None,
-        verbose_name='暂时不用'
-    )
     phone = models.CharField(
         default=None,
         unique=True,
@@ -62,7 +56,7 @@ class User(models.Model):
         max_length=L['nickname'],
         default=None,
     )
-    FIELD_LIST = ['email', 'password', 'avatar', 'nickname', 'phone']
+    FIELD_LIST = ['password', 'avatar', 'nickname', 'phone']
 
     @staticmethod
     def _valid_password(password):
@@ -105,7 +99,6 @@ class User(models.Model):
                 phone=phone,
                 password=hashed_password,
                 salt=salt,
-                email=None,
                 avatar=None,
                 nickname='',
             )

@@ -78,7 +78,7 @@ class App(models.Model):
     L = {
         'name': 32,
         'id': 32,
-        'secret': 64,
+        'secret': 32,
         'redirect_uri': 512,
     }
     MIN_L = {
@@ -204,3 +204,33 @@ class App(models.Model):
             scopes=scope_list,
             redirect_uri=self.redirect_uri,
         )
+
+
+class UserApp(models.Model):
+    """用户应用类"""
+    L = {
+        'user_app_id': 8,
+        'auth_code': 32,
+    }
+
+    user = models.ForeignKey(
+        'User.User',
+        on_delete=models.CASCADE,
+    )
+    app = models.ForeignKey(
+        'App.App',
+        on_delete=models.CASCADE,
+    )
+    user_app_id = models.CharField(
+        max_length=L['user_app_id'],
+        verbose_name='用户在这个app下的唯一ID',
+    )
+    bind = models.BooleanField(
+        default=False,
+        verbose_name='用户是否绑定应用',
+    )
+
+    last_auth_code_time = models.FloatField(
+        default=0,
+        verbose_name='上一次申请auth_code的时间，防止被多次使用',
+    )

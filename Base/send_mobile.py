@@ -15,22 +15,30 @@ yunpian_appkey = Config.get_value_by_key('yunpian-appkey').body
 class SendMobile:
     REGISTER = 0
     FORGET_PASSWORD = 1
+    BIND = 2
+
     CHINA = 0
     ABROAD = 1
     texts = [
         [
             '【六七九】本次注册的验证码为#code#，五分钟内有效。',
-            '【六七九】本次密码找回的验证码为#code#，五分钟内有效。'
+            '【六七九】本次密码找回的验证码为#code#，五分钟内有效。',
+            '【六七九】本次绑定手机号的验证码为#code#，五分钟内有效。',
         ], [
             '【Six79】Code for registering is #code#, valid within 5 minutes.',
             '【Six79】Code for retrieving password is #code#, valid within 5 minutes.',
+            '【Six79】Code for binding mobile is #code#, valid within 5 minutes.',
         ]
     ]
     PHONE = 'phone'
     PHONE_NUMBER = 'phone_number'
+    QITIAN_ID = 'qitian_id'
+    LOGIN_TYPE = 'login_type'
 
     @staticmethod
     def send_captcha(request, mobile, type_):
+        if type_ < 0 or type_ > 2:
+            return
         if mobile.startswith('+86'):
             region = SendMobile.CHINA
         else:

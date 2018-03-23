@@ -121,6 +121,7 @@ div.qa-box {
       color: white;
       filter: opacity(0.8);
       font-size: 14px;
+      &:extend(.animate);
     }
     @qa-item-main-height: 34px;
     .main {
@@ -143,6 +144,18 @@ div.qa-box {
         font-family: "PingFang SC", serif;
       }
       width: 100%;
+    }
+    &:extend(.animate);
+  }
+  div.qa-item.inactive {
+    height: 40px;
+    overflow: hidden;
+    div.title {
+      filter: opacity(0.4);
+      &:after {
+        content: "？";
+      }
+      &:extend(.ptr);
     }
   }
 }

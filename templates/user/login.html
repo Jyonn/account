@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load staticfiles %}
-{% block title %}齐天簿 - 用户注册{% endblock %}
+{% block title %}齐天簿 - 用户登录{% endblock %}
 {% block main %}
     <link rel="stylesheet" href="{% static "css/user/register.css" %}"/>
     <div class="full img-fit img-random fit-body"></div>
@@ -16,38 +16,38 @@
             <div id="saying"></div>
         </div>
         <div class="qa-box phone active" id="phone-box">
-            <div class="qa-item">
-                <div class="title">使用手机号注册</div>
+            <div class="qa-item active" id="phone-item">
+                <a onclick="Login.activatePhoneItem()"><div class="title">使用手机号登录</div></a>
                 <div class="region-box main" id="switch-region-btn">
                     <div id="region">+86</div>
                     <span class="line flaticon-down-arrow"></span>
                 </div>
                 <input class="main" id="phone-input" placeholder="填写手机号码"/>
             </div>
+            <div class="qa-item inactive" id="qitian-item">
+                <a onclick="Login.activateQitianItem()"><div class="title">使用齐天号登录</div></a>
+                <input class="main" id="qitian-input" placeholder="填写齐天号"/>
+            </div>
 {#            <div class="qa-item" id="captcha"></div>#}
         </div>
         <div class="qa-box region inactive" id="region-box"></div>
         <div class="qa-box password inactive" id="password-box">
             <div class="qa-item">
-                <div class="title">验证手机</div>
-                <input class="main" id="captcha-input" type="number" placeholder="填写短信验证码">
-            </div>
-            <div class="qa-item">
-                <div class="title">设置密码</div>
-                <input class="main" id="password-input" type="password" placeholder="设置登录密码">
+                <div class="title">登录密码</div>
+                <input class="main" id="password-input" type="password" placeholder="填写登录密码"/>
             </div>
         </div>
         <div class="footer center" id="footer-box">
             <span class="solid flaticon-right-arrow-in-black-circular-button next" id="next-btn"></span>
-            <span class="text">继续以完成注册</span>
+            <span class="text">继续以完成登录</span>
         </div>
     </div>
-    <script src="{% static "js/user/register.js" %}"></script>
+    <script src="{% static "js/user/login.js" %}"></script>
     <script src="{% static "js/base/saying.js" %}"></script>
     <script src="{% static "js/base/gt.js" %}"></script>
     <script src="{% static "js/base/captcha.js" %}"></script>
     <script>
-        Register.staticConstructor({
+        Login.staticConstructor({
             phoneBoxId: 'phone-box',
             regionBoxId: 'region-box',
             footerBoxId: 'footer-box',
@@ -56,9 +56,10 @@
             backBtnId: 'back-btn',
             passwordBoxId: 'password-box',
             titleId: 'title',
-            captchaInputId: 'captcha-input',
             passwordInputId: 'password-input',
             nextBtnId: 'next-btn',
+            phoneItemId: 'phone-item',
+            qitianItemId: 'qitian-item',
         });
         Saying.staticConstructor('saying');
         initGeetest({
@@ -73,8 +74,9 @@
                 bindBtnId: 'next-btn',
                 regionId: 'region',
                 phoneInputId: 'phone-input',
-                type: 0,
-                successCallback: Register.switchToCaptchaBox,
+                qitianInputId: 'qitian-input',
+                type: -1,
+                successCallback: Login.switchToCaptchaBox,
             });
         })
     </script>

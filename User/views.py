@@ -19,6 +19,11 @@ class UserView:
         return render(request, 'user/bind-phone.html', dict(captcha=o_captcha))
 
     @staticmethod
+    def login(request):
+        o_captcha = Captcha.get(request)
+        return render(request, 'user/login.html', dict(captcha=o_captcha))
+
+    @staticmethod
     def config(request):
         return render(request, 'user/info-modify.html')
 

@@ -49,15 +49,24 @@ class CaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['challenge', 'validate', 'seccode', 'phone',
+    @require_post(['challenge', 'validate', 'seccode', 'account',
                    {"value": 'type', "process": int}])
     def post(request):
         challenge = request.d.challenge
         validate = request.d.validate
         seccode = request.d.seccode
-        phone = request.d.phone
+        account = request.d.account
         type_ = request.d.type
         if not Captcha.verify(request, challenge, validate, seccode):
             return error_response(Error.ERROR_INTERACTION)
-        SendMobile.send_captcha(request, phone, type_)
+        if type_ == -1:
+            # 手机号登录
+            Session.save(request, SendMobile.PHONE_NUMBER, account)
+            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.PHONE_NUMBER)
+        elif type_ == -2:
+            # 齐天号登录
+            Session.save(request, SendMobile.QITIAN_ID, account)
+            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.QITIAN_ID)
+        else:
+            SendMobile.send_captcha(request, account, type_)
         return response()

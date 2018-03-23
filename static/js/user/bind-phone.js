@@ -51,7 +51,7 @@ class BindPhone {
     }
 
     static switchToPhoneBox() {
-        BindPhone.title.innerText = '注册齐天簿';
+        BindPhone.title.innerText = '绑定手机号';
         activate(BindPhone.phoneBox);
         activate(BindPhone.footerBox);
         deactivate(BindPhone.regionBox);
@@ -60,7 +60,7 @@ class BindPhone {
     }
 
     static switchToCaptchaBox() {
-        BindPhone.title.innerText = '手机号注册';
+        BindPhone.title.innerText = '绑定手机号';
         activate(BindPhone.captchaBox);
         activate(BindPhone.footerBox);
         deactivate(BindPhone.regionBox);

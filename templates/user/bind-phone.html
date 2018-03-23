@@ -17,12 +17,12 @@
         </div>
         <div class="qa-box phone active" id="phone-box">
             <div class="qa-item">
-                <div class="title">使用手机号注册</div>
+                <div class="title">绑定的手机号</div>
                 <div class="region-box main" id="switch-region-btn">
                     <div id="region">+86</div>
                     <span class="line flaticon-down-arrow"></span>
                 </div>
-                <input class="main" id="phone-input" placeholder="您的手机号码"/>
+                <input class="main" id="phone-input" placeholder="填写手机号码"/>
             </div>
 {#            <div class="qa-item" id="captcha"></div>#}
         </div>
@@ -30,7 +30,7 @@
         <div class="qa-box password inactive" id="captcha-box">
             <div class="qa-item">
                 <div class="title">验证手机</div>
-                <input class="main" id="captcha-input" type="number" placeholder="输入短信验证码">
+                <input class="main" id="captcha-input" type="number" placeholder="填写短信验证码">
             </div>
         </div>
         <div class="footer center" id="footer-box">
@@ -68,7 +68,7 @@
                 bindBtnId: 'next-btn',
                 regionId: 'region',
                 phoneInputId: 'phone-input',
-                type: 0,
+                type: 2,
                 successCallback: BindPhone.switchToCaptchaBox,
             });
         })
