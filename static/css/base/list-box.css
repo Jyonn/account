@@ -1,3 +1,9 @@
+div.list-box {
+  position: absolute;
+  width: 100%;
+  transition: 0.5s;
+  height: calc(100% - 106px - 100px);
+}
 div.list-box section {
   position: relative;
   width: 100%;
@@ -56,6 +62,24 @@ div.list-box section div.item.form .value::placeholder {
   color: white;
   filter: opacity(0.6);
 }
+div.list-box section div.item.form .square-img {
+  position: absolute;
+  left: 80px;
+  top: 4px;
+  width: 32px;
+  height: 32px;
+}
+div.list-box section div.item.form span.jump {
+  position: absolute;
+  right: 24px;
+  color: white;
+}
+div.list-box section div.item.form span.jump:before {
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+}
 div.list-box section div.item.button {
   cursor: pointer;
 }
@@ -102,6 +126,46 @@ div.list-box section div.item.jump span.jump:before {
   line-height: 40px;
   vertical-align: middle;
 }
+div.list-box section div.item.text div.text {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+  color: white;
+  font-size: 13px;
+}
+div.list-box section div.item.select {
+  cursor: pointer;
+}
+div.list-box section div.item.select div.text {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+  color: white;
+  font-size: 13px;
+}
+div.list-box section div.item.select span.select {
+  position: absolute;
+  right: 24px;
+  filter: opacity(0.6);
+}
+div.list-box section div.item.select span.select:before {
+  top: 0;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+}
+div.list-box section div.item.select span.select.selected {
+  color: #E8343B;
+}
+div.list-box section div.item.select span.select.unselected {
+  color: white;
+}
 div.list-box section.b0 {
   position: absolute;
   bottom: -24px;
@@ -109,4 +173,13 @@ div.list-box section.b0 {
 div.list-box section.b1 {
   position: absolute;
   bottom: 40px;
+}
+div.list-box.active {
+  left: 0;
+}
+div.list-box.inactive {
+  left: 100%;
+}
+div.list-box.main.inactive {
+  left: -100%;
 }

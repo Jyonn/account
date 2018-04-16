@@ -2,11 +2,15 @@
 {% load staticfiles %}
 {% block title %}齐天簿 - 用户登录{% endblock %}
 {% block main %}
-    <link rel="stylesheet" href="{% static "css/user/register.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/architecture.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/title-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/saying-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/qa-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/footer.css" %}"/>
     <div class="full img-fit img-random fit-body"></div>
     <div class="center-container">
         <div class="full mask"></div>
-        <div class="title-box">
+        <div class="title-box big-title">
             <div class="full mask"></div>
             <span class="line flaticon-left-arrow-line-symbol back" id="back-btn"></span>
             <div id="title"></div>
@@ -28,7 +32,7 @@
                 <a onclick="Login.activateQitianItem()"><div class="title">使用齐天号登录</div></a>
                 <input class="main" id="qitian-input" placeholder="填写齐天号"/>
             </div>
-{#            <div class="qa-item" id="captcha"></div>#}
+            <a href="{% url "user-register" %}?from={{ request.get_full_path | urlencode }}"><div class="jump-item">没有账号？立即注册！</div></a>
         </div>
         <div class="qa-box region inactive" id="region-box"></div>
         <div class="qa-box password inactive" id="password-box">
@@ -42,11 +46,15 @@
             <span class="text">继续以完成登录</span>
         </div>
     </div>
+    <script src="{% static "js/user/base.js" %}"></script>
     <script src="{% static "js/user/login.js" %}"></script>
     <script src="{% static "js/base/saying.js" %}"></script>
     <script src="{% static "js/base/gt.js" %}"></script>
     <script src="{% static "js/base/captcha.js" %}"></script>
     <script>
+        UserBase.staticConstructor({
+            successCallback: Router.jumpBackOrRoute(Router.jumpToUserCenter),
+        })
         Login.staticConstructor({
             phoneBoxId: 'phone-box',
             regionBoxId: 'region-box',

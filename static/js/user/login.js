@@ -41,9 +41,9 @@ class Login {
             .then((body) => {
                 for (let i = 0; i < body.length; i++) {
                     let html = stringToHtml(
-                        this.regionTemplate(
+                        Login.regionTemplate(
                             body[i].num, body[i].name, body[i].name + ' +' + body[i].num));
-                    this.regionBox.appendChild(html);
+                    Login.regionBox.appendChild(html);
                 }
             });
     }
@@ -82,13 +82,23 @@ class Login {
         this.switchToPhoneBox();
     }
 
-    static login() {
+    static login(succFunc, failFunc) {
         let password = Login.passwordInput.value;
         Service.loginAPI({password: password})
             .then((body) => {
                 Request.saveToken(body.token);
                 InfoCenter.push(new Info('登录成功，正在跳转……', Info.TYPE_SUCC));
+                setTimeout(() => {
+                    window.location.href = '/user/center';
+                }, 1000);
             })
+            .catch((resp) => {
+                if (MyError.check('ERROR_SESSION', resp)) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
+            });
     }
 
     static activatePhoneItem() {

@@ -5,7 +5,7 @@
 from django.db import models
 
 from Base.common import deprint
-from Base.decorator import field_validator
+from Base.validator import field_validator
 from Base.error import Error
 from Base.response import Ret
 

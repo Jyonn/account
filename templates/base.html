@@ -8,17 +8,20 @@
     <link rel="stylesheet" href="{% static "css/flaticon-solid.css" %}"/>
     <link rel="stylesheet" href="{% static "css/flaticon-line.css" %}"/>
 
+    <script src="{% static "js/base/router.js" %}"></script>
+    <script src="{% static "js/base/user.js" %}"></script>
     <script src="{% static "js/base.js" %}"></script>
     <script src="{% static "js/base/info.js" %}"></script>
     <script src="{% static "js/service.js" %}"></script>
+    <script src="{% static "js/base/error.js" %}"></script>
 </head>
 <body>
-{% block main %}
-{% endblock %}
 <div class="info-center" id="info-center"></div>
-</body>
 <script>
     Info.staticConstructor();
     InfoCenter.staticConstructor('info-center');
 </script>
+{% block main %}
+{% endblock %}
+</body>
 </html>

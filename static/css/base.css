@@ -89,6 +89,7 @@ body {
   overflow: scroll;
   right: 0;
   top: 100px;
+  z-index: 99999;
 }
 .info-center > div {
   min-height: 34px;
@@ -124,4 +125,7 @@ body {
 }
 .ptr {
   cursor: pointer;
+}
+.hidden {
+  visibility: hidden;
 }

@@ -1,4 +1,4 @@
-@import "color";
+@import "base/color";
 
 * {
   padding: 0;
@@ -120,6 +120,7 @@ body {
   overflow: scroll;
   right: 0;
   top: @info-center-top;
+  z-index: 99999;
   @info-item-min-height: 34px;
   >div {
     min-height: @info-item-min-height;
@@ -161,4 +162,8 @@ body {
 
 .ptr {
   cursor: pointer;
+}
+
+.hidden {
+  visibility: hidden;
 }

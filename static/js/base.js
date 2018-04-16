@@ -30,6 +30,12 @@ class ErrorHandler {
 class Request {
     static staticConstructor() {
         this.token = window.localStorage.getItem('token');
+        if (this.token) {
+            Request.get('/api/user/')
+                .then((resp) => {
+                    Request.user = new User(resp);
+                })
+        }
     }
     static saveToken(token) {
         this.token = token;

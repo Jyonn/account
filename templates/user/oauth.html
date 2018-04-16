@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block title %}齐天簿 - 登录应用{% endblock %}
+{% block main %}
+    <link rel="stylesheet" href="{% static "css/architecture.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/title-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/saying-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/list-box.css" %}"/>
+    <div class="full img-fit img-random fit-body"></div>
+    <div class="center-container">
+        <div class="full mask"></div>
+        <div class="title-box user-info">
+            <div class="full mask"></div>
+            <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit" id="avatar"></div></a>
+            <div class="middle">
+                <div class="nickname" id="nickname"></div>
+                <div class="info" id="user-desc"></div>
+            </div>
+        </div>
+        <div class="saying-box">
+            <div class="full mask"></div>
+            <div id="saying"></div>
+        </div>
+        <div class="app-title-box">
+            <div class="img-fit"></div>
+        </div>
+        <div class="list-box main active">
+            <section>
+                <div class="item text">
+                    <div class="full mask"></div>
+                    <div class="text">授权以登录{{ app_info.app_name }}应用</div>
+                </div>
+            </section>
+            <section>
+                <div class="item text">
+                    <div class="full mask"></div>
+                    <div class="text">{{ app_info.app_name }}将获得以下 {{ app_info.scopes | length }} 项权限</div>
+                </div>
+                {% for o_scope in app_info.scopes %}
+                <div class="item text">
+                    <div class="full mask"></div>
+                    <div class="text">- {{ o_scope.desc }}</div>
+                </div>
+                {% endfor %}
+            </section>
+            <section class="b1">
+                <div class="item button" id="cancel-oauth">
+                    <div class="full mask"></div>
+                    <div class="button">取消授权</div>
+                </div>
+            </section>
+            <section class="b0">
+                <div class="item button confirm" id="verify-oauth">
+                    <div class="full mask"></div>
+                    <div class="button">确认授权</div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script src="{% static "js/user/base.js" %}"></script>
+    <script src="{% static "js/user/oauth.js" %}"></script>
+    <script src="{% static "js/base/saying.js" %}"></script>
+    <script>
+        Saying.staticConstructor('saying');
+        UserBase.staticConstructor({
+            nicknameId: 'nickname',
+            descId: 'user-desc',
+            avatarId: 'avatar',
+        });
+        OAuth.staticConstructor({
+            cancelOAuthId: 'cancel-oauth',
+            verifyOAuthId: 'verify-oauth',
+        });
+    </script>
+{% endblock %}

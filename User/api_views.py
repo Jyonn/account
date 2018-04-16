@@ -4,14 +4,16 @@
 """
 from django.views import View
 
-from Base.decorator import require_json, require_post, require_login, require_get, require_delete, \
-    require_put, require_root
+from Base.scope import ScopeInstance
+from Base.validator import require_json, require_post, require_login, require_get, require_delete, \
+    require_put, require_root, require_scope
 from Base.error import Error
-from Base.jtoken import jwt_e
+from Base.jtoken import jwt_e, JWType
 from Base.policy import get_avatar_policy
 from Base.qn import get_upload_token, qiniu_auth_callback
 from Base.response import response, error_response
 from Base.send_mobile import SendMobile
+from Base.session import Session
 
 from User.models import User
 
@@ -19,7 +21,7 @@ from User.models import User
 class UserView(View):
     @staticmethod
     def get_token_info(o_user):
-        ret = jwt_e(dict(user_id=o_user.pk))
+        ret = jwt_e(dict(user_id=o_user.pk, type=JWType.LOGIN_TOKEN))
         if ret.error is not Error.OK:
             return error_response(ret)
         token, dict_ = ret.body
@@ -30,13 +32,14 @@ class UserView(View):
     @staticmethod
     @require_get()
     @require_login
+    @require_scope([ScopeInstance.r_base_info])
     def get(request):
         """ GET /api/user/
 
         获取我的信息
         """
         o_user = request.user
-        return UsernameView.get(request, o_user.username)
+        return response(body=o_user.to_dict())
 
     @staticmethod
     @require_json
@@ -73,6 +76,7 @@ class UserView(View):
         ]
     )
     @require_login
+    @require_scope(deny_all_auth_token=True)
     def put(request):
         """ PUT /api/user/
 
@@ -93,25 +97,26 @@ class UserView(View):
         return response(body=o_user.to_dict())
 
 
-class UsernameView(View):
-    @staticmethod
-    @require_get()
-    def get(request, username):
-        """ GET /api/user/@:username
-
-        获取用户信息
-        """
-        ret = User.get_user_by_phone(username)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-        return response(body=o_user.to_dict())
+class QitianView(View):
+    # @staticmethod
+    # @require_get()
+    # def get(request, qitian):
+    #     """ GET /api/user/@:qitian
+    #
+    #     获取用户信息
+    #     """
+    #     ret = User.get_user_by_qitian(qitian)
+    #     if ret.error is not Error.OK:
+    #         return error_response(ret)
+    #     o_user = ret.body
+    #     if not isinstance(o_user, User):
+    #         return error_response(Error.STRANGE)
+    #     return response(body=o_user.to_dict())
 
     @staticmethod
     @require_delete()
     @require_root
+    @require_scope(deny_all_auth_token=True)
     def delete(request, username):
         """ DELETE /api/user/@:username
 
@@ -134,16 +139,23 @@ class UsernameView(View):
 class TokenView(View):
     @staticmethod
     @require_json
-    @require_post(['username', 'password'])
-    def get(request):
-        """ GET /api/user/token
+    @require_post(['password'])
+    def post(request):
+        """ POST /api/user/token
 
         登录获取token
         """
-        username = request.d.username
         password = request.d.password
-
-        ret = User.authenticate(username, password)
+        login_type = Session.load(request, SendMobile.LOGIN_TYPE, once_delete=False)
+        if not login_type:
+            return error_response(Error.ERROR_SESSION)
+        login_value = Session.load(request, login_type, once_delete=False)
+        if not login_value:
+            return error_response(Error.ERROR_SESSION)
+        if login_type == SendMobile.PHONE_NUMBER:
+            ret = User.authenticate(None, login_value, password)
+        else:
+            ret = User.authenticate(login_value, None, password)
         if ret.error != Error.OK:
             return error_response(ret)
         o_user = ret.body
@@ -157,6 +169,7 @@ class AvatarView(View):
     @staticmethod
     @require_get(['filename'])
     @require_login
+    @require_scope(deny_all_auth_token=True)
     def get(request):
         """ GET /api/user/avatar
 

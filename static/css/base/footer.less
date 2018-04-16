@@ -1,0 +1,30 @@
+@import "heights";
+
+div.footer {
+  position: absolute;
+  width: 100%;
+  height: @footer-height;
+  span {
+    display: block;
+  }
+  span.next{
+    padding-top: 40px;
+    &:before {
+      color: white;
+      font-size: 64px;
+    }
+  }
+  span.text {
+    margin-top: 16px;
+    color: white;
+    font-size: 14px;
+  }
+}
+
+div.footer.active {
+  left: 0;
+}
+
+div.footer.inactive {
+  left: -100%;
+}

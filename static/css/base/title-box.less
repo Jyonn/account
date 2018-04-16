@@ -1,0 +1,101 @@
+@import "heights";
+
+@avatar-size: 70px;
+div.title-box {
+  position: absolute;
+  width: 100%;
+  height: @title-box-height;
+  div.mask {
+    background: black;
+    filter: opacity(0.5);
+  }
+  div.avatar {
+    position: absolute;
+    width: @avatar-size;
+    height: @avatar-size;
+    border-radius: @avatar-size / 2;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    &:hover {
+      border: 2px solid rgba(255, 255, 255, 1);
+    }
+    cursor: pointer;
+  }
+}
+
+div.title-box.big-title {
+  /*for register.html*/
+  span.back {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    color: white;
+    &:before {
+      font-size: 24px;
+    }
+  }
+  span.back.inactive {
+    display: none;
+  }
+  div#title {
+    position: absolute;
+    bottom: 0;
+    right: 10px;
+    color: white;
+    font-size: 40px;
+  }
+}
+
+div.title-box.user-info {
+  /*for center.html*/
+  div.avatar {
+    left: 18px;
+    top: calc(~'50% - @{avatar-size} / 2');
+  }
+  @middle-margin: 108px;
+  div.middle {
+    position: absolute;
+    width: calc(~'100% - 190px');
+    left: 0;
+    top: 29px;
+    margin-left: @middle-margin;
+    color: white;
+    white-space: nowrap;
+    div.nickname {
+      font-weight: bold;
+      font-size: 20px;
+    }
+    div.info {
+      font-size: 14px;
+      width: 100%;
+      overflow: hidden;
+    }
+  }
+
+  span.setting {
+    cursor: pointer;
+    position: absolute;
+    right: 34px;
+    top: 43px;
+    color: white;
+  }
+}
+
+div.title-box.middle-avatar {
+  div.avatar {
+    top: calc(~'100% - @{avatar-size} / 2');
+    left: calc(~'50% - @{avatar-size} / 2');
+  }
+  @text-height: 20px;
+  div.text {
+    position: absolute;
+    top: calc(~'100% + @{avatar-size} / 2 + 6px');
+    height: @text-height;
+    line-height: @text-height;
+    width: 100%;
+    left: 0;
+    text-align: center;
+    color: white;
+    font-size: 14px;
+    filter: opacity(0.6);
+  }
+}

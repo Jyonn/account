@@ -12,16 +12,26 @@ from Base.response import Ret
 
 class Session:
     @staticmethod
-    def save(request, key, value):
+    def save(request, key, value, visit_time=-1):
         request.session["saved_" + key] = value
+        request.session["saved_" + key + "_visit_time"] = visit_time
 
     @staticmethod
     def load(request, key, once_delete=True):
+        visit_time = request.session.get("saved_" + key + "_visit_time")
+        if visit_time is None:
+            return None
+        if visit_time == 0:
+            del request.session["saved_" + key + "_visit_time"]
         value = request.session.get("saved_" + key)
         if value is None:
             return None
+        if visit_time == 0:
+            del request.session["saved_" + key]
+            return None
         if once_delete:
             del request.session["saved_" + key]
+        request.session["saved_" + key + "_visit_time"] = visit_time - 1
         return value
 
     @staticmethod

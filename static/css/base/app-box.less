@@ -1,0 +1,111 @@
+@import "heights";
+@import "color";
+
+div.app-box {
+  position: absolute;
+  width: 100%;
+  height: @app-box-height;
+  overflow: scroll;
+  padding-bottom: 20px;
+
+  @app-item-height: 168px;
+  div.app-item {
+    position: relative;
+    float: left;
+    width: 50%;
+    height: @app-item-height;
+    margin: 20px 0 0;
+
+    @main-width: 168px;
+    @main-margin-left-odd: calc(~'(100% - @{main-width}) / 3 * 2');
+    @main-margin-left-even:calc(~'(100% - @{main-width}) / 3');
+
+    &:nth-child(odd) {
+      div.main {
+        margin-left: @main-margin-left-odd;
+      }
+    }
+    &:nth-child(even) {
+      div.main {
+        margin-left: @main-margin-left-even;
+      }
+    }
+
+    div.main {
+      position: relative;
+      width: @main-width;
+      height: 100%;
+
+      div.mask {
+        filter: opacity(0.6);
+        color: white;
+      }
+
+      @logo-size: 40px;
+      @logo-radius: @logo-size / 2;
+      div.logo {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transition: 0.2s;
+        cursor: pointer;
+      }
+
+      div.logo.active {
+        border-radius: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      div.logo.inactive {
+        width: @logo-size;
+        height: @logo-size;
+        border-radius: @logo-radius 0 @logo-radius @logo-radius;
+        z-index: 1;
+      }
+
+      div.app-name {
+        position: absolute;
+        top: 8px;
+        left: 14px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+      @description-height: 40px;
+      div.description {
+        position: absolute;
+        top: calc(~'50% - @{description-height} / 2');
+        height: @description-height;
+        color: #555555;
+        font-size: 14px;
+        display: flex;
+        flex-direction: column;
+        align-content: center;
+        justify-content: center;
+        padding: 0 14px;
+      }
+
+      @btn-box-margin: 20px;
+      div.btn-box {
+        position: absolute;
+        height: 20px;
+        margin: 0 @btn-box-margin;
+        width: calc(~'100% - @{btn-box-margin} * 2');
+        bottom: 18px;
+        span {
+          position: absolute;
+          top: 0;
+          cursor: pointer;
+        }
+        span.remove {
+          color: @red;
+          left: 0;
+        }
+        span.getin {
+          color: black;
+          right: 0;
+        }
+      }
+    }
+  }
+}

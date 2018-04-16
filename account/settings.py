@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
 import os
 
-HOST = 'https://account.6-79.cn'
+HOST = 'https://sso.6-79.cn'
 # HOST = 'localhost:8000'
 CDN_HOST = 'https://res.6-79.cn'
 

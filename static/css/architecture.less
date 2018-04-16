@@ -1,0 +1,26 @@
+@import "base";
+@import "base/heights";
+
+div.title-box {
+  top: 0;
+}
+
+div.saying-box {
+  top: @title-box-height;
+}
+
+div.qa-box {
+  top: @title-box-height + @saying-height;
+}
+
+div.footer {
+  bottom: 0;
+}
+
+div.app-box {
+  top: @title-box-height + @saying-height;
+}
+
+div.list-box {
+  top: @title-box-height + @list-box-margin-top;
+}

@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 {% load staticfiles %}
-{% block title %}齐天簿 - 个人信息{% endblock %}
+{% block title %}齐天簿 - 管理{% endblock %}
 {% block main %}
+    <link rel="stylesheet" href="{% static "css/architecture.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/title-box.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/saying-box.css" %}"/>
     <link rel="stylesheet" href="{% static "css/base/list-box.css" %}"/>
-    <link rel="stylesheet" href="{% static "css/user/settings.css" %}"/>
     <div class="full img-fit img-random fit-body"></div>
     <div class="center-container">
         <div class="full mask"></div>
-        <div class="title-box">
+        <div class="title-box user-info">
             <div class="full mask"></div>
             <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit img-random"></div></a>
             <div class="middle">
@@ -21,7 +23,7 @@
         </div>
         <div class="list-box main active">
             <section>
-                <a href="{% url "user-info-modify" %}">
+                <a href="{% url "user-info-modify" %}?from={{ request.get_full_path | urlencode }}">
                     <div class="item jump">
                         <div class="full mask"></div>
                         <div class="text">修改个人信息</div>
@@ -35,11 +37,13 @@
                     <div class="text">我的应用</div>
                     <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
                 </div>
-                <div class="item jump">
-                    <div class="full mask"></div>
-                    <div class="text">申请应用</div>
-                    <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
-                </div>
+                <a href="{% url "app-apply" %}?from={{ request.get_full_path | urlencode }}">
+                    <div class="item jump">
+                        <div class="full mask"></div>
+                        <div class="text">申请应用</div>
+                        <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
+                    </div>
+                </a>
             </section>
             <section>
                 <div class="item jump">

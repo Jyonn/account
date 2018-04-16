@@ -14,6 +14,7 @@ from django.http import HttpRequest
 
 from Base.common import deprint
 from Base.error import Error
+from Base.jtoken import JWType
 from Base.param import Param
 from Base.response import Ret, error_response
 
@@ -154,6 +155,37 @@ def field_validator(dict_, cls, allow_none=False):
     return Ret()
 
 
+def require_scope(scope_list=list(), deny_all_auth_token=False):
+    def decorator(func):
+        """decorator"""
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if request.type_ != JWType.AUTH_TOKEN:
+                return func(request, *args, **kwargs)
+
+            if deny_all_auth_token:
+                return error_response(Error.DENY_ALL_AUTH_TOKEN)
+            o_app = request.user_app.app
+
+            from App.models import App, Scope
+            if not isinstance(o_app, App):
+                deprint('Base-validator-scope_validator-o_app')
+                return error_response(Error.STRANGE)
+
+            if not isinstance(scope_list, list):
+                deprint('Base-validator-scope_validator-scope_list')
+                return error_response(Error.STRANGE)
+            for o_scope in scope_list:
+                if not isinstance(o_scope, Scope):
+                    decorator_generator('Base-validator-scope_validator-o_scope')
+                    return error_response(Error.STRANGE)
+                if o_scope not in o_app.scopes.all():
+                    return error_response(Error.SCOPE_NOT_SATISFIED, append_msg=o_scope.desc)
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
 def require_method(method, r_params=None, decode=True):
     """generate decorator, validate func with proper method and params"""
     def decorator(func):
@@ -255,23 +287,53 @@ def require_login_func(request):
         return ret
     dict_ = ret.body
 
-    try:
-        user_id = dict_["user_id"]
-    except KeyError as err:
-        deprint(str(err))
+    type_ = dict_.get('type')
+    if not type_:
+        deprint('Base-validator-require_login_func-dict.get(type)')
         return Ret(Error.STRANGE)
 
-    from User.models import User
-    ret = User.get_user_by_id(user_id)
-    if ret.error is not Error.OK:
-        return ret
-    o_user = ret.body
-    if not isinstance(o_user, User):
-        return Ret(Error.STRANGE)
+    if type_ == JWType.LOGIN_TOKEN:
+        user_id = dict_.get("user_id")
+        if not user_id:
+            deprint('Base-validator-require_login_func-dict.get(user_id)')
+            return Ret(Error.STRANGE)
+
+        from User.models import User
+        ret = User.get_user_by_id(user_id)
+        if ret.error is not Error.OK:
+            return ret
+        o_user = ret.body
+        if not isinstance(o_user, User):
+            return Ret(Error.STRANGE)
+    elif type_ == JWType.AUTH_TOKEN:
+        user_app_id = dict_.get('user_app_id')
+        if not user_app_id:
+            deprint('Base-validator-require_login_func-dict.get(user_app_id)')
+            return Ret(Error.STRANGE)
+
+        from App.models import UserApp
+        ret = UserApp.get_user_app_by_user_app_id(user_app_id, check_bind=True)
+        if ret.error is not Error.OK:
+            return ret
+        o_user_app = ret.body
+        if not isinstance(o_user_app, UserApp):
+            return Ret(Error.STRANGE)
+
+        ctime = dict_['ctime']
+        if o_user_app.app.field_change_time > ctime:
+            return error_response(Error.APP_FIELD_CHANGE)
+
+        o_user = o_user_app.user
+        request.user_app = o_user_app
+    else:
+        return Ret(Error.ERROR_TOKEN_TYPE)
 
     if float(dict_['ctime']) < float(o_user.pwd_change_time):
         return Ret(Error.PASSWORD_CHANGED)
+
     request.user = o_user
+    request.type_ = type_
+
     return Ret()
 
 

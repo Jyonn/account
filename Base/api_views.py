@@ -2,7 +2,7 @@ from django.views import View
 
 from Base import country
 from Base.captcha import Captcha
-from Base.decorator import require_get, require_json, require_post, require_put
+from Base.validator import require_get, require_json, require_post
 from Base.error import Error
 from Base.response import response, error_response
 from Base.send_mobile import SendMobile
@@ -61,12 +61,12 @@ class CaptchaView(View):
             return error_response(Error.ERROR_INTERACTION)
         if type_ == -1:
             # 手机号登录
-            Session.save(request, SendMobile.PHONE_NUMBER, account)
-            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.PHONE_NUMBER)
+            Session.save(request, SendMobile.PHONE_NUMBER, account, visit_time=5)
+            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.PHONE_NUMBER, visit_time=5)
         elif type_ == -2:
             # 齐天号登录
-            Session.save(request, SendMobile.QITIAN_ID, account)
-            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.QITIAN_ID)
+            Session.save(request, SendMobile.QITIAN_ID, account, visit_time=5)
+            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.QITIAN_ID, visit_time=5)
         else:
             SendMobile.send_captcha(request, account, type_)
         return response()

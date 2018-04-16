@@ -5,9 +5,9 @@ class Saying {
     }
 
     static initSaying() {
-        Service.getSayingAPI({max_length: 26})
+        Service.getSayingAPI({max_length: 24, consider_author: 1})
             .then((body) => {
-                this.saying.innerText = body.sentence;
+                this.saying.innerText = `${body.author || '佚名'} | ${body.sentence}`;
             })
     }
 }

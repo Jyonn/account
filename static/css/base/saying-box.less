@@ -1,0 +1,19 @@
+@import "heights";
+
+div.saying-box {
+  position: absolute;
+  width: 100%;
+  height: @saying-height;
+  div.mask {
+    background: white;
+    filter: opacity(0.2);
+  }
+  div#saying {
+    line-height: @saying-height;
+    vertical-align: middle;
+    letter-spacing: 1px;
+    color: black;
+    font-size: 12px;
+    padding-left: 10px;
+  }
+}

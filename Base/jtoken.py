@@ -12,6 +12,12 @@ from Base.response import Ret
 from account.settings import SECRET_KEY, JWT_ENCODE_ALGO
 
 
+class JWType:
+    LOGIN_TOKEN = 'login-token'
+    AUTH_CODE = 'auth-code'
+    AUTH_TOKEN = 'auth-token'
+
+
 def jwt_e(dict_, replace=True, expire_second=7 * 60 * 60 * 24):
     """
     jwt签名加密

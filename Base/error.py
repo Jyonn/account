@@ -35,6 +35,7 @@ class Error:
     QINIU_UNAUTHORIZED = E("七牛端身份验证错误")
     ERROR_REQUEST_QINIU = E("七牛请求错误")
     PASSWORD_CHANGED = E("密码已改变，需要重新获取token")
+    INVALID_QITIAN = E("齐天号只能包含字母数字以及下划线")
     INVALID_PASSWORD = E("密码只能包含字母数字以及“!@#$%^&*()_+-=,.?;:”")
     INVALID_USERNAME_FIRST = E("用户名首字符只能是字母")
     INVALID_USERNAME = E("用户名只能包含字母数字和下划线")
@@ -45,7 +46,7 @@ class Error:
     JWT_PARAM_INCOMPLETE = E("身份认证token缺少参数")
     REQUIRE_DICT = E("需要字典数据")
     ERROR_CREATE_USER = E("存储用户错误")
-    ERROR_PASSWORD = E("错误的用户名或密码")
+    ERROR_PASSWORD = E("密码错误")
     NOT_FOUND_USER = E("不存在的用户")
 
     GET_CAPTCHA_ERROR = E("获取验证码失败")
@@ -59,6 +60,16 @@ class Error:
     APP_NOT_BELONG = E("不是你的应用")
     ERROR_MODIFY_APP = E("修改应用信息错误")
     ERROR_INTERACTION = E("操作失败，请再试一次")
+    ERROR_SESSION = E("会话错误，请刷新重试")
+    ERROR_TOKEN_TYPE = E("错误的Token类型，登录失败")
+    NOT_FOUND_USER_APP = E("用户和应用没有绑定关系")
+    ERROR_BIND_USER_APP = E("无法绑定应用")
+    REQUIRE_AUTH_CODE = E("需要身份认证code")
+    APP_FIELD_CHANGE = E("应用信息发生变化，请重新确认授权")
+    NEW_AUTH_CODE_CREATED = E("不是最新授权，已失效")
+    APP_UNBINDED = E("应用被用户解绑")
+    SCOPE_NOT_SATISFIED = E("没有获取权限：")
+    DENY_ALL_AUTH_TOKEN = E("拒绝第三方认证请求")
 
     @classmethod
     def get_error_dict(cls):

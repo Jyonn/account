@@ -2,12 +2,13 @@
 {% load staticfiles %}
 {% block title %}齐天簿 - 个人信息{% endblock %}
 {% block main %}
+    <link rel="stylesheet" href="{% static "css/architecture.css" %}"/>
+    <link rel="stylesheet" href="{% static "css/base/title-box.css" %}"/>
     <link rel="stylesheet" href="{% static "css/base/list-box.css" %}"/>
-    <link rel="stylesheet" href="{% static "css/user/info-modify.css" %}"/>
     <div class="full img-fit img-random fit-body"></div>
     <div class="center-container">
         <div class="full mask"></div>
-        <div class="title-box">
+        <div class="title-box middle-avatar">
             <div class="full mask"></div>
             <div class="avatar img-fit img-random"></div>
             <div class="text">点击更换头像</div>
@@ -17,12 +18,12 @@
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">昵称</div>
-                    <input class="value" value="工刀" placeholder="昵称可以随时更改"/>
+                    <input class="value" placeholder="您还没有设置昵称" id="nickname"/>
                 </div>
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">签名</div>
-                    <input class="value" value="地窖里的蛇和老酒，把时间泡醇厚。" placeholder="个性签名可以随时更改"/>
+                    <input class="value" placeholder="您还没有填写个性签名" id="user-desc"/>
                 </div>
             </section>
             <section>
@@ -39,7 +40,7 @@
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">手机号</div>
-                    <a class="value" href="{% url 'user-bind-phone' %}">绑定手机号</a>
+                    <a class="value" href="{% url 'user-bind-phone' %}?from={{ request.get_full_path | urlencode }}">绑定手机号</a>
                 </div>
             </section>
             <section class="b1">
@@ -82,4 +83,13 @@
             </section>
         </div>
     </div>
+    <script src="{% static "js/user/base.js" %}"></script>
+{#    <script src="{% static "js/user/register.js" %}"></script>#}
+    <script>
+        UserBase.staticConstructor({
+            nicknameId: 'nickname',
+            descId: 'user-desc',
+            avatarId: 'avatar',
+        })
+    </script>
 {% endblock %}

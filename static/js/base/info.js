@@ -52,6 +52,7 @@ class InfoCenter {
     static staticConstructor(selector) {
         this.infoContainer = document.getElementById(selector);
     }
+
     static push(info) {
         InfoCenter.infoContainer.appendChild(info.html);
         setTimeout(() => {
@@ -61,5 +62,14 @@ class InfoCenter {
         info.html.addEventListener("click", () => {
             info.remove();
         });
+    }
+
+    static delayInfo(info, callback, timeout = 3000) {
+        return function() {
+            setTimeout(callback, timeout);
+            if (info) {
+                InfoCenter.push(info);
+            }
+        }
     }
 }

@@ -8,7 +8,7 @@ from django.db import models
 from django.utils.crypto import get_random_string
 
 from Base.common import deprint
-from Base.decorator import field_validator
+from Base.validator import field_validator
 from Base.error import Error
 from Base.response import Ret
 
@@ -25,10 +25,18 @@ class User(models.Model):
         'nickname': 10,
         'avatar': 1024,
         'phone': 20,
+        'qitian': 20,
+        'description': 20,
     }
     MIN_L = {
         'password': 6,
+        'qitian': 4,
     }
+    qitian = models.CharField(
+        default=None,
+        unique=True,
+        max_length=L['qitian'],
+    )
     phone = models.CharField(
         default=None,
         unique=True,
@@ -56,7 +64,28 @@ class User(models.Model):
         max_length=L['nickname'],
         default=None,
     )
-    FIELD_LIST = ['password', 'avatar', 'nickname', 'phone']
+    description = models.CharField(
+        max_length=L['description'],
+        default=None,
+    )
+    FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description']
+
+    @classmethod
+    def get_unique_qitian_id(cls):
+        while True:
+            qitian_id = '#'+get_random_string(length=8)
+            ret = cls.get_user_by_qitian(qitian_id)
+            if ret.error == Error.NOT_FOUND_USER:
+                return qitian_id
+            deprint('generate res_str_id: %s, conflict.' % qitian_id)
+
+    @staticmethod
+    def _valid_qitian(qitian):
+        """验证齐天号合法"""
+        valid_chars = '^[A-Za-z0-9_]{4,20}$'
+        if re.match(valid_chars, qitian) is None:
+            return Ret(Error.INVALID_QITIAN)
+        return Ret()
 
     @staticmethod
     def _valid_password(password):
@@ -96,11 +125,13 @@ class User(models.Model):
             return Ret(Error.PHONE_EXIST)
         try:
             o_user = cls(
+                qitian=cls.get_unique_qitian_id(),
                 phone=phone,
                 password=hashed_password,
                 salt=salt,
                 avatar=None,
                 nickname='',
+                description=None,
             )
             o_user.save()
         except ValueError as err:
@@ -137,6 +168,15 @@ class User(models.Model):
         return Ret(o_user)
 
     @staticmethod
+    def get_user_by_qitian(qitian_id):
+        try:
+            o_user = User.objects.get(qitian=qitian_id)
+        except User.DoesNotExist as err:
+            deprint(str(err))
+            return Ret(Error.NOT_FOUND_USER)
+        return Ret(o_user)
+
+    @staticmethod
     def get_user_by_id(user_id):
         """根据用户ID获取用户对象"""
         try:
@@ -150,28 +190,24 @@ class User(models.Model):
         """把用户对象转换为字典"""
         return dict(
             user_id=self.pk,
+            qitian=self.qitian,
             avatar=self.get_avatar_url(),
             nickname=self.nickname,
+            description=self.description,
         )
 
-    def to_base_dict(self):
-        """基本字典信息"""
-        return dict(
-            nickname=self.nickname[:-3]+'***',
-            avatar=self.get_avatar_url(),
-        )
-
-    @staticmethod
-    def authenticate(phone, password):
+    @classmethod
+    def authenticate(cls, qitian, phone, password):
+        print(qitian, phone, password)
         """验证手机号和密码是否匹配"""
-        ret = User._validate(locals())
+        if qitian:
+            ret = cls.get_user_by_qitian(qitian)
+        else:
+            ret = cls.get_user_by_phone(phone)
         if ret.error is not Error.OK:
             return ret
-        try:
-            o_user = User.objects.get(phone=phone)
-        except User.DoesNotExist as err:
-            deprint(str(err))
-            return Ret(Error.NOT_FOUND_USER)
+        o_user = ret.body
+
         salt, hashed_password = User.hash_password(password, o_user.salt)
         if hashed_password == o_user.password:
             return Ret(o_user)
