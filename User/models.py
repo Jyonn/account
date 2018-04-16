@@ -67,6 +67,8 @@ class User(models.Model):
     description = models.CharField(
         max_length=L['description'],
         default=None,
+        blank=True,
+        null=True,
     )
     FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description']
 
