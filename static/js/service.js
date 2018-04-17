@@ -35,6 +35,10 @@ class Service {
         return Request.post('/api/app/', arguments[0]);
     }
 
+    static modifyAppInfoAPI(app_id, {name, description, redirect_uri, scopes}) {
+        return Request.put(`/api/app/${app_id}`, arguments[1]);
+    }
+
     static getMyInfoAPI() {
         return Request.get('/api/user/');
     }
@@ -47,8 +51,8 @@ class Service {
         return Request.post('/api/oauth/', arguments[0]);
     }
 
-    static getAppInfoAPI({app_id}) {
-        return Request.get(`/api/app/${arguments[0].app_id}`);
+    static getAppInfoAPI(app_id) {
+        return Request.get(`/api/app/${app_id}`);
     }
 
     static getAppLogoTokenAPI({app_id, filename}) {
@@ -64,7 +68,7 @@ class Service {
         fd.append('key', key);
         fd.append('token', token);
         fd.append('file', file);
-        return Request.post(Service.QN_HOST, fd);
+        return Request.post(Service.QN_HOST, fd, false, false);
     }
 }
 

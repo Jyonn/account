@@ -34,5 +34,5 @@ def get_avatar_policy(user_id):
 
 def get_logo_policy(app_id):
     policy = LOGO_POLICY
-    policy['callbackBody'] = '{"key":"$(key)","app_id":%s}' % app_id
+    policy['callbackBody'] = '{"key":"$(key)","app_id":"%s"}' % app_id
     return policy

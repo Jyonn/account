@@ -216,6 +216,7 @@ class App(models.Model):
                 secret=get_random_string(length=cls.L['secret']),
                 redirect_uri=redirect_uri,
                 owner=owner,
+                field_change_time=datetime.datetime.now().timestamp(),
             )
             o_app.save()
             o_app.scopes.add(*scopes)
@@ -225,17 +226,16 @@ class App(models.Model):
             return Ret(Error.ERROR_CREATE_APP, append_msg=str(err))
         return Ret(o_app)
 
-    def modify(self, name, redirect_uri, scopes):
-        ret = self._validate(locals(), allow_none=True)
+    def modify(self, name, desc, redirect_uri, scopes):
+        """修改应用信息"""
+        ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
-        if name:
-            self.name = name
-        if redirect_uri:
-            self.redirect_uri = redirect_uri
-        if scopes:
-            self.scopes.remove()
-            self.scopes.add(*scopes)
+        self.name = name
+        self.desc = desc
+        self.redirect_uri = redirect_uri
+        self.scopes.remove()
+        self.scopes.add(*scopes)
         self.field_change_time = datetime.datetime.now().timestamp()
         try:
             self.save()
@@ -255,13 +255,14 @@ class App(models.Model):
             redirect_uri=self.redirect_uri,
             logo=self.get_logo_url(),
             app_desc=self.desc,
+            owner=self.owner.to_dict(),
         )
         if relation == App.R_OWNER:
             dict_['app_secret'] = self.secret
         return dict_
 
     def get_logo_url(self, small=True):
-        """获取用户头像地址"""
+        """获取应用logo地址"""
         if self.logo is None:
             return None
         from Base.qn import get_resource_url
@@ -269,13 +270,21 @@ class App(models.Model):
         return get_resource_url(key)
 
     def modify_logo(self, logo):
-        """修改用户头像"""
+        """修改应用logo"""
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
+        from Base.qn import delete_res
+        if self.logo:
+            ret = delete_res(self.logo)
+            if ret.error is not Error.OK:
+                return ret
         self.logo = logo
         self.save()
         return Ret()
+
+    def belong(self, o_user):
+        return self.owner == o_user
 
 
 class UserApp(models.Model):

@@ -87,10 +87,10 @@ class Login {
         Service.loginAPI({password: password})
             .then((body) => {
                 Request.saveToken(body.token);
-                InfoCenter.push(new Info('登录成功，正在跳转……', Info.TYPE_SUCC));
-                setTimeout(() => {
-                    window.location.href = '/user/center';
-                }, 1000);
+                InfoCenter.delayInfo(
+                    new Info('登录成功，正在跳转……', Info.TYPE_SUCC),
+                    Router.jumpBackOrRoute(Router.jumpToUserCenter),
+                );
             })
             .catch((resp) => {
                 if (MyError.check('ERROR_SESSION', resp)) {

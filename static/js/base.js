@@ -47,20 +47,30 @@ class Request {
         .map(k => esc(k) + '=' + esc(params[k]))
         .join('&');
     }
-    static async baseFetch(method, url, data=null) {
+    static async baseFetch(method, url, data=null, credential=true, json=true) {
         if ((method === Method.GET || method === Method.DELETE) && data) {
             url += '?' + this.getQueryString(data);
             data = null;
         }
-        let req = await fetch(url, {
-            method: method,
-            headers: {
-                "Content-type": "application/json",
-                "Token": this.token || '',
-            },
-            body: data ? JSON.stringify(data) : null,
-            credentials: "include",
-        });
+        let credentials = credential ? "include" : null;
+        let req;
+        if (json) {
+            req = await fetch(url, {
+                method: method,
+                headers: {
+                    "Content-type": "application/json",
+                    "Token": this.token || '',
+                },
+                body: data ? JSON.stringify(data) : null,
+                credentials: credentials,
+            });
+        } else {
+            req = await fetch(url, {
+                method: method,
+                body: data,
+                credentials: credentials,
+            });
+        }
         return req.json().then((resp) => {
             if (resp.code !== 0) {
                 InfoCenter.push(new Info(resp.msg));
@@ -69,17 +79,17 @@ class Request {
             return resp.body;
         }).catch(ErrorHandler.handler);
     }
-    static async get(url, data=null) {
-        return this.baseFetch(Method.GET, url, data);
+    static async get(url, data=null, credential=true, json=true) {
+        return this.baseFetch(Method.GET, url, data, credential, json);
     }
-    static async post(url, data=null) {
-        return this.baseFetch(Method.POST, url, data);
+    static async post(url, data=null, credential=true, json=true) {
+        return this.baseFetch(Method.POST, url, data, credential, json);
     }
-    static async put(url, data=null) {
-        return this.baseFetch(Method.PUT, url, data);
+    static async put(url, data=null, credential=true, json=true) {
+        return this.baseFetch(Method.PUT, url, data, credential, json);
     }
-    static async delete(url, data=null) {
-        return this.baseFetch(Method.DELETE, url, data);
+    static async delete(url, data=null, credential=true, json=true) {
+        return this.baseFetch(Method.DELETE, url, data, credential, json);
     }
 }
 

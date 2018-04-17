@@ -89,22 +89,35 @@ class AppIDView(View):
 
     @staticmethod
     @require_json
-    @require_put([('name', None, None), ('redirect_uri', None, None)])
+    @require_put([
+        'name',
+        'description',
+        'redirect_uri',
+        {
+            "value": 'scopes',
+            "process": Scope.list_to_scope_list,
+        }
+    ])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def put(request, app_id):
         o_user = request.user
         name = request.d.name
+        desc = request.d.description
         redirect_uri = request.d.redirect_uri
+        scopes = request.d.scopes
 
         ret = App.get_app_by_id(app_id)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_app = ret.body
-        if o_app.owner is not o_user:
+        if not isinstance(o_app, App):
+            return error_response(Error.STRANGE)
+
+        if not o_app.belong(o_user):
             return error_response(Error.APP_NOT_BELONG)
 
-        ret = o_app.modify(name, redirect_uri)
+        ret = o_app.modify(name, desc, redirect_uri, scopes)
         if ret.error is not Error.OK:
             return error_response(ret)
         return response(body=o_app.to_dict(relation=App.R_OWNER))
@@ -120,7 +133,7 @@ class AppIDView(View):
         if ret.error is not Error.OK:
             return error_response(ret)
         o_app = ret.body
-        if o_app.owner is not o_user:
+        if not o_app.belong(o_user):
             return error_response(Error.APP_NOT_BELONG)
 
         o_app.delete()
@@ -173,7 +186,7 @@ class AppLogoView(View):
     def post(request):
         """ POST /api/app/logo
 
-        七牛上传用户头像回调函数
+        七牛上传应用logo回调函数
         """
         ret = qiniu_auth_callback(request)
         if ret.error is not Error.OK:
@@ -188,4 +201,4 @@ class AppLogoView(View):
         if not isinstance(o_app, App):
             return error_response(Error.STRANGE)
         o_app.modify_logo(key)
-        return response(body=o_app.to_dict())
+        return response(body=o_app.to_dict(relation=App.R_USER))
