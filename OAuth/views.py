@@ -11,6 +11,11 @@ class OAuthView(View):
     @staticmethod
     @require_get(['app_id'])
     def oauth(request):
+        """GET /oauth?app_id=:app_id
+
+        授权应用并使用应用
+        """
+
         app_id = request.d.app_id
         ret = App.get_app_by_id(app_id)
         if ret.error is not Error.OK:

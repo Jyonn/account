@@ -3,18 +3,20 @@ class Router {
         window.location.href = location;
     }
 
-    static packAbstructJump(location) {
-        return function () {
-            Router.abstructJump(location);
-        }
-    }
-
     static jumpToUserCenter() {
         Router.abstructJump('/user/center');
     }
 
     static jumpToUserLogin() {
         Router.abstructJump('/user/login');
+    }
+
+    static jumpToAppInfoModify(app_id) {
+        Router.abstructJump(`/app/info-modify/${app_id}`);
+    }
+
+    static jumpToOAuth(app_id) {
+        Router.abstructJump(`/oauth/?app_id=${app_id}`);
     }
 
     static jumpBackOrRoute(router) {

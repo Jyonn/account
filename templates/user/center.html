@@ -24,7 +24,13 @@
             <div class="full mask"></div>
             <div id="saying"></div>
         </div>
-        <div class="app-box" id="app-box"></div>
+        <div class="app-box active main" id="app-box-user"></div>
+        <div class="app-box inactive" id="app-box-owner"></div>
+        <div class="app-view-switcher">
+            <span class="active" id="switch-app-user-btn">我使用的应用</span>
+            <span class="inactive middle">|</span>
+            <span class="inactive" id="switch-app-owner-btn">我申请的应用</span>
+        </div>
     </div>
     <script src="{% static "js/user/base.js" %}"></script>
     <script src="{% static "js/user/center.js" %}"></script>
@@ -37,7 +43,10 @@
             avatarId: 'avatar',
         });
         Center.staticConstructor({
-            appBoxId: 'app-box',
+            appBoxUserId: 'app-box-user',
+            appBoxOwnerId: 'app-box-owner',
+            switchAppUserBtnId: 'switch-app-user-btn',
+            switchAppOwnerBtnId: 'switch-app-owner-btn',
         })
     </script>
 {% endblock %}

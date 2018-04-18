@@ -7,6 +7,7 @@ div.app-box {
   height: @app-box-height;
   overflow: scroll;
   padding-bottom: 20px;
+  transition: 0.2s;
 
   @app-item-height: 168px;
   div.app-item {
@@ -107,5 +108,37 @@ div.app-box {
         }
       }
     }
+  }
+}
+
+div.app-box.active {
+  left: 0;
+}
+
+div.app-box.inactive {
+  left: 100%;
+}
+
+div.app-box.main.inactive {
+  left: -100%;
+}
+
+div.app-view-switcher {
+  position: absolute;
+  width: 100%;
+  height: @app-view-switcher-height;
+  text-align: center;
+  span {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  span.middle {
+    margin: 0 10px;
+  }
+  span.inactive {
+    filter: opacity(0.6);
   }
 }

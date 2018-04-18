@@ -1,9 +1,10 @@
 div.app-box {
   position: absolute;
   width: 100%;
-  height: calc(100% - 106px - 30px);
+  height: calc(100% - 106px - 30px - 50px);
   overflow: scroll;
   padding-bottom: 20px;
+  transition: 0.2s;
 }
 div.app-box div.app-item {
   position: relative;
@@ -83,4 +84,32 @@ div.app-box div.app-item div.main div.btn-box span.remove {
 div.app-box div.app-item div.main div.btn-box span.getin {
   color: black;
   right: 0;
+}
+div.app-box.active {
+  left: 0;
+}
+div.app-box.inactive {
+  left: 100%;
+}
+div.app-box.main.inactive {
+  left: -100%;
+}
+div.app-view-switcher {
+  position: absolute;
+  width: 100%;
+  height: 50px;
+  text-align: center;
+}
+div.app-view-switcher span {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+div.app-view-switcher span.middle {
+  margin: 0 10px;
+}
+div.app-view-switcher span.inactive {
+  filter: opacity(0.6);
 }

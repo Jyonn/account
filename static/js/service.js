@@ -43,8 +43,8 @@ class Service {
         return Request.get('/api/user/');
     }
 
-    static getMyAppAPI() {
-        return Request.get('/api/app/');
+    static getMyAppAPI({relation}) {
+        return Request.get('/api/app/', arguments[0]);
     }
 
     static oAuthAPI({app_id}) {

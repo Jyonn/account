@@ -11,15 +11,15 @@
         <div class="full mask"></div>
         <div class="title-box user-info">
             <div class="full mask"></div>
-            <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit img-random"></div></a>
+            <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit" id="avatar"></div></a>
             <div class="middle">
-                <div class="nickname">工刀</div>
-                <div class="info">地窖里的蛇和老酒，把时间泡醇厚。</div>
+                <div class="nickname" id="nickname"></div>
+                <div class="info" id="user-desc"></div>
             </div>
         </div>
         <div class="saying-box">
             <div class="full mask"></div>
-            <div id="saying">浮华褪尽，人比烟花寂寞。</div>
+            <div id="saying"></div>
         </div>
         <div class="list-box main active">
             <section>
@@ -32,11 +32,6 @@
                 </a>
             </section>
             <section>
-                <div class="item jump">
-                    <div class="full mask"></div>
-                    <div class="text">我的应用</div>
-                    <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
-                </div>
                 <a href="{% url "app-apply" %}?from={{ request.get_full_path | urlencode }}">
                     <div class="item jump">
                         <div class="full mask"></div>
@@ -71,4 +66,15 @@
             </section>
         </div>
     </div>
+    <script src="{% static "js/user/base.js" %}"></script>
+    <script src="{% static "js/user/center.js" %}"></script>
+    <script src="{% static "js/base/saying.js" %}"></script>
+    <script>
+        Saying.staticConstructor('saying');
+        UserBase.staticConstructor({
+            nicknameId: 'nickname',
+            descId: 'user-desc',
+            avatarId: 'avatar',
+        });
+    </script>
 {% endblock %}
