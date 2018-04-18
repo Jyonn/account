@@ -90,7 +90,7 @@ class Login {
                 InfoCenter.delayInfo(
                     new Info('登录成功，正在跳转……', Info.TYPE_SUCC),
                     Router.jumpBackOrRoute(Router.jumpToUserCenter),
-                );
+                )();
             })
             .catch((resp) => {
                 if (MyError.check('ERROR_SESSION', resp)) {

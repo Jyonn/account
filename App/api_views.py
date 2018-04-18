@@ -4,7 +4,7 @@ from App.models import App, Scope, UserApp
 from Base.policy import get_avatar_policy, get_logo_policy
 from Base.qn import get_upload_token, qiniu_auth_callback
 from Base.validator import require_get, require_login, require_post, require_put, require_delete, \
-    require_json, require_scope
+    require_json, require_scope, maybe_login
 from Base.error import Error
 from Base.response import error_response, response
 from User.models import User
@@ -76,8 +76,12 @@ class AppView(View):
 class AppIDView(View):
     @staticmethod
     @require_get()
+    @maybe_login
+    @require_scope(deny_all_auth_token=True, allow_no_login=True)
     def get(request, app_id):
         """GET /api/app/:app_id"""
+        o_user = request.user
+
         ret = App.get_app_by_id(app_id)
         if ret.error is not Error.OK:
             return error_response(ret)
@@ -85,7 +89,9 @@ class AppIDView(View):
         if not isinstance(o_app, App):
             return error_response(Error.STRANGE)
 
-        return response(body=o_app.to_dict(relation=App.R_USER))
+        dict_ = o_app.to_dict(relation=App.R_USER)
+        dict_['belong'] = o_app.belong(o_user)
+        return response(body=dict_)
 
     @staticmethod
     @require_json

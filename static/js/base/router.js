@@ -4,7 +4,11 @@ class Router {
     }
 
     static jumpToUserCenter() {
-        Router.abstructJump('/user/center');
+        Router.abstructJump('/user/center?r=user');
+    }
+
+    static jumpToUserCenterOwner() {
+        Router.abstructJump('/user/center?r=owner');
     }
 
     static jumpToUserLogin() {

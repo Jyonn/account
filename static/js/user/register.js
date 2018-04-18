@@ -83,7 +83,10 @@ class Register {
         Service.registerAPI({password: password, code: captcha})
             .then((body) => {
                 Request.saveToken(body.token);
-                InfoCenter.push(new Info('注册成功，正在跳转……', Info.TYPE_SUCC));
+                InfoCenter.delayInfo(
+                    new Info('注册成功，正在跳转……', Info.TYPE_SUCC),
+                    Router.jumpBackOrRoute(Router.jumpToUserCenter),
+                )();
             })
     }
 }

@@ -8,6 +8,7 @@ class InfoModify {
         appLogoId,
         logoChangeBtnId,
         uploadLogoInputId,
+        cancelModifyBtnId,
         confirmModifyBtnId,
     }) {
         this.title = document.getElementById(titleId);
@@ -19,11 +20,13 @@ class InfoModify {
         this.appLogo = document.getElementById(appLogoId);
         this.logoChangeBtn = document.getElementById(logoChangeBtnId);
         this.uploadLogoInput = document.getElementById(uploadLogoInputId);
+        this.cancelModifyBtn = document.getElementById(cancelModifyBtnId);
         this.confirmModifyBtn = document.getElementById(confirmModifyBtnId);
 
         this.logoChangeBtn.addEventListener('click', this.selectLogoFile);
         this.uploadLogoInput.addEventListener('change', this.uploadLogo);
         this.confirmModifyBtn.addEventListener('click', this.infoModify);
+        this.cancelModifyBtn.addEventListener('click', Router.jumpBackOrRoute(Router.jumpToUserCenterOwner));
 
         this.switchToMainBox();
         this.initAppBox();
@@ -78,8 +81,19 @@ class InfoModify {
     static initAppBox() {
         Service.getAppInfoAPI(app_id)
             .then((body) => {
-                InfoModify.refreshInfo(body);
-            })
+                if (body.belong) {
+                    InfoModify.refreshInfo(body);
+                } else {
+                    InfoCenter.delayInfo(
+                        new Info('您不是应用的所有者'),
+                        Router.jumpBackOrRoute(
+                            Request.token ?
+                                Router.jumpToUserCenterOwner :
+                                Router.abstructJump(`/user/login?from=${window.location.pathname}`)
+                        ),
+                    )();
+                }
+            });
     }
 
     static infoModify() {
@@ -99,8 +113,10 @@ class InfoModify {
             redirect_uri: appRedirectUri,
             scopes: scope_list
         }).then((body) => {
-            InfoCenter.push(new Info('更新应用信息成功', Info.TYPE_SUCC));
-            InfoModify.refreshInfo(body);
+            InfoCenter.delayInfo(
+                new Info('更新应用信息成功', Info.TYPE_SUCC),
+                Router.jumpBackOrRoute(Router.jumpToUserCenterOwner),
+            )();
         })
     }
 }

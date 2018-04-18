@@ -155,12 +155,19 @@ def field_validator(dict_, cls, allow_none=False):
     return Ret()
 
 
-def require_scope(scope_list=list(), deny_all_auth_token=False):
+def require_scope(scope_list=list(), deny_all_auth_token=False, allow_no_login=False):
     def decorator(func):
         """decorator"""
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            if request.type_ != JWType.AUTH_TOKEN:
+            type_ = getattr(request, 'type_', None)
+            if not type_:
+                if allow_no_login:
+                    return func(request, *args, **kwargs)
+                else:
+                    return error_response(Error.REQUIRE_LOGIN)
+
+            if type_ != JWType.AUTH_TOKEN:
                 return func(request, *args, **kwargs)
 
             if deny_all_auth_token:
