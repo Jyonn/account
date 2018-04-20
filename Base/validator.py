@@ -335,9 +335,6 @@ def require_login_func(request):
     else:
         return Ret(Error.ERROR_TOKEN_TYPE)
 
-    if float(dict_['ctime']) < float(o_user.pwd_change_time):
-        return Ret(Error.PASSWORD_CHANGED)
-
     request.user = o_user
     request.type_ = type_
 

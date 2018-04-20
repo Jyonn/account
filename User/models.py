@@ -70,12 +70,17 @@ class User(models.Model):
         blank=True,
         null=True,
     )
+    qitian_modify_time = models.IntegerField(
+        verbose_name='齐天号被修改的次数',
+        help_text='一般只能修改一次',
+        default=0,
+    )
     FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description']
 
     @classmethod
     def get_unique_qitian_id(cls):
         while True:
-            qitian_id = '#'+get_random_string(length=8)
+            qitian_id = get_random_string(length=8)
             ret = cls.get_user_by_qitian(qitian_id)
             if ret.error == Error.NOT_FOUND_USER:
                 return qitian_id
@@ -134,6 +139,7 @@ class User(models.Model):
                 avatar=None,
                 nickname='',
                 description=None,
+                qitian_modify_time=0,
             )
             o_user.save()
         except ValueError as err:
@@ -219,15 +225,21 @@ class User(models.Model):
         """获取用户头像地址"""
         if self.avatar is None:
             return None
-        from Base.qn import get_resource_url
+        from Base.qn import QN_PUBLIC_MANAGER
         key = "%s-small" % self.avatar if small else self.avatar
-        return get_resource_url(key)
+        return QN_PUBLIC_MANAGER.get_resource_url(key)
 
     def modify_avatar(self, avatar):
         """修改用户头像"""
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
+
+        # from Base.qn import delete_res
+        # if self.avatar:
+        #     ret = delete_res(self.avatar)
+        #     if ret.error is not Error.OK:
+        #         return ret
         self.avatar = avatar
         self.save()
         return Ret()

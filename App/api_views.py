@@ -1,8 +1,8 @@
 from django.views import View
 
 from App.models import App, Scope, UserApp
-from Base.policy import get_avatar_policy, get_logo_policy
-from Base.qn import get_upload_token, qiniu_auth_callback
+from Base.policy import get_logo_policy
+from Base.qn import QN_RES_MANAGER
 from Base.validator import require_get, require_login, require_post, require_put, require_delete, \
     require_json, require_scope, maybe_login
 from Base.error import Error
@@ -183,7 +183,7 @@ class AppLogoView(View):
         import datetime
         crt_time = datetime.datetime.now().timestamp()
         key = 'app/%s/logo/%s/%s' % (app_id, crt_time, filename)
-        qn_token, key = get_upload_token(key, get_logo_policy(app_id))
+        qn_token, key = QN_RES_MANAGER.get_upload_token(key, get_logo_policy(app_id))
         return response(body=dict(upload_token=qn_token, key=key))
 
     @staticmethod
@@ -194,7 +194,7 @@ class AppLogoView(View):
 
         七牛上传应用logo回调函数
         """
-        ret = qiniu_auth_callback(request)
+        ret = QN_RES_MANAGER.qiniu_auth_callback(request)
         if ret.error is not Error.OK:
             return error_response(ret)
 
@@ -208,3 +208,28 @@ class AppLogoView(View):
             return error_response(Error.STRANGE)
         o_app.modify_logo(key)
         return response(body=o_app.to_dict(relation=App.R_USER))
+
+
+class UserAppIdView(View):
+    @staticmethod
+    @require_json
+    @require_post(['app_secret'])
+    def post(request, user_app_id):
+        """ POST /api/app/user/:user_app_id
+
+        通过app获取user信息
+        """
+
+        app_secret = request.d.app_secret
+
+        ret = UserApp.get_user_app_by_user_app_id(user_app_id)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_user_app = ret.body
+        if not isinstance(o_user_app, UserApp):
+            return error_response(Error.STRANGE)
+
+        if not o_user_app.app.authentication(app_secret):
+            return error_response(Error.ERROR_APP_SECRET)
+
+        return response(body=o_user_app.user.to_dict())

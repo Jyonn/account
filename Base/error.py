@@ -70,6 +70,7 @@ class Error:
     APP_UNBINDED = E("应用被用户解绑")
     SCOPE_NOT_SATISFIED = E("没有获取权限：")
     DENY_ALL_AUTH_TOKEN = E("拒绝第三方认证请求")
+    ERROR_APP_SECRET = E("错误的应用密钥")
 
     @classmethod
     def get_error_dict(cls):

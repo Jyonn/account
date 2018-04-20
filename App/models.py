@@ -265,18 +265,18 @@ class App(models.Model):
         """获取应用logo地址"""
         if self.logo is None:
             return None
-        from Base.qn import get_resource_url
+        from Base.qn import QN_RES_MANAGER
         key = "%s-small" % self.logo if small else self.logo
-        return get_resource_url(key)
+        return QN_RES_MANAGER.get_resource_url(key)
 
     def modify_logo(self, logo):
         """修改应用logo"""
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
-        from Base.qn import delete_res
+        from Base.qn import QN_RES_MANAGER
         if self.logo:
-            ret = delete_res(self.logo)
+            ret = QN_RES_MANAGER.delete_res(self.logo)
             if ret.error is not Error.OK:
                 return ret
         self.logo = logo
@@ -286,11 +286,14 @@ class App(models.Model):
     def belong(self, o_user):
         return self.owner == o_user
 
+    def authentication(self, app_secret):
+        return self.secret == app_secret
+
 
 class UserApp(models.Model):
     """用户应用类"""
     L = {
-        'user_app_id': 8,
+        'user_app_id': 16,
         'auth_code': 32,
     }
 

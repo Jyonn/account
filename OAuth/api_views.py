@@ -58,7 +58,13 @@ class OAuthTokenView(View):
         if o_user_app.last_auth_code_time > ctime:
             return error_response(Error.NEW_AUTH_CODE_CREATED)
 
-        ret = jwt_e(dict(user_app_id=o_user_app.user_app_id, type=JWType.AUTH_TOKEN))
+        ret = jwt_e(
+            dict(
+                user_app_id=o_user_app.user_app_id,
+                type=JWType.AUTH_TOKEN,
+            ),
+            expire_second=365 * 24 * 60 * 60
+        )
         if ret.error is not Error.OK:
             return error_response(ret)
         token, dict_ = ret.body

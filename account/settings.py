@@ -14,7 +14,6 @@ import os
 
 HOST = 'https://sso.6-79.cn'
 # HOST = 'localhost:8000'
-CDN_HOST = 'https://res.6-79.cn'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

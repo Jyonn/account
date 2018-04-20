@@ -6,11 +6,11 @@ from django.views import View
 
 from Base.scope import ScopeInstance
 from Base.validator import require_json, require_post, require_login, require_get, require_delete, \
-    require_put, require_root, require_scope
+    require_put, require_scope
 from Base.error import Error
 from Base.jtoken import jwt_e, JWType
 from Base.policy import get_avatar_policy
-from Base.qn import get_upload_token, qiniu_auth_callback
+from Base.qn import QN_PUBLIC_MANAGER
 from Base.response import response, error_response
 from Base.send_mobile import SendMobile
 from Base.session import Session
@@ -97,7 +97,7 @@ class UserView(View):
         return response(body=o_user.to_dict())
 
 
-class QitianView(View):
+# class QitianView(View):
     # @staticmethod
     # @require_get()
     # def get(request, qitian):
@@ -113,27 +113,27 @@ class QitianView(View):
     #         return error_response(Error.STRANGE)
     #     return response(body=o_user.to_dict())
 
-    @staticmethod
-    @require_delete()
-    @require_root
-    @require_scope(deny_all_auth_token=True)
-    def delete(request, username):
-        """ DELETE /api/user/@:username
-
-        删除用户
-        """
-        o_user = request.user
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-
-        ret = User.get_user_by_phone(username)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-        o_user.delete()
-        return response()
+    # @staticmethod
+    # @require_delete()
+    # @require_root
+    # @require_scope(deny_all_auth_token=True)
+    # def delete(request, username):
+    #     """ DELETE /api/user/@:username
+    #
+    #     删除用户
+    #     """
+    #     o_user = request.user
+    #     if not isinstance(o_user, User):
+    #         return error_response(Error.STRANGE)
+    #
+    #     ret = User.get_user_by_phone(username)
+    #     if ret.error is not Error.OK:
+    #         return error_response(ret)
+    #     o_user = ret.body
+    #     if not isinstance(o_user, User):
+    #         return error_response(Error.STRANGE)
+    #     o_user.delete()
+    #     return response()
 
 
 class TokenView(View):
@@ -184,7 +184,7 @@ class AvatarView(View):
         import datetime
         crt_time = datetime.datetime.now().timestamp()
         key = 'user/%s/avatar/%s/%s' % (o_user.pk, crt_time, filename)
-        qn_token, key = get_upload_token(key, get_avatar_policy(o_user.pk))
+        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, get_avatar_policy(o_user.pk))
         return response(body=dict(upload_token=qn_token, key=key))
 
     @staticmethod
@@ -195,7 +195,7 @@ class AvatarView(View):
 
         七牛上传用户头像回调函数
         """
-        ret = qiniu_auth_callback(request)
+        ret = QN_PUBLIC_MANAGER.qiniu_auth_callback(request)
         if ret.error is not Error.OK:
             return error_response(ret)
 
