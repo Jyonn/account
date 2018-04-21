@@ -44,7 +44,7 @@ class InfoModify {
                     .then((body_) => {
                         InfoCenter.push(new Info('用户头像更新成功', Info.TYPE_SUCC));
                         if (!body_.avatar) {
-                            body_.avatar = 'https://unsplash.6-79.cn/random/regular?quick=1';
+                            body_.avatar = get_random_image();
                         }
                         InfoModify.avatar.style.backgroundImage = `url("${body_.avatar}")`;
                     })

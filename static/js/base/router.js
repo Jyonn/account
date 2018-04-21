@@ -1,26 +1,43 @@
 class Router {
-    static abstructJump(location, data={}, no_from=false) {
+    static abstructJump(location, no_from=false, data={}) {
         return function() {
             if (!no_from) {
                 data.from = current_full_path;
             }
-            if (data) {
+            let params = Request.getQueryString(data);
+            if (params) {
                 location += '?' + Request.getQueryString(data);
             }
             window.location.href = location;
         }
     }
 
+    static jumpToGithubRepo() {
+        return Router.abstructJump(`https://github.com/lqj679ssn/account`, true);
+    }
+
     static jumpToUserCenter(no_from=false) {
-        return Router.abstructJump(`/user/center`, {r: 'user'}, no_from);
+        return Router.abstructJump(`/user/center`, no_from, {r: 'user'});
+    }
+
+    static jumpToUserInfoModify(no_from=false) {
+        return Router.abstructJump(`/user/info-modify`, no_from);
+    }
+
+    static jumpToUserSetting(no_from=false) {
+        return Router.abstructJump(`/user/settings`, no_from);
     }
 
     static jumpToUserCenterOwner(no_from=false) {
-        return Router.abstructJump(`/user/center`, {r: 'owner'}, no_from);
+        return Router.abstructJump(`/user/center`, no_from, {r: 'owner'});
     }
 
     static jumpToUserLogin(no_from=false) {
         return Router.abstructJump(`/user/login`, no_from);
+    }
+
+    static jumpToAppApply(no_from=false) {
+        return Router.abstructJump(`/app/apply`, no_from);
     }
 
     // center.js
@@ -39,9 +56,8 @@ class Router {
 
     static jumpBackOrRoute(router) {
         let value = Router.getQueryParam('from');
-        console.log(value);
         if (value) {
-            return Router.abstructJump(value, null, true);
+            return Router.abstructJump(decodeURIComponent(value), true);
         } else if (router) {
             return router;
         }

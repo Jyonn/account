@@ -72,7 +72,7 @@ class InfoModify {
         InfoModify.appDescInput.value = body.app_desc;
         InfoModify.redirectUriInput.value = body.redirect_uri;
         if (!body.logo) {
-            body.logo = 'https://unsplash.6-79.cn/random/regular?quick=1'
+            body.logo = get_random_image()
         }
         InfoModify.appLogo.style.backgroundImage = `url("${body.logo}")`;
         Scope.initScopeBox(body.scopes);

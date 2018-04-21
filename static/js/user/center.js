@@ -15,7 +15,7 @@ class Center {
             <div class="app-item">
                 <div class="main">
                     <div class="full mask"></div>
-                    <div class="logo img-fit img-random inactive"></div>
+                    <div class="logo img-fit inactive" style="background-image: url('${5}')"></div>
                     <div class="app-name">${0}</div>
                     <div class="description">${1}</div>
                     <div class="btn-box">
@@ -67,7 +67,8 @@ class Center {
                             body[i].app_desc,
                             null,
                             Center.userSpanClass,
-                            `Router.jumpToOAuth('${body[i].app_id}')`
+                            `Router.jumpToOAuth('${body[i].app_id}')()`,
+                            body[i].logo ? body[i].logo : get_random_image(),
                         ));
                     this.appBoxAsUser.appendChild(html);
                 }
@@ -81,7 +82,8 @@ class Center {
                             body[i].app_desc,
                             null,
                             Center.ownerSpanClass,
-                            `Router.jumpToAppInfoModify('${body[i].app_id}')`
+                            `Router.jumpToAppInfoModify('${body[i].app_id}')()`,
+                            body[i].logo ? body[i].logo : get_random_image(),
                         ));
                     this.appBoxAsOwner.appendChild(html);
                 }

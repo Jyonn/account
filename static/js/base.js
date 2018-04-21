@@ -11,6 +11,10 @@ function deactivate(ele) {
     ele.classList.remove(active);
 }
 
+function get_random_image() {
+    return 'https://unsplash.6-79.cn/random/regular?quick=1';
+}
+
 class Method {
     static staticConstructor() {
         this.GET = 'get';

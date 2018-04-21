@@ -11,7 +11,7 @@
         <div class="full mask"></div>
         <div class="title-box user-info">
             <div class="full mask"></div>
-            <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit" id="avatar"></div></a>
+            <a onclick="Router.jumpToUserInfoModify()()"><div class="avatar img-fit" id="avatar"></div></a>
             <div class="middle">
                 <div class="nickname" id="nickname"></div>
                 <div class="info" id="user-desc"></div>
@@ -23,7 +23,7 @@
         </div>
         <div class="list-box main active">
             <section>
-                <a href="{% url "user-info-modify" %}?from={{ request.get_full_path | urlencode }}">
+                <a onclick="Router.jumpToUserInfoModify()()">
                     <div class="item jump">
                         <div class="full mask"></div>
                         <div class="text">修改个人信息</div>
@@ -32,7 +32,7 @@
                 </a>
             </section>
             <section>
-                <a href="{% url "app-apply" %}?from={{ request.get_full_path | urlencode }}">
+                <a onclick="Router.jumpToAppApply()()">
                     <div class="item jump">
                         <div class="full mask"></div>
                         <div class="text">申请应用</div>
@@ -41,11 +41,13 @@
                 </a>
             </section>
             <section>
-                <div class="item jump">
-                    <div class="full mask"></div>
-                    <div class="text">代码开源</div>
-                    <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
-                </div>
+                <a onclick="Router.jumpToGithubRepo()()">
+                    <div class="item jump">
+                        <div class="full mask"></div>
+                        <div class="text">代码开源</div>
+                        <span class="jump solid flaticon-arrow-angle-pointing-to-right"></span>
+                    </div>
+                </a>
                 <div class="item jump">
                     <div class="full mask"></div>
                     <div class="text">关于齐天簿</div>
@@ -55,7 +57,7 @@
             <section class="b1">
                 <div class="item button">
                     <div class="full mask"></div>
-                    <div class="button">返回</div>
+                    <div class="button" onclick="Router.jumpBackOrRoute(Router.jumpToUserCenter())()">返回</div>
                 </div>
             </section>
             <section class="b0">

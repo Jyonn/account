@@ -11,12 +11,12 @@
         <div class="full mask"></div>
         <div class="title-box user-info">
             <div class="full mask"></div>
-            <a href="{% url 'user-info-modify' %}"><div class="avatar img-fit" id="avatar"></div></a>
+            <a onclick="Router.jumpToUserInfoModify()()"><div class="avatar img-fit" id="avatar"></div></a>
             <div class="middle">
                 <div class="nickname" id="nickname"></div>
                 <div class="info" id="user-desc"></div>
             </div>
-            <a href="{% url 'user-settings' %}">
+            <a onclick="Router.jumpToUserSetting()()">
                 <span class="setting solid flaticon-configuration-gross-black-cogwheel-symbol-of-interface hover-strong"></span>
             </a>
         </div>
