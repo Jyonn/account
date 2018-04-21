@@ -61,7 +61,7 @@ class QN:
         """获取资源链接"""
         url = '%s/%s' % (self.cdn_host, key)
         if self.public:
-            return '%s%s' % (self.cdn_host, key)
+            return '%s/%s' % (self.cdn_host, key)
         else:
             return self.auth.private_download_url(url, expires=expires)
 
