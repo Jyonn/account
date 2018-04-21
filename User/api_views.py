@@ -72,7 +72,8 @@ class UserView(View):
         [
             ('password', None, None),
             ('old_password', None, None),
-            ('nickname', None, None)
+            ('nickname', None, None),
+            ('description', None, None),
         ]
     )
     @require_login
@@ -89,11 +90,12 @@ class UserView(View):
         password = request.d.password
         nickname = request.d.nickname
         old_password = request.d.old_password
+        description = request.d.description
         if password is not None:
             ret = o_user.change_password(password, old_password)
             if ret.error is not Error.OK:
                 return error_response(ret)
-        o_user.modify_info(nickname)
+        o_user.modify_info(nickname, description)
         return response(body=o_user.to_dict())
 
 

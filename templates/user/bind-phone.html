@@ -42,11 +42,15 @@
             <span class="text">继续以完成绑定</span>
         </div>
     </div>
+    <script src="{% static "js/user/base.js" %}"></script>
     <script src="{% static "js/user/bind-phone.js" %}"></script>
     <script src="{% static "js/base/saying.js" %}"></script>
     <script src="{% static "js/base/gt.js" %}"></script>
     <script src="{% static "js/base/captcha.js" %}"></script>
     <script>
+        UserBase.staticConstructor({
+            successCallback: Router.jumpBackOrRoute(Router.jumpToUserCenter()),
+        });
         BindPhone.staticConstructor({
             phoneBoxId: 'phone-box',
             regionBoxId: 'region-box',

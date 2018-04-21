@@ -3,12 +3,16 @@ class UserBase {
         nicknameId,
         descId,
         avatarId,
+        qitianId,
+        bindPhoneId,
         successCallback,
         errorCallback,
     }) {
         this.nickname = document.getElementById(nicknameId);
         this.desc = document.getElementById(descId);
         this.avatar = document.getElementById(avatarId);
+        this.qitian = document.getElementById(qitianId);
+        this.bindPhone = document.getElementById(bindPhoneId);
 
         this.initMyInfo(successCallback, errorCallback);
     }
@@ -16,6 +20,15 @@ class UserBase {
     static initMyInfo(successCallback, errorCallback) {
         Service.getMyInfoAPI()
             .then((body) => {
+                if (UserBase.bindPhone) {
+                    if (body.bind_phone) {
+                        UserBase.bindPhone.innerText = '已绑定手机号';
+                    } else {
+                        UserBase.bindPhone.innerText = '绑定手机号';
+                        UserBase.bindPhone.addEventListener('click', Router.jumpToBindPhone());
+                        UserBase.bindPhone.classList.add('ptr');
+                    }
+                }
                 if (UserBase.nickname) {
                     if (UserBase.nickname.tagName === 'INPUT') {
                         UserBase.nickname.value = body.nickname;
@@ -32,6 +45,14 @@ class UserBase {
                 }
                 if (UserBase.avatar) {
                     UserBase.avatar.style.backgroundImage = `url('${body.avatar || 'https://unsplash.6-79.cn/random/regular?quick=1'}')`;
+                }
+                if (UserBase.qitian) {
+                    if (UserBase.qitian.tagName === 'INPUT') {
+                        UserBase.qitian.value = body.qitian;
+                        UserBase.qitian.disabled = !body.allow_qitian_modify;
+                    } else {
+                        UserBase.qitian.innerText = body.qitian || '您还没有设置齐天号';
+                    }
                 }
                 if (successCallback) {
                     successCallback(body);

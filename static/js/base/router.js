@@ -1,36 +1,42 @@
 class Router {
-    static abstructJump(location) {
-        window.location.href = location;
+    static abstructJump(location, data={}) {
+        return function() {
+            data.from = current_full_path;
+            location += '?' + Request.getQueryString(data);
+            window.location.href = location;
+        }
     }
 
     static jumpToUserCenter() {
-        Router.abstructJump('/user/center?r=user');
+        return Router.abstructJump(`/user/center`, {r: 'user'});
     }
 
     static jumpToUserCenterOwner() {
-        Router.abstructJump('/user/center?r=owner');
+        return Router.abstructJump(`/user/center`, {r: 'owner'});
     }
 
     static jumpToUserLogin() {
-        Router.abstructJump('/user/login');
+        return Router.abstructJump(`/user/login`);
     }
 
     static jumpToAppInfoModify(app_id) {
-        Router.abstructJump(`/app/info-modify/${app_id}`);
+        return Router.abstructJump(`/app/info-modify/${app_id}`);
     }
 
     static jumpToOAuth(app_id) {
-        Router.abstructJump(`/oauth/?app_id=${app_id}`);
+        return Router.abstructJump(`/oauth/?app_id=${app_id}`);
+    }
+
+    static jumpToBindPhone() {
+        return Router.abstructJump(`/user/bind-phone`);
     }
 
     static jumpBackOrRoute(router) {
-        return function () {
-            let value = Router.getQueryParam('from');
-            if (value) {
-                Router.abstructJump(value);
-            } else if (router) {
-                router();
-            }
+        let value = Router.getQueryParam('from');
+        if (value) {
+            return Router.abstructJump(value);
+        } else if (router) {
+            return router;
         }
     }
 

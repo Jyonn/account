@@ -70,6 +70,14 @@ class Service {
         fd.append('file', file);
         return Request.post(Service.QN_HOST, fd, false, false);
     }
+
+    static modifyUserPasswordAPI({password, old_password}) {
+        return Request.put('/api/user/', arguments[0]);
+    }
+
+    static modifyUserInfoAPI({nickname, description}) {
+        return Request.put('/api/user/', arguments[0]);
+    }
 }
 
 Service.staticConstructor();

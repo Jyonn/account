@@ -10,7 +10,7 @@ class OAuth {
         this.cancelOAuth.addEventListener('click',
             InfoCenter.delayInfo(
                 new Info('取消授权，正在前往个人主页', Info.TYPE_WARN),
-                Router.jumpBackOrRoute(Router.jumpToUserCenter),
+                Router.jumpBackOrRoute(Router.jumpToUserCenter()),
             ));
         this.verifyOAuth.addEventListener('click', this.oAuthVerify);
     }

@@ -202,6 +202,8 @@ class User(models.Model):
             avatar=self.get_avatar_url(),
             nickname=self.nickname,
             description=self.description,
+            allow_qitian_modify=int(self.qitian_modify_time == 0),
+            bind_phone=int(self.phone is not None),
         )
 
     @classmethod
@@ -244,13 +246,16 @@ class User(models.Model):
         self.save()
         return Ret()
 
-    def modify_info(self, nickname):
+    def modify_info(self, nickname, description):
         """修改用户信息"""
         if nickname is None:
             nickname = self.nickname
+        if description is None:
+            description = self.description
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
         self.nickname = nickname
+        self.description = description
         self.save()
         return Ret()

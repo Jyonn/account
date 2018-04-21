@@ -10,10 +10,11 @@
         <div class="full mask"></div>
         <div class="title-box middle-avatar">
             <div class="full mask"></div>
-            <div class="avatar img-fit img-random"></div>
+            <div class="avatar img-fit" id="avatar"></div>
             <div class="text">点击更换头像</div>
+            <input type="file" class="hidden" id="upload-avatar" accept="image/*"/>
         </div>
-        <div class="list-box main active">
+        <div class="list-box main active" id="main-box">
             <section>
                 <div class="item form">
                     <div class="full mask"></div>
@@ -30,66 +31,81 @@
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">齐天号</div>
-                    <input class="value" placeholder="齐天号由数字、字母和下划线组成，只能设置一次">
+                    <input class="value" placeholder="齐天号由数字、字母和下划线组成，只能设置一次" id="qitian">
                 </div>
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">密码</div>
-                    <div class="value ptr">修改密码</div>
+                    <div class="value ptr" onclick="InfoModify.switchToPasswordBox()">修改密码…</div>
                 </div>
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">手机号</div>
-                    <a class="value" href="{% url 'user-bind-phone' %}?from={{ request.get_full_path | urlencode }}">绑定手机号</a>
+                    <div class="value" id="bind-phone">绑定手机号</div>
                 </div>
             </section>
             <section class="b1">
                 <div class="item button">
                     <div class="full mask"></div>
-                    <div class="button">返回</div>
+                    <div class="button" id="cancel-modify">取消修改</div>
                 </div>
             </section>
             <section class="b0">
                 <div class="item button confirm">
                     <div class="full mask"></div>
-                    <div class="button">确认修改</div>
+                    <div class="button" id="confirm-modify">修改信息</div>
                 </div>
             </section>
         </div>
-        <div class="list-box password inactive">
+        <div class="list-box password inactive" id="password-box">
             <section>
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">旧密码</div>
-                    <input class="value" type="password" placeholder="此处填入旧密码">
+                    <input class="value" type="password" placeholder="此处填入旧密码" id="old-password">
                 </div>
                 <div class="item form">
                     <div class="full mask"></div>
                     <div class="key">新密码</div>
-                    <input class="value" type="password" placeholder="此处填入新密码">
+                    <input class="value" type="password" placeholder="此处填入新密码" id="new-password">
                 </div>
             </section>
             <section class="b1">
                 <div class="item button">
                     <div class="full mask"></div>
-                    <div class="button">返回</div>
+                    <div class="button" onclick="InfoModify.switchToMainBox()">取消修改</div>
                 </div>
             </section>
             <section class="b0">
                 <div class="item button confirm">
                     <div class="full mask"></div>
-                    <div class="button">确认修改</div>
+                    <div class="button" onclick="InfoModify.modifyPassword()">修改密码</div>
                 </div>
             </section>
         </div>
     </div>
     <script src="{% static "js/user/base.js" %}"></script>
-{#    <script src="{% static "js/user/register.js" %}"></script>#}
+    <script src="{% static "js/user/info-modify.js" %}"></script>
     <script>
         UserBase.staticConstructor({
             nicknameId: 'nickname',
             descId: 'user-desc',
             avatarId: 'avatar',
+            qitianId: 'qitian',
+            bindPhoneId: 'bind-phone',
+        });
+        InfoModify.staticConstructor({
+            mainBoxId: 'main-box',
+            passwordBoxId: 'password-box',
+            nicknameInputId: 'nickname',
+            descInputId: 'user-desc',
+            qitianInputId: 'qitian',
+            oldPasswordInputId: 'old-password',
+            newPasswordInputId: 'new-password',
+            cancelModifyBtnId: 'cancel-modify',
+            confirmModifyBtnId: 'confirm-modify',
+            avatarId: 'avatar',
+            uploadAvatarInputId: 'upload-avatar',
         })
     </script>
 {% endblock %}

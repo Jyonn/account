@@ -18,6 +18,7 @@
 <body>
 <div class="info-center" id="info-center"></div>
 <script>
+    let current_full_path = '{{ request.get_full_path | urlencode }}';
     Info.staticConstructor();
     InfoCenter.staticConstructor('info-center');
 </script>
