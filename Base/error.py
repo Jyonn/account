@@ -55,7 +55,7 @@ class Error:
     ERROR_CREATE_SCOPE = E("创建权限错误")
     NOT_FOUND_APP = E("不存在的应用")
     ERROR_CREATE_APP = E("创建应用错误")
-    EXIST_APP_NAME = E("已存在的应用名")
+    EXIST_APP_NAME = E("已存在此应用名")
     NOT_FOUND_SCOPE = E("不存在的权限")
     APP_NOT_BELONG = E("不是你的应用")
     ERROR_MODIFY_APP = E("修改应用信息错误")
@@ -71,6 +71,7 @@ class Error:
     SCOPE_NOT_SATISFIED = E("没有获取权限：")
     DENY_ALL_AUTH_TOKEN = E("拒绝第三方认证请求")
     ERROR_APP_SECRET = E("错误的应用密钥")
+    QITIAN_EXIST = E("已存在此齐天号")
 
     @classmethod
     def get_error_dict(cls):

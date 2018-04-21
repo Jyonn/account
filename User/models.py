@@ -262,7 +262,12 @@ class User(models.Model):
             return ret
 
         if self.allow_qitian_modify():
-            self.qitian = qitian
+            if self.qitian != qitian:
+                ret = self.get_user_by_qitian(qitian)
+                if ret.error == Error.NOT_FOUND_USER:
+                    self.qitian = qitian
+                else:
+                    return Ret(Error.QITIAN_EXIST)
         self.nickname = nickname
         self.description = description
         self.save()
