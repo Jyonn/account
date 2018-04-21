@@ -75,7 +75,7 @@ class Service {
         return Request.put('/api/user/', arguments[0]);
     }
 
-    static modifyUserInfoAPI({nickname, description}) {
+    static modifyUserInfoAPI({nickname, description, qitian}) {
         return Request.put('/api/user/', arguments[0]);
     }
 }

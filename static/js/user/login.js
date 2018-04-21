@@ -89,7 +89,7 @@ class Login {
                 Request.saveToken(body.token);
                 InfoCenter.delayInfo(
                     new Info('登录成功，正在跳转……', Info.TYPE_SUCC),
-                    Router.jumpBackOrRoute(Router.jumpToUserCenter()),
+                    Router.jumpBackOrRoute(Router.jumpToUserCenter(true)),
                 )();
             })
             .catch((resp) => {

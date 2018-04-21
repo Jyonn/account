@@ -49,7 +49,7 @@
     <script src="{% static "js/base/captcha.js" %}"></script>
     <script>
         UserBase.staticConstructor({
-            successCallback: Router.jumpBackOrRoute(Router.jumpToUserCenter()),
+            successCallback: Router.jumpBackOrRoute(Router.jumpToUserCenter(true)),
         });
         BindPhone.staticConstructor({
             phoneBoxId: 'phone-box',

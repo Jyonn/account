@@ -194,6 +194,9 @@ class User(models.Model):
             return Ret(Error.NOT_FOUND_USER)
         return Ret(o_user)
 
+    def allow_qitian_modify(self):
+        return self.qitian_modify_time == 0
+
     def to_dict(self):
         """把用户对象转换为字典"""
         return dict(
@@ -202,7 +205,7 @@ class User(models.Model):
             avatar=self.get_avatar_url(),
             nickname=self.nickname,
             description=self.description,
-            allow_qitian_modify=int(self.qitian_modify_time == 0),
+            allow_qitian_modify=int(self.allow_qitian_modify()),
             bind_phone=int(self.phone is not None),
         )
 
@@ -246,15 +249,20 @@ class User(models.Model):
         self.save()
         return Ret()
 
-    def modify_info(self, nickname, description):
+    def modify_info(self, nickname, description, qitian):
         """修改用户信息"""
         if nickname is None:
             nickname = self.nickname
         if description is None:
             description = self.description
+        if qitian is None:
+            qitian = self.qitian
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
+
+        if self.allow_qitian_modify():
+            self.qitian = qitian
         self.nickname = nickname
         self.description = description
         self.save()

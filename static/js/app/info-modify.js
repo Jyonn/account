@@ -26,7 +26,7 @@ class InfoModify {
         this.logoChangeBtn.addEventListener('click', this.selectLogoFile);
         this.uploadLogoInput.addEventListener('change', this.uploadLogo);
         this.confirmModifyBtn.addEventListener('click', this.infoModify);
-        this.cancelModifyBtn.addEventListener('click', Router.jumpBackOrRoute(Router.jumpToUserCenterOwner()));
+        this.cancelModifyBtn.addEventListener('click', Router.jumpBackOrRoute(Router.jumpToUserCenterOwner(true)));
 
         this.switchToMainBox();
         this.initAppBox();
@@ -88,7 +88,7 @@ class InfoModify {
                         new Info('您不是应用的所有者'),
                         Router.jumpBackOrRoute(
                             Request.token ?
-                                Router.jumpToUserCenterOwner() :
+                                Router.jumpToUserCenterOwner(true) :
                                 Router.jumpToUserLogin()
                         ),
                     )();
@@ -115,7 +115,7 @@ class InfoModify {
         }).then((body) => {
             InfoCenter.delayInfo(
                 new Info('更新应用信息成功', Info.TYPE_SUCC),
-                Router.jumpBackOrRoute(Router.jumpToUserCenterOwner()),
+                Router.jumpBackOrRoute(Router.jumpToUserCenterOwner(true)),
             )();
         })
     }

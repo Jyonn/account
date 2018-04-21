@@ -1,40 +1,47 @@
 class Router {
-    static abstructJump(location, data={}) {
+    static abstructJump(location, data={}, no_from=false) {
         return function() {
-            data.from = current_full_path;
-            location += '?' + Request.getQueryString(data);
+            if (!no_from) {
+                data.from = current_full_path;
+            }
+            if (data) {
+                location += '?' + Request.getQueryString(data);
+            }
             window.location.href = location;
         }
     }
 
-    static jumpToUserCenter() {
-        return Router.abstructJump(`/user/center`, {r: 'user'});
+    static jumpToUserCenter(no_from=false) {
+        return Router.abstructJump(`/user/center`, {r: 'user'}, no_from);
     }
 
-    static jumpToUserCenterOwner() {
-        return Router.abstructJump(`/user/center`, {r: 'owner'});
+    static jumpToUserCenterOwner(no_from=false) {
+        return Router.abstructJump(`/user/center`, {r: 'owner'}, no_from);
     }
 
-    static jumpToUserLogin() {
-        return Router.abstructJump(`/user/login`);
+    static jumpToUserLogin(no_from=false) {
+        return Router.abstructJump(`/user/login`, no_from);
     }
 
-    static jumpToAppInfoModify(app_id) {
-        return Router.abstructJump(`/app/info-modify/${app_id}`);
+    // center.js
+    static jumpToAppInfoModify(app_id, no_from=false) {
+        return Router.abstructJump(`/app/info-modify/${app_id}`, no_from);
     }
 
-    static jumpToOAuth(app_id) {
-        return Router.abstructJump(`/oauth/?app_id=${app_id}`);
+    // center.js
+    static jumpToOAuth(app_id, no_from=false) {
+        return Router.abstructJump(`/oauth/?app_id=${app_id}`, no_from);
     }
 
-    static jumpToBindPhone() {
-        return Router.abstructJump(`/user/bind-phone`);
+    static jumpToBindPhone(no_from=false) {
+        return Router.abstructJump(`/user/bind-phone`, no_from);
     }
 
     static jumpBackOrRoute(router) {
         let value = Router.getQueryParam('from');
+        console.log(value);
         if (value) {
-            return Router.abstructJump(value);
+            return Router.abstructJump(value, null, true);
         } else if (router) {
             return router;
         }

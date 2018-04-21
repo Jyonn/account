@@ -26,6 +26,8 @@ class InfoModify {
 
         this.avatar.addEventListener('click', this.selectAvatarFile);
         this.uploadAvatarInput.addEventListener('change', this.uploadAvatar);
+        this.confirmModifyBtn.addEventListener('click', this.infoModify);
+        this.cancelModifyBtn.addEventListener('click', Router.jumpBackOrRoute(Router.jumpToUserCenter(true)));
 
         this.switchToMainBox();
     }
@@ -74,7 +76,18 @@ class InfoModify {
             ));
     }
 
-    static modifyInfo() {
+    static infoModify() {
+        let nickname = InfoModify.nicknameInput.value;
+        let user_desc = InfoModify.descInput.value;
+        let qitian = InfoModify.qitianInput.value;
 
+        Service.modifyUserInfoAPI({
+            nickname: nickname,
+            description: user_desc,
+            qitian: qitian,
+        })
+            .then((body) => {
+
+            })
     }
 }
