@@ -14,6 +14,7 @@ class OAuthView(View):
     @require_login
     @require_scope(deny_all_auth_token=True)
     def post(request):
+        """POST /api/oauth/"""
         o_user = request.user
         app_id = request.d.app_id
 
@@ -34,7 +35,9 @@ class OAuthTokenView(View):
     @staticmethod
     @require_post(['code', 'app_secret'])
     def post(request):
+        """POST /api/oauth/token"""
         code = request.d.code
+        print(code)
         ret = jwt_d(code)
         if ret.error is not Error.OK:
             return error_response(ret)
