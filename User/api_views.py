@@ -5,7 +5,7 @@
 from django.views import View
 
 from Base.scope import ScopeInstance
-from Base.validator import require_json, require_post, require_login, require_get, require_delete, \
+from Base.validator import require_json, require_post, require_login, require_get, \
     require_put, require_scope
 from Base.error import Error
 from Base.jtoken import jwt_e, JWType

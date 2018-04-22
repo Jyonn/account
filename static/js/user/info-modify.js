@@ -86,8 +86,10 @@ class InfoModify {
             description: user_desc,
             qitian: qitian,
         })
-            .then((body) => {
-
-            })
+            .then(InfoCenter.delayInfo(
+                new Info('修改个人信息成功，正在跳转主页', Info.TYPE_SUCC),
+                Router.jumpBackOrRoute(Router.jumpToUserCenter(true)),
+                1000,
+            ))
     }
 }

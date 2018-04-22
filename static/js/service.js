@@ -55,6 +55,10 @@ class Service {
         return Request.get(`/api/app/${app_id}`);
     }
 
+    static getAppSecretAPI(app_id) {
+        return Request.get(`/api/app/${app_id}/secret`);
+    }
+
     static getAppLogoTokenAPI({app_id, filename}) {
         return Request.get('/api/app/logo', arguments[0]);
     }

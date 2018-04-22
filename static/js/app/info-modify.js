@@ -10,9 +10,13 @@ class InfoModify {
         uploadLogoInputId,
         cancelModifyBtnId,
         confirmModifyBtnId,
+        keyBoxId,
+        appIdId,
+        appSecretId,
     }) {
         this.title = document.getElementById(titleId);
         this.mainBox = document.getElementById(mainBoxId);
+        this.keyBox = document.getElementById(keyBoxId);
 
         this.appNameInput = document.getElementById(appNameInputId);
         this.appDescInput = document.getElementById(appDescInputId);
@@ -22,6 +26,9 @@ class InfoModify {
         this.uploadLogoInput = document.getElementById(uploadLogoInputId);
         this.cancelModifyBtn = document.getElementById(cancelModifyBtnId);
         this.confirmModifyBtn = document.getElementById(confirmModifyBtnId);
+
+        this.appId = document.getElementById(appIdId);
+        this.appSecret = document.getElementById(appSecretId);
 
         this.logoChangeBtn.addEventListener('click', this.selectLogoFile);
         this.uploadLogoInput.addEventListener('change', this.uploadLogo);
@@ -59,11 +66,20 @@ class InfoModify {
         InfoModify.title.innerText = '选择权限';
         activate(Scope.scopeBox);
         deactivate(InfoModify.mainBox);
+        deactivate(InfoModify.keyBox);
     }
 
     static switchToMainBox() {
         InfoModify.title.innerText = '编辑应用信息';
         activate(InfoModify.mainBox);
+        deactivate(Scope.scopeBox);
+        deactivate(InfoModify.keyBox);
+    }
+
+    static switchToKeyBox() {
+        InfoModify.title.innerText = '查看密钥对';
+        activate(InfoModify.keyBox);
+        deactivate(InfoModify.mainBox);
         deactivate(Scope.scopeBox);
     }
 
@@ -93,6 +109,11 @@ class InfoModify {
                         ),
                     )();
                 }
+            });
+        Service.getAppSecretAPI(app_id)
+            .then((body) => {
+                InfoModify.appId.innerText = app_id;
+                InfoModify.appSecret.innerText = body;
             });
     }
 

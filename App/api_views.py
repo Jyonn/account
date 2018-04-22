@@ -73,6 +73,28 @@ class AppView(View):
         return response(body=o_app.to_dict(relation=App.R_OWNER))
 
 
+class AppIDSecretView(View):
+    @staticmethod
+    @require_get()
+    @require_login
+    @require_scope(deny_all_auth_token=True)
+    def get(request, app_id):
+        """GET /api/app/:app_id/secret"""
+        o_user = request.user
+
+        ret = App.get_app_by_id(app_id)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_app = ret.body
+        if not isinstance(o_app, App):
+            return error_response(Error.STRANGE)
+
+        if not o_app.belong(o_user):
+            return error_response(Error.APP_NOT_BELONG)
+
+        return response(body=o_app.secret)
+
+
 class AppIDView(View):
     @staticmethod
     @require_get()
