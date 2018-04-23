@@ -4,6 +4,8 @@
 """
 from django.views import View
 
+from App.models import UserApp
+from Base.common import deprint
 from Base.scope import ScopeInstance
 from Base.validator import require_json, require_post, require_login, require_get, \
     require_put, require_scope
@@ -39,7 +41,10 @@ class UserView(View):
         获取我的信息
         """
         o_user = request.user
-        return response(body=o_user.to_dict())
+        if not isinstance(o_user, User):
+            deprint('User-api_views-UserView-get-o_user-User')
+            return error_response(Error.STRANGE)
+        return response(body=o_user.to_dict(oauth=request.type_ == JWType.AUTH_TOKEN))
 
     @staticmethod
     @require_json

@@ -197,17 +197,24 @@ class User(models.Model):
     def allow_qitian_modify(self):
         return self.qitian_modify_time == 0
 
-    def to_dict(self):
+    def to_dict(self, oauth=False):
         """把用户对象转换为字典"""
-        return dict(
-            user_id=self.pk,
-            qitian=self.qitian,
-            avatar=self.get_avatar_url(),
-            nickname=self.nickname,
-            description=self.description,
-            allow_qitian_modify=int(self.allow_qitian_modify()),
-            bind_phone=int(self.phone is not None),
-        )
+        if oauth:
+            return dict(
+                avatar=self.get_avatar_url(),
+                nickname=self.nickname,
+                description=self.description,
+            )
+        else:
+            return dict(
+                user_id=self.pk,
+                qitian=self.qitian,
+                avatar=self.get_avatar_url(),
+                nickname=self.nickname,
+                description=self.description,
+                allow_qitian_modify=int(self.allow_qitian_modify()),
+                bind_phone=int(self.phone is not None),
+            )
 
     @classmethod
     def authenticate(cls, qitian, phone, password):

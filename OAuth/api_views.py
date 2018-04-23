@@ -37,7 +37,6 @@ class OAuthTokenView(View):
     def post(request):
         """POST /api/oauth/token"""
         code = request.d.code
-        print(code)
         ret = jwt_d(code)
         if ret.error is not Error.OK:
             return error_response(ret)
