@@ -89,8 +89,6 @@ class OAuthTokenView(View):
         if o_user_app.app.field_change_time > ctime:
             return error_response(Error.APP_FIELD_CHANGE)
 
-        print(o_user_app.last_auth_code_time, type(o_user_app.last_auth_code_time))
-        print(str(ctime))
         if o_user_app.last_auth_code_time != str(ctime):
             return error_response(Error.NEW_AUTH_CODE_CREATED)
 

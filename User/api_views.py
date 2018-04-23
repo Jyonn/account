@@ -44,6 +44,8 @@ class UserView(View):
         if not isinstance(o_user, User):
             deprint('User-api_views-UserView-get-o_user-User')
             return error_response(Error.STRANGE)
+        print('get info')
+        print(o_user.to_dict(oauth=request.type_ == JWType.AUTH_TOKEN))
         return response(body=o_user.to_dict(oauth=request.type_ == JWType.AUTH_TOKEN))
 
     @staticmethod
