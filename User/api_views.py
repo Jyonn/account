@@ -45,6 +45,7 @@ class UserView(View):
             deprint('User-api_views-UserView-get-o_user-User')
             return error_response(Error.STRANGE)
         print('get info')
+        print(request.type_)
         print(o_user.to_dict(oauth=request.type_ == JWType.AUTH_TOKEN))
         return response(body=o_user.to_dict(oauth=request.type_ == JWType.AUTH_TOKEN))
 
