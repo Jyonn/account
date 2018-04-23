@@ -289,6 +289,8 @@ def require_login_func(request):
         return Ret(Error.REQUIRE_LOGIN)
     from Base.jtoken import jwt_d
 
+    print('jwt-str', jwt_str)
+
     ret = jwt_d(jwt_str)
     if ret.error is not Error.OK:
         return ret
