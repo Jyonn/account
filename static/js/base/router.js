@@ -12,6 +12,10 @@ class Router {
         }
     }
 
+    static jumpToApp(uri, code) {
+        return Router.abstructJump(`${uri}/code=${code}`, true);
+    }
+
     static jumpToGithubRepo() {
         return Router.abstructJump(`https://github.com/lqj679ssn/account`, true);
     }

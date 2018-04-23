@@ -11,6 +11,7 @@ class OAuth {
             InfoCenter.delayInfo(
                 new Info('取消授权，正在前往个人主页', Info.TYPE_WARN),
                 Router.jumpBackOrRoute(Router.jumpToUserCenter(true)),
+                1000,
             ));
         this.verifyOAuth.addEventListener('click', this.oAuthVerify);
     }
@@ -20,10 +21,8 @@ class OAuth {
             .then((body) => {
                 InfoCenter.delayInfo(
                     new Info('授权成功，正在前往应用', Info.TYPE_SUCC),
-                    // Router.packAbstructJump(`${body.redirect_uri}?code=${body.auth_code}`)
-                    function () {
-                        console.log(`${body.redirect_uri}?code=${body.auth_code}`);
-                    }
+                    Router.jumpToApp(body.redirect_uri, body.auth_code),
+                    1000,
                 )();
             })
     }
