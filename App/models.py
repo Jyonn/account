@@ -295,6 +295,7 @@ class UserApp(models.Model):
     L = {
         'user_app_id': 16,
         'auth_code': 32,
+        'last_auth_code_time': 20,
     }
 
     user = models.ForeignKey(
@@ -314,9 +315,10 @@ class UserApp(models.Model):
         default=False,
         verbose_name='用户是否绑定应用',
     )
-    last_auth_code_time = models.FloatField(
-        default=0,
+    last_auth_code_time = models.CharField(
+        default=None,
         verbose_name='上一次申请auth_code的时间，防止被多次使用',
+        max_length=L['last_auth_code_time'],
     )
 
     def to_dict(self):

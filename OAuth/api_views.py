@@ -89,7 +89,7 @@ class OAuthTokenView(View):
         if o_user_app.app.field_change_time > ctime:
             return error_response(Error.APP_FIELD_CHANGE)
 
-        if abs(o_user_app.last_auth_code_time - ctime) > 1e-5:
+        if o_user_app.last_auth_code_time != str(ctime):
             return error_response(Error.NEW_AUTH_CODE_CREATED)
 
         ret = jwt_e(
