@@ -299,6 +299,8 @@ def require_login_func(request):
         deprint('Base-validator-require_login_func-dict.get(type)')
         return Ret(Error.STRANGE)
 
+    print('type_', type_)
+
     if type_ == JWType.LOGIN_TOKEN:
         user_id = dict_.get("user_id")
         if not user_id:
