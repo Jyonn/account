@@ -27,8 +27,10 @@ class InfoModify {
         this.cancelModifyBtn = document.getElementById(cancelModifyBtnId);
         this.confirmModifyBtn = document.getElementById(confirmModifyBtnId);
 
-        this.appId = document.getElementById(appIdId);
+        this.appIdDiv = document.getElementById(appIdId);
         this.appSecret = document.getElementById(appSecretId);
+
+        this.appId = Router.getQueryParam('app_id');
 
         this.logoChangeBtn.addEventListener('click', this.selectLogoFile);
         this.uploadLogoInput.addEventListener('change', this.uploadLogo);
@@ -45,7 +47,7 @@ class InfoModify {
             return;
         let logo_file = logo_files[0],
             filename = logo_file.name;
-        Service.getAppLogoTokenAPI({app_id: app_id, filename: filename})
+        Service.getAppLogoTokenAPI({app_id: InfoModify.appId, filename: filename})
             .then((body) => {
                 Service.uploadFile({key: body.key, token: body.upload_token, file: logo_file})
                     .then((body_) => {
@@ -95,7 +97,7 @@ class InfoModify {
     }
 
     static initAppBox() {
-        Service.getAppInfoAPI(app_id)
+        Service.getAppInfoAPI(InfoModify.appId)
             .then((body) => {
                 if (body.belong) {
                     InfoModify.refreshInfo(body);
@@ -110,9 +112,9 @@ class InfoModify {
                     )();
                 }
             });
-        Service.getAppSecretAPI(app_id)
+        Service.getAppSecretAPI(InfoModify.appId)
             .then((body) => {
-                InfoModify.appId.innerText = app_id;
+                InfoModify.appIdDiv.innerText = InfoModify.appId;
                 InfoModify.appSecret.innerText = body;
             });
     }
@@ -128,7 +130,7 @@ class InfoModify {
             }
         }
 
-        Service.modifyAppInfoAPI(app_id, {
+        Service.modifyAppInfoAPI(InfoModify.appId, {
             name: appName,
             description: appDesc,
             redirect_uri: appRedirectUri,

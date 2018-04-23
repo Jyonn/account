@@ -2,13 +2,44 @@ from django.views import View
 
 from App.models import App, UserApp
 from Base.common import deprint
-from Base.validator import require_post, require_login, require_scope
+from Base.validator import require_post, require_login, require_scope, require_get
 from Base.error import Error
 from Base.jtoken import jwt_d, JWType, jwt_e
 from Base.response import error_response, response
 
 
 class OAuthView(View):
+    @staticmethod
+    @require_get(['app_id'])
+    @require_login
+    @require_scope(deny_all_auth_token=True)
+    def get(request):
+        """GET /api/oauth/?app_id=:app_id"""
+        o_user = request.user
+        app_id = request.d.app_id
+
+        ret = App.get_app_by_id(app_id)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_app = ret.body
+        if not isinstance(o_app, App):
+            return error_response(Error.STRANGE)
+
+        ret = UserApp.get_user_app_by_o_user_o_app(o_user, o_app)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_user_app = ret.body
+        if not isinstance(o_user_app, UserApp):
+            return error_response(Error.STRANGE)
+
+        if o_user_app.bind:
+            ret = UserApp.do_bind(o_user, o_app)
+            if ret.error is not Error.OK:
+                return error_response(ret)
+            return response(body=dict(auth_code=ret.body[0], redirect_uri=o_app.redirect_uri))
+        else:
+            return error_response(Error.APP_UNBINDED)
+
     @staticmethod
     @require_post(['app_id'])
     @require_login

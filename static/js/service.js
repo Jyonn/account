@@ -51,6 +51,10 @@ class Service {
         return Request.post('/api/oauth/', arguments[0]);
     }
 
+    static getOAuthInfoAPI({app_id}) {
+        return Request.get('/api/oauth/', arguments[0]);
+    }
+
     static getAppInfoAPI(app_id) {
         return Request.get(`/api/app/${app_id}`);
     }

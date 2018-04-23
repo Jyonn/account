@@ -14,6 +14,16 @@ class OAuth {
                 1000,
             ));
         this.verifyOAuth.addEventListener('click', this.oAuthVerify);
+
+        this.getOAuthInfo();
+    }
+
+    static getOAuthInfo() {
+        Service.getOAuthInfoAPI({app_id: OAuth.appId})
+            .then((body) => {
+                Router.jumpToApp(body.redirect_uri, body.auth_code)();
+            })
+            .catch((err) => console.log(err));
     }
 
     static oAuthVerify() {

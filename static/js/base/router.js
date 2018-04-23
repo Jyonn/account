@@ -6,7 +6,8 @@ class Router {
             }
             let params = Request.getQueryString(data);
             if (params) {
-                location += '?' + Request.getQueryString(data);
+                location += (location.indexOf('?') === -1) ? '?' : '&';
+                location += Request.getQueryString(data);
             }
             window.location.href = location;
         }
