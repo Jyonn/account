@@ -57,9 +57,10 @@ class OAuthTokenView(View):
         ctime = dict_['ctime']
         if o_user_app.app.field_change_time > ctime:
             return error_response(Error.APP_FIELD_CHANGE)
-        print(o_user_app.last_auth_code_time)
-        print(ctime)
-        if o_user_app.last_auth_code_time > ctime:
+        print(o_user_app.last_auth_code_time, type(o_user_app.last_auth_code_time))
+        print(ctime, type(ctime))
+
+        if abs(o_user_app.last_auth_code_time - ctime) > 1e5:
             return error_response(Error.NEW_AUTH_CODE_CREATED)
 
         ret = jwt_e(
