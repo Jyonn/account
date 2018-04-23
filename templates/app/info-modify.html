@@ -107,6 +107,7 @@
     <script src="{% static "js/app/scope.js" %}"></script>
     <script src="{% static "js/app/info-modify.js" %}"></script>
     <script>
+        let app_id = "{{ app_id }}";
         UserBase.staticConstructor({
            errorCallback: Router.jumpToUserLogin(),
         });
