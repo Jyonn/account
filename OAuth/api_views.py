@@ -60,7 +60,7 @@ class OAuthTokenView(View):
         print(o_user_app.last_auth_code_time, type(o_user_app.last_auth_code_time))
         print(ctime, type(ctime))
 
-        if abs(o_user_app.last_auth_code_time - ctime) > 1e5:
+        if abs(o_user_app.last_auth_code_time - ctime) > 1e-5:
             return error_response(Error.NEW_AUTH_CODE_CREATED)
 
         ret = jwt_e(
