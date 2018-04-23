@@ -314,8 +314,10 @@ class UserApp(models.Model):
         default=False,
         verbose_name='用户是否绑定应用',
     )
-    last_auth_code_time = models.FloatField(
+    last_auth_code_time = models.DecimalField(
         default=0,
+        max_digits=16,
+        decimal_places=6,
         verbose_name='上一次申请auth_code的时间，防止被多次使用',
     )
 
