@@ -67,7 +67,7 @@ class Center {
                             body[i].app_desc,
                             null,
                             Center.userSpanClass,
-                            `Router.jumpToOAuth('${body[i].app_id}')()`,
+                            `Router.jumpToOAuth('${body[i].app_id}', true)()`,
                             body[i].logo ? body[i].logo : get_random_image(),
                         ));
                     this.appBoxAsUser.appendChild(html);
@@ -82,7 +82,7 @@ class Center {
                             body[i].app_desc,
                             null,
                             Center.ownerSpanClass,
-                            `Router.jumpToAppInfoModify('${body[i].app_id}')()`,
+                            `Router.jumpToAppInfoModify('${body[i].app_id}', true)()`,
                             body[i].logo ? body[i].logo : get_random_image(),
                         ));
                     this.appBoxAsOwner.appendChild(html);
