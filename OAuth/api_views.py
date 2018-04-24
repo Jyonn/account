@@ -32,6 +32,9 @@ class OAuthView(View):
         if not isinstance(o_user_app, UserApp):
             return error_response(Error.STRANGE)
 
+        if float(o_user_app.last_auth_code_time) < o_app.field_change_time:
+            return error_response(Error.APP_FIELD_CHANGE)
+
         if o_user_app.bind:
             ret = UserApp.do_bind(o_user, o_app)
             if ret.error is not Error.OK:
