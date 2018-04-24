@@ -285,7 +285,6 @@ def require_login_func(request):
     并根据传入的token获取user
     """
     jwt_str = request.META.get('HTTP_TOKEN')
-    print('jwt', jwt_str)
     if jwt_str is None:
         return Ret(Error.REQUIRE_LOGIN)
     from Base.jtoken import jwt_d
@@ -294,8 +293,6 @@ def require_login_func(request):
     if ret.error is not Error.OK:
         return ret
     dict_ = ret.body
-
-    print(dict_)
 
     type_ = dict_.get('type')
     if not type_:
@@ -330,8 +327,6 @@ def require_login_func(request):
             return Ret(Error.STRANGE)
 
         ctime = dict_['ctime']
-        print(ctime)
-        print(float(o_user_app.app.field_change_time))
         if float(o_user_app.app.field_change_time) > ctime:
             return Ret(Error.APP_FIELD_CHANGE)
 
