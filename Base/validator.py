@@ -289,8 +289,6 @@ def require_login_func(request):
         return Ret(Error.REQUIRE_LOGIN)
     from Base.jtoken import jwt_d
 
-    print('jwt-str', jwt_str)
-
     ret = jwt_d(jwt_str)
     if ret.error is not Error.OK:
         return ret
@@ -300,8 +298,6 @@ def require_login_func(request):
     if not type_:
         deprint('Base-validator-require_login_func-dict.get(type)')
         return Ret(Error.STRANGE)
-
-    print('type_', type_)
 
     if type_ == JWType.LOGIN_TOKEN:
         user_id = dict_.get("user_id")
@@ -332,7 +328,7 @@ def require_login_func(request):
 
         ctime = dict_['ctime']
         if o_user_app.app.field_change_time > ctime:
-            return error_response(Error.APP_FIELD_CHANGE)
+            return Ret(Error.APP_FIELD_CHANGE)
 
         o_user = o_user_app.user
         request.user_app = o_user_app
