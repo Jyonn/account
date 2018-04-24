@@ -327,6 +327,8 @@ def require_login_func(request):
             return Ret(Error.STRANGE)
 
         ctime = dict_['ctime']
+        print(ctime)
+        print(float(o_user_app.app.field_change_time))
         if float(o_user_app.app.field_change_time) > ctime:
             return Ret(Error.APP_FIELD_CHANGE)
 
