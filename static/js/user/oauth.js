@@ -21,7 +21,7 @@ class OAuth {
     static getOAuthInfo() {
         Service.getOAuthInfoAPI({app_id: OAuth.appId})
             .then((body) => {
-                Router.jumpToApp(body.redirect_uri, body.auth_code)();
+                // Router.jumpToApp(body.redirect_uri, body.auth_code)();
             })
             .catch((err) => console.log(err));
     }
