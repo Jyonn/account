@@ -6,6 +6,7 @@ class OAuth {
         this.cancelOAuth = document.getElementById(cancelOAuthId);
         this.verifyOAuth = document.getElementById(verifyOAuthId);
         this.appId = Router.getQueryParam('app_id');
+        this.state = Router.getQueryParam('state') || '';
 
         this.cancelOAuth.addEventListener('click',
             InfoCenter.delayInfo(
@@ -21,7 +22,7 @@ class OAuth {
     static getOAuthInfo() {
         Service.getOAuthInfoAPI({app_id: OAuth.appId})
             .then((body) => {
-                Router.jumpToApp(body.redirect_uri, body.auth_code)();
+                Router.jumpToApp(body.redirect_uri, {code: body.auth_code, state: OAuth.state})();
             })
             .catch((err) => console.log(err));
     }
@@ -31,7 +32,7 @@ class OAuth {
             .then((body) => {
                 InfoCenter.delayInfo(
                     new Info('授权成功，正在前往应用', Info.TYPE_SUCC),
-                    Router.jumpToApp(body.redirect_uri, body.auth_code),
+                    Router.jumpToApp(body.redirect_uri, {code: body.auth_code, state: OAuth.state}),
                     1000,
                 )();
             })

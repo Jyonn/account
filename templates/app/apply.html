@@ -45,7 +45,7 @@
             <section class="b1">
                 <div class="item button">
                     <div class="full mask"></div>
-                    <div class="button">取消申请</div>
+                    <div class="button" onclick="Router.jumpBackOrRoute(Router.jumpToUserSetting(true))()">取消申请</div>
                 </div>
             </section>
             <section class="b0">
@@ -65,6 +65,7 @@
             </section>
         </div>
     </div>
+    <script src="{% static "js/user/base.js" %}"></script>
     <script src="{% static "js/base/saying.js" %}"></script>
     <script src="{% static "js/app/scope.js" %}"></script>
     <script src="{% static "js/app/apply.js" %}"></script>

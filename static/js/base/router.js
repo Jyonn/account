@@ -13,8 +13,8 @@ class Router {
         }
     }
 
-    static jumpToApp(uri, code) {
-        return Router.abstructJump(`${uri}?code=${code}`, true);
+    static jumpToApp(uri, {code, state}) {
+        return Router.abstructJump(uri, true, arguments[1]);
     }
 
     static jumpToGithubRepo() {

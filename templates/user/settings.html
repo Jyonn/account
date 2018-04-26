@@ -57,13 +57,13 @@
             <section class="b1">
                 <div class="item button">
                     <div class="full mask"></div>
-                    <div class="button" onclick="Router.jumpBackOrRoute(Router.jumpToUserCenter())()">返回</div>
+                    <div class="button" onclick="Router.jumpBackOrRoute(Router.jumpToUserCenter(true))()">返回</div>
                 </div>
             </section>
             <section class="b0">
                 <div class="item button confirm">
                     <div class="full mask"></div>
-                    <div class="button">退出登录</div>
+                    <div class="button" onclick="Request.removeToken(); Router.jumpToUserLogin(true)">退出登录</div>
                 </div>
             </section>
         </div>

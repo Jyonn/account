@@ -247,11 +247,6 @@ class User(models.Model):
         if ret.error is not Error.OK:
             return ret
 
-        # from Base.qn import delete_res
-        # if self.avatar:
-        #     ret = delete_res(self.avatar)
-        #     if ret.error is not Error.OK:
-        #         return ret
         self.avatar = avatar
         self.save()
         return Ret()
@@ -273,6 +268,7 @@ class User(models.Model):
                 ret = self.get_user_by_qitian(qitian)
                 if ret.error == Error.NOT_FOUND_USER:
                     self.qitian = qitian
+                    self.qitian_modify_time += 1
                 else:
                     return Ret(Error.QITIAN_EXIST)
         self.nickname = nickname

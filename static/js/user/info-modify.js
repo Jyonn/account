@@ -11,6 +11,7 @@ class InfoModify {
         confirmModifyBtnId,
         avatarId,
         uploadAvatarInputId,
+        switchUserBtnId,
     }) {
         this.mainBox = document.getElementById(mainBoxId);
         this.passwordBox = document.getElementById(passwordBoxId);
@@ -91,5 +92,10 @@ class InfoModify {
                 Router.jumpBackOrRoute(Router.jumpToUserCenter(true)),
                 1000,
             ))
+    }
+
+    static switchUser() {
+        Request.removeToken();
+        Router.jumpToUserLogin()();
     }
 }

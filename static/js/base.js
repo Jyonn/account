@@ -34,16 +34,13 @@ class ErrorHandler {
 class Request {
     static staticConstructor() {
         this.token = window.localStorage.getItem('token');
-        if (this.token) {
-            Request.get('/api/user/')
-                .then((resp) => {
-                    Request.user = new User(resp);
-                })
-        }
     }
     static saveToken(token) {
         this.token = token;
         window.localStorage.setItem('token', token);
+    }
+    static removeToken() {
+        window.localStorage.removeItem('token');
     }
     static getQueryString(params) {
       const esc = encodeURIComponent;
@@ -123,3 +120,9 @@ function stringToHtml(s) {
 
 Method.staticConstructor();
 Request.staticConstructor();
+
+document.addEventListener('keydown', function ($event) {
+    if ($event.keyCode === 9) {
+        return $event.preventDefault();
+    }
+});
