@@ -15,7 +15,7 @@ class Center {
             <div class="app-item">
                 <div class="main">
                     <div class="full mask"></div>
-                    <div class="logo img-fit inactive" style="background-image: url('${5}')"></div>
+                    <div class="logo img-fit inactive" style="background-image: url('${5}')" onclick="toggle(this)"></div>
                     <div class="app-name">${0}</div>
                     <div class="description">${1}</div>
                     <div class="btn-box">

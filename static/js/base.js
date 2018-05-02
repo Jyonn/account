@@ -11,6 +11,14 @@ function deactivate(ele) {
     ele.classList.remove(active);
 }
 
+function toggle(ele) {
+    if (ele.classList.contains('active')) {
+        deactivate(ele);
+    } else {
+        activate(ele);
+    }
+}
+
 function get_random_image() {
     return 'https://unsplash.6-79.cn/random/regular?quick=1';
 }

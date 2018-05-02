@@ -34,6 +34,7 @@ div.app-box div.app-item div.main div.logo {
   right: 0;
   transition: 0.2s;
   cursor: pointer;
+  z-index: 1;
 }
 div.app-box div.app-item div.main div.logo.active {
   border-radius: 0;
