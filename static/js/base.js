@@ -61,7 +61,7 @@ class Request {
             url += '?' + this.getQueryString(data);
             data = null;
         }
-        let credentials = credential ? "include" : null;
+        // let credentials = credential ? "include" : null;
         let req;
         if (json) {
             req = await fetch(url, {
@@ -71,13 +71,13 @@ class Request {
                     "Token": this.token || '',
                 },
                 body: data ? JSON.stringify(data) : null,
-                credentials: credentials,
+                // credentials: credentials,
             });
         } else {
             req = await fetch(url, {
                 method: method,
                 body: data,
-                credentials: credentials,
+                // credentials: credentials,
             });
         }
         return req.json().then((resp) => {
