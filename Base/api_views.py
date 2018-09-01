@@ -1,7 +1,8 @@
 from django.views import View
 
 from Base import country
-from Base.captcha import Captcha
+from Base.captcha import Captcha, GT
+from Base.common import deprint
 from Base.validator import require_get, require_json, require_post
 from Base.error import Error
 from Base.response import response, error_response
@@ -58,6 +59,7 @@ class CaptchaView(View):
         account = request.d.account
         type_ = request.d.type
         if not Captcha.verify(request, challenge, validate, seccode):
+            deprint(Session.load(request, GT.GT_STATUS_SESSION_KEY), challenge, validate, seccode)
             return error_response(Error.ERROR_INTERACTION)
         if type_ == -1:
             # 手机号登录
