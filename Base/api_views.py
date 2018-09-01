@@ -58,8 +58,8 @@ class CaptchaView(View):
         seccode = request.d.seccode
         account = request.d.account
         type_ = request.d.type
+        deprint(Session.load(request, GT.GT_STATUS_SESSION_KEY), challenge, validate, seccode)
         if not Captcha.verify(request, challenge, validate, seccode):
-            deprint(Session.load(request, GT.GT_STATUS_SESSION_KEY), challenge, validate, seccode)
             return error_response(Error.ERROR_INTERACTION)
         if type_ == -1:
             # 手机号登录
