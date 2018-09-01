@@ -15,13 +15,17 @@ class Captcha:
     @staticmethod
     def get(request):
         status = GT.pre_process()
+        deprint('status', status)
         if not status:
             status = 2
+        deprint('status', status)
         Session.save(request, GT.GT_STATUS_SESSION_KEY, status)
+        deprint(Session.load(request, GT.GT_STATUS_SESSION_KEY))
         return json.loads(GT.get_response_str())
 
     @staticmethod
     def verify(request, challenge, validate, seccode):
+        deprint(Session.load(request, GT.GT_STATUS_SESSION_KEY))
         try:
             status = Session.load(request, GT.GT_STATUS_SESSION_KEY)
             if status == 1:
