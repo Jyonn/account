@@ -28,13 +28,13 @@
             <section>
                 <div class="item text">
                     <div class="full mask"></div>
-                    <div class="text">授权以登录{{ app_info.app_name }}应用</div>
+                    <div class="text">授权以登录 ⎡{{ app_info.app_name }}⎦ 应用</div>
                 </div>
             </section>
             <section>
                 <div class="item text">
                     <div class="full mask"></div>
-                    <div class="text">{{ app_info.app_name }}将获得以下 {{ app_info.scopes | length }} 项权限</div>
+                    <div class="text">⎡{{ app_info.app_name }}⎦将获得以下 {{ app_info.scopes | length }} 项权限</div>
                 </div>
                 {% for o_scope in app_info.scopes %}
                 <div class="item text">

@@ -45,7 +45,11 @@ class Apply {
             redirect_uri: appRedirectUri,
             scopes: scope_list,
         }).then((resp) => {
-                console.log(resp);
+                // console.log(resp);
+            InfoCenter.delayInfo(
+                new Info('申请应用成功', Info.TYPE_SUCC),
+                Router.jumpBackOrRoute(Router.jumpToUserSetting(true)),
+            )();
         })
     }
 }
