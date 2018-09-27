@@ -22,7 +22,10 @@
             <div id="saying"></div>
         </div>
         <div class="app-title-box">
-            <div class="img-fit"></div>
+            <div class="img-fit qtb-logo" style='background-image: url("{% static "image/qtb.png" %}")'></div>
+            <div class="img-fit arrow" style='background-image: url("{% static "image/arrow.png" %}")'></div>
+            <div class="img-fit app-logo" style="background-image: url('{% if app_info.logo %}{{ app_info.logo }}{% else %}https://unsplash.6-79.cn/random/regular?quick=1{% endif %}')"></div>
+            <div class="app-name">授权</div>
         </div>
         <div class="list-box main active">
             <section>
@@ -71,6 +74,7 @@
         OAuth.staticConstructor({
             cancelOAuthId: 'cancel-oauth',
             verifyOAuthId: 'verify-oauth',
+            {#appLogoId: 'app-logo',#}
         });
     </script>
 {% endblock %}

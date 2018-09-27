@@ -183,3 +183,35 @@ div.list-box.inactive {
 div.list-box.main.inactive {
   left: -100%;
 }
+div.app-title-box {
+  position: absolute;
+  width: 100%;
+  top: 156px;
+  height: 30px;
+}
+div.app-title-box div.app-logo {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  left: calc(50% + 10px + 40px / 2);
+}
+div.app-title-box div.qtb-logo {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  right: calc(50% + 10px + 40px / 2);
+}
+div.app-title-box div.arrow {
+  position: absolute;
+  width: 40px;
+  height: 15px;
+  vertical-align: middle;
+  left: calc(50% - 40px / 2);
+  bottom: 0;
+}
+div.app-title-box div.app-name {
+  position: absolute;
+  left: calc(50% - 20px);
+  color: white;
+  font-size: 12px;
+}

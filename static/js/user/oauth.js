@@ -2,6 +2,7 @@ class OAuth {
     static staticConstructor({
         cancelOAuthId,
         verifyOAuthId,
+        // appLogoId,
     }) {
         this.cancelOAuth = document.getElementById(cancelOAuthId);
         this.verifyOAuth = document.getElementById(verifyOAuthId);

@@ -200,3 +200,38 @@ div.list-box.inactive {
 div.list-box.main.inactive {
   left: -100%;
 }
+
+div.app-title-box {
+  position: absolute;
+  width: 100%;
+  top: 156px;
+  height: @app-logo-size;
+  div.app-logo {
+    position: absolute;
+    width: @app-logo-size;
+    height: @app-logo-size;
+    left: calc(~'50% + 10px + @{arrow-width} / 2');
+  }
+  div.qtb-logo {
+    position: absolute;
+    width: @app-logo-size;
+    height: @app-logo-size;
+    right: calc(~'50% + 10px + @{arrow-width} / 2');
+  }
+  div.arrow {
+    position: absolute;
+    width: @arrow-width;
+    height: @arrow-height;
+    vertical-align: middle;
+    left: calc(~'50% - @{arrow-width} / 2');
+    //top: @app-logo-size / 2 - @arrow-height / 2;
+    bottom: 0;
+  }
+  div.app-name {
+    position: absolute;
+    //left: calc(~'50% + 15px + @{arrow-width} / 2 + @{app-logo-size}');
+    left: calc(~'50% - 20px');
+    color: white;
+    font-size: 12px;
+  }
+}
