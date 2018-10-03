@@ -17,16 +17,16 @@ class OAuth {
             ));
         this.verifyOAuth.addEventListener('click', this.oAuthVerify);
 
-        this.getOAuthInfo();
+        // this.getOAuthInfo();
     }
 
-    static getOAuthInfo() {
-        Service.getOAuthInfoAPI({app_id: OAuth.appId})
-            .then((body) => {
-                Router.jumpToApp(body.redirect_uri, {code: body.auth_code, state: OAuth.state})();
-            })
-            .catch((err) => console.log(err));
-    }
+    // static getOAuthInfo() {
+    //     Service.getOAuthInfoAPI({app_id: OAuth.appId})
+    //         .then((body) => {
+    //             Router.jumpToApp(body.redirect_uri, {code: body.auth_code, state: OAuth.state})();
+    //         })
+    //         .catch((err) => console.log(err));
+    // }
 
     static oAuthVerify() {
         Service.oAuthAPI({app_id: OAuth.appId})
