@@ -46,7 +46,7 @@ function captchaHandler({captchaObj, bindBtnId, phoneInputId, qitianInputId, reg
                 successCallback();
             })
             .catch(() => {
-                window.reload();
+                window.location.reload();
             });
     })
 }
