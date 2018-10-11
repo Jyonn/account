@@ -167,12 +167,12 @@ class User(models.Model):
 
     @staticmethod
     def get_user_by_phone(phone):
-        """根据用户名获取用户对象"""
+        """根据手机号获取用户对象"""
         try:
             o_user = User.objects.get(phone=phone)
         except User.DoesNotExist as err:
             deprint(str(err))
-            return Ret(Error.NOT_FOUND_USER)
+            return Ret(Error.NOT_FOUND_USER, append_msg='，手机号未注册')
         return Ret(o_user)
 
     @staticmethod
@@ -181,7 +181,7 @@ class User(models.Model):
             o_user = User.objects.get(qitian=qitian_id)
         except User.DoesNotExist as err:
             deprint(str(err))
-            return Ret(Error.NOT_FOUND_USER)
+            return Ret(Error.NOT_FOUND_USER, append_msg='，不存在的齐天号')
         return Ret(o_user)
 
     @staticmethod

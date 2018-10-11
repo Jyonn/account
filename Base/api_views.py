@@ -61,14 +61,26 @@ class CaptchaView(View):
         # deprint(Session.load(request, GT.GT_STATUS_SESSION_KEY), challenge, validate, seccode)
         if not Captcha.verify(request, challenge, validate, seccode):
             return error_response(Error.ERROR_INTERACTION)
+
+        from User.models import User
         if type_ == -1:
             # 手机号登录
+            ret = User.get_user_by_phone(account)
+            if ret.error is not Error.OK:
+                return error_response(ret)
             Session.save(request, SendMobile.PHONE_NUMBER, account, visit_time=5)
             Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.PHONE_NUMBER, visit_time=5)
         elif type_ == -2:
             # 齐天号登录
+            ret = User.get_user_by_qitian(account)
+            if ret.error is not Error.OK:
+                return error_response(ret)
             Session.save(request, SendMobile.QITIAN_ID, account, visit_time=5)
             Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.QITIAN_ID, visit_time=5)
         else:
+            # 手机号注册
+            ret = User.get_user_by_phone(account)
+            if ret.error is Error.OK:
+                return error_response(Error.PHONE_EXIST)
             SendMobile.send_captcha(request, account, type_)
         return response()
