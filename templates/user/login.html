@@ -86,6 +86,7 @@
                 type: -1,
                 successCallback: Login.switchToCaptchaBox,
             });
-        })
+        });
+        InfoCenter.push(new Info('最新版Chrome存在Bug，导致无法用手机号登录，问题已反馈给Google，请使用齐天号登录或换用浏览器'));
     </script>
 {% endblock %}
