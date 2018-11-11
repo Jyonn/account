@@ -152,7 +152,7 @@ class User(models.Model):
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
-        if self.password != User._hash(old_password):
+        if self.password != User._hash(old_password+self.salt):
             return Ret(Error.ERROR_PASSWORD)
         self.salt, self.password = User.hash_password(password)
         import datetime
