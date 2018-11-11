@@ -34,7 +34,7 @@ class Error:
     FAIL_QINIU = E("未知原因导致的七牛端操作错误")
     QINIU_UNAUTHORIZED = E("七牛端身份验证错误")
     ERROR_REQUEST_QINIU = E("七牛请求错误")
-    PASSWORD_CHANGED = E("密码已改变，需要重新获取token")
+    PASSWORD_CHANGED = E("密码已修改，请重新登录")
     INVALID_QITIAN = E("齐天号只能包含字母数字以及下划线")
     INVALID_PASSWORD = E("密码只能包含字母数字以及“!@#$%^&*()_+-=,.?;:”")
     INVALID_USERNAME_FIRST = E("用户名首字符只能是字母")

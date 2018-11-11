@@ -294,6 +294,11 @@ def require_login_func(request):
         return ret
     dict_ = ret.body
 
+    ctime = dict_.get('ctime')
+    if not ctime:
+        deprint('Base-validator-require_login_func-dict.get(ctime)')
+        return Ret(Error.STRANGE)
+
     type_ = dict_.get('type')
     if not type_:
         deprint('Base-validator-require_login_func-dict.get(type)')
@@ -326,7 +331,6 @@ def require_login_func(request):
         if not isinstance(o_user_app, UserApp):
             return Ret(Error.STRANGE)
 
-        ctime = dict_['ctime']
         if float(o_user_app.app.field_change_time) > ctime:
             return Ret(Error.APP_FIELD_CHANGE)
 
@@ -334,6 +338,9 @@ def require_login_func(request):
         request.user_app = o_user_app
     else:
         return Ret(Error.ERROR_TOKEN_TYPE)
+
+    if float(o_user.pwd_change_time) > ctime:
+        return Ret(Error.PASSWORD_CHANGED)
 
     request.user = o_user
     request.type_ = type_
