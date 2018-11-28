@@ -29,7 +29,7 @@ class Error:
     ERROR_TUPLE_FORMAT = E("属性元组格式错误")
     ERROR_PROCESS_FUNC = E("参数预处理函数错误")
     BETA_CODE_ERROR = E("内测码错误")
-    
+
     NOT_FOUND_CONFIG = E("不存在的配置")
     FAIL_QINIU = E("未知原因导致的七牛端操作错误")
     QINIU_UNAUTHORIZED = E("七牛端身份验证错误")
@@ -73,12 +73,12 @@ class Error:
     ERROR_APP_SECRET = E("错误的应用密钥")
     QITIAN_EXIST = E("已存在此齐天号")
 
-    @classmethod
-    def get_error_dict(cls):
-        error_dict = dict()
-        for k in cls.__dict__:
-            if k[0] != '_':
-                e = getattr(cls, k)
-                if isinstance(e, E):
-                    error_dict[k] = dict(eid=e.eid, msg=e.msg)
-        return error_dict
+
+ERROR_DICT = dict()
+REVERSED_ERROR_DICT = dict()
+for k in Error.__dict__:
+    if k[0] != '_':
+        e = getattr(Error, k)
+        if isinstance(e, E):
+            ERROR_DICT[k] = dict(eid=e.eid, msg=e.msg)
+            REVERSED_ERROR_DICT[e.eid] = k

@@ -4,7 +4,7 @@ from Base import country
 from Base.captcha import Captcha, GT
 from Base.common import deprint
 from Base.validator import require_get, require_json, require_post
-from Base.error import Error
+from Base.error import Error, ERROR_DICT
 from Base.response import response, error_response
 from Base.send_mobile import SendMobile
 from Base.session import Session
@@ -13,7 +13,7 @@ from Base.session import Session
 class ErrorView(View):
     @staticmethod
     def get(request):
-        return response(body=Error.get_error_dict())
+        return response(body=ERROR_DICT)
 
 
 class RegionView(View):
