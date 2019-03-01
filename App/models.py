@@ -296,6 +296,7 @@ class UserApp(models.Model):
         'user_app_id': 16,
         'auth_code': 32,
         'last_auth_code_time': 20,
+        'last_score_changed_time': 20,
     }
 
     user = models.ForeignKey(
@@ -320,6 +321,15 @@ class UserApp(models.Model):
         verbose_name='上一次申请auth_code的时间，防止被多次使用',
         max_length=L['last_auth_code_time'],
     )
+    # frequent_score = models.FloatField(
+    #     verbose_name='频繁访问分数，按分值排序为常用应用',
+    #     default=0,
+    # )
+    # last_score_changed_time = models.CharField(
+    #     default=None,
+    #     verbose_name='上一次分数变化的时间',
+    #     max_length=L['last_score_changed_time'],
+    # )
 
     def to_dict(self):
         return dict(

@@ -53,7 +53,7 @@ class Session:
         except KeyError as err:
             deprint(str(err))
         if None in [correct_code, correct_time, correct_last]:
-            return Ret(Error.GET_CAPTCHA_ERROR, append_msg=captcha_type)
+            return Ret(Error.ERROR_CAPTCHA)
         if current_time - correct_time > correct_last:
             return Ret(Error.CAPTCHA_EXPIRED)
         if correct_code.upper() != str(code).upper():

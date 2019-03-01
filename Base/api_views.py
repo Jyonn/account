@@ -1,11 +1,11 @@
 from django.views import View
 
 from Base import country
-from Base.captcha import Captcha, GT
-from Base.common import deprint
+from Base.recaptcha import Recaptcha
+from Base.captcha import Captcha
 from Base.validator import require_get, require_json, require_post
 from Base.error import Error, ERROR_DICT
-from Base.response import response, error_response
+from Base.response import response, error_response, Ret
 from Base.send_mobile import SendMobile
 from Base.session import Session
 
@@ -41,6 +41,234 @@ class RegionView(View):
             ) for c in country.countries
         ]
         return response(body=regions)
+
+
+class ReCaptchaView(View):
+    RECAPTCHA = 'recaptcha'
+
+    MODE_LOGIN_PHONE_CODE = 0
+    MODE_LOGIN_PHONE_PWD = 1
+    MODE_LOGIN_QTB_PWD = 2
+    MODE_REGISTER = 3
+    MODE_FIND_PWD = 4
+    MODE_LOGIN_CODE = 5
+    MODE_REGISTER_CODE = 6
+    MODE_FIND_PWD_CODE = 7
+    MODE_REQUIRE_CAPTCHA_LIST = [
+        MODE_LOGIN_PHONE_CODE,
+        MODE_LOGIN_PHONE_PWD,
+        MODE_LOGIN_QTB_PWD,
+        MODE_REGISTER,
+        MODE_FIND_PWD
+    ]
+    MODE_CHECK_CODE_LIST = [
+        MODE_LOGIN_CODE,
+        MODE_REGISTER_CODE,
+        MODE_FIND_PWD_CODE,
+    ]
+    MODE_LIST = [
+        MODE_LOGIN_PHONE_CODE,
+        MODE_LOGIN_PHONE_PWD,
+        MODE_LOGIN_QTB_PWD,
+        MODE_REGISTER,
+        MODE_FIND_PWD,
+        MODE_LOGIN_CODE,
+        MODE_REGISTER_CODE,
+        MODE_FIND_PWD_CODE,
+    ]
+
+    @staticmethod
+    def mode_validate(mode):
+        if mode not in ReCaptchaView.MODE_LIST:
+            return Ret(Error.ERROR_PARAM_FORMAT)
+        return Ret()
+
+    @staticmethod
+    @require_json
+    @require_post(['phone'])
+    def login_phone_code_handler(request):
+        phone = request.d.phone
+
+        from User.models import User
+        ret = User.get_user_by_phone(phone)
+        if ret.error is not Error.OK:  # 不存在
+            SendMobile.send_captcha(request, phone, SendMobile.REGISTER)
+            next_mode = ReCaptchaView.MODE_REGISTER_CODE
+            toast_msg = '账号不存在，请注册'
+        else:
+            SendMobile.send_captcha(request, phone, SendMobile.LOGIN)
+            next_mode = ReCaptchaView.MODE_LOGIN_CODE
+            toast_msg = ''
+        return response(body=dict(
+            next_mode=next_mode,
+            toast_msg=toast_msg,
+        ))
+
+    @staticmethod
+    @require_json
+    @require_post(['phone'])
+    def register_handler(request):
+        phone = request.d.phone
+
+        from User.models import User
+        ret = User.get_user_by_phone(phone)
+        if ret.error is not Error.OK:  # 不存在
+            SendMobile.send_captcha(request, phone, SendMobile.REGISTER)
+            next_mode = ReCaptchaView.MODE_REGISTER_CODE
+            toast_msg = ''
+        else:
+            SendMobile.send_captcha(request, phone, SendMobile.LOGIN)
+            next_mode = ReCaptchaView.MODE_LOGIN_CODE
+            toast_msg = '账号已注册，请验证'
+        return response(body=dict(
+            next_mode=next_mode,
+            toast_msg=toast_msg,
+        ))
+
+    @staticmethod
+    @require_json
+    @require_post(['phone'])
+    def find_pwd_handler(request):
+        phone = request.d.phone
+        from User.models import User
+        ret = User.get_user_by_phone(phone)
+        if ret.error is not Error.OK:  # 不存在
+            return error_response(Error.NOT_FOUND_USER)
+        SendMobile.send_captcha(request, phone, SendMobile.FIND_PWD)
+        return response(body=dict(
+            next_mode=ReCaptchaView.MODE_FIND_PWD_CODE,
+            toast_msg='',
+        ))
+
+    @staticmethod
+    @require_json
+    @require_post(['phone', 'pwd'])
+    def login_phone_pwd_handler(request):
+        phone = request.d.phone
+        pwd = request.d.pwd
+
+        from User.models import User
+        ret = User.authenticate(None, phone, pwd)
+        if ret.error != Error.OK:
+            return error_response(ret)
+        o_user = ret.body
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        from User.api_views import UserView
+        return response(body=UserView.get_token_info(o_user))
+
+    @staticmethod
+    @require_json
+    @require_post(['qt', 'pwd'])
+    def login_qt_pwd_handler(request):
+        qt = request.d.qt
+        pwd = request.d.pwd
+
+        from User.models import User
+        ret = User.authenticate(qt, None, pwd)
+        if ret.error != Error.OK:
+            return error_response(ret)
+        o_user = ret.body
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        from User.api_views import UserView
+        return response(body=UserView.get_token_info(o_user))
+
+    @staticmethod
+    @require_json
+    @require_post()
+    def login_code_handler(request):
+        phone = request.phone
+
+        from User.models import User
+        ret = User.get_user_by_phone(phone)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+
+        o_user = ret.body
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        from User.api_views import UserView
+        return response(body=UserView.get_token_info(o_user))
+
+    @staticmethod
+    @require_json
+    @require_post(['pwd'])
+    def register_code_handler(request):
+        phone = request.phone
+        pwd = request.d.pwd
+
+        from User.models import User
+        ret = User.create(phone, pwd)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_user = ret.body
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        from User.api_views import UserView
+        return response(body=UserView.get_token_info(o_user))
+
+    @staticmethod
+    @require_json
+    @require_post(['pwd'])
+    def find_pwd_code_handler(request):
+        phone = request.phone
+        pwd = request.d.pwd
+
+        from User.models import User
+        ret = User.get_user_by_phone(phone)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_user = ret.body
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        ret = o_user.modify_password(pwd)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+
+        from User.api_views import UserView
+        return response(body=UserView.get_token_info(o_user))
+
+    @staticmethod
+    @require_json
+    @require_post([
+        ('response', None, None),
+        ('code', None, None),
+        ('mode', mode_validate),
+    ])
+    def post(request):
+        mode = request.d.mode
+
+        if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
+            resp = request.d.response
+            if not resp or not Recaptcha.verify(resp):
+                return error_response(Error.ERROR_PARAM_FORMAT)
+        if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
+            code = request.d.code
+            if not code:
+                return error_response(Error.ERROR_PARAM_FORMAT)
+            ret = SendMobile.check_captcha(request, code)
+            if ret.error is not Error.OK:
+                return error_response(ret)
+            request.phone = ret.body
+
+        mode_handlers = [
+            ReCaptchaView.login_phone_code_handler,
+            ReCaptchaView.login_phone_pwd_handler,
+            ReCaptchaView.login_qt_pwd_handler,
+            ReCaptchaView.register_handler,
+            ReCaptchaView.find_pwd_handler,
+            ReCaptchaView.login_code_handler,
+            ReCaptchaView.register_code_handler,
+            ReCaptchaView.find_pwd_code_handler,
+        ]
+
+        return mode_handlers[mode](request)
 
 
 class CaptchaView(View):

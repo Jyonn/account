@@ -147,6 +147,16 @@ class User(models.Model):
             return Ret(Error.ERROR_CREATE_USER)
         return Ret(o_user)
 
+    def modify_password(self, password):
+        ret = self._validate(locals())
+        if ret.error is not Error.OK:
+            return ret
+        self.salt, self.password = User.hash_password(password)
+        import datetime
+        self.pwd_change_time = datetime.datetime.now().timestamp()
+        self.save()
+        return Ret()
+
     def change_password(self, password, old_password):
         """修改密码"""
         ret = self._validate(locals())
@@ -218,7 +228,6 @@ class User(models.Model):
 
     @classmethod
     def authenticate(cls, qitian, phone, password):
-        print(qitian, phone, password)
         """验证手机号和密码是否匹配"""
         if qitian:
             ret = cls.get_user_by_qitian(qitian)

@@ -14,8 +14,8 @@ yunpian_appkey = Config.get_value_by_key('yunpian-appkey').body
 
 class SendMobile:
     REGISTER = 0
-    FORGET_PASSWORD = 1
-    BIND = 2
+    FIND_PWD = 1
+    LOGIN = 2
 
     CHINA = 0
     ABROAD = 1
@@ -23,11 +23,11 @@ class SendMobile:
         [
             '【六七九】本次注册的验证码为#code#，五分钟内有效。',
             '【六七九】本次密码找回的验证码为#code#，五分钟内有效。',
-            '【六七九】本次绑定手机号的验证码为#code#，五分钟内有效。',
+            '【六七九】本次登录的验证码为#code#，五分钟内有效。',
         ], [
             '【Six79】Code for registering is #code#, valid within 5 minutes.',
             '【Six79】Code for retrieving password is #code#, valid within 5 minutes.',
-            '【Six79】Code for binding mobile is #code#, valid within 5 minutes.',
+            '【Six79】Code for logging in is #code#, valid within 5 minutes.',
         ]
     ]
     PHONE = 'phone'
@@ -47,7 +47,8 @@ class SendMobile:
         code = get_random_string(length=6, allowed_chars="1234567890")
         text = text.replace("#code#", code)
 
-        SendMobile._send_sms(yunpian_appkey, text, mobile)
+        # SendMobile._send_sms(yunpian_appkey, text, mobile)
+        print(code)
         Session.save_captcha(request, SendMobile.PHONE, code)
         Session.save(request, SendMobile.PHONE_NUMBER, mobile)
 

@@ -17,3 +17,10 @@ def md5(s):
     md5_ = hashlib.md5()
     md5_.update(s.encode())
     return md5_.hexdigest()
+
+
+def get_client_ip(request):
+    if 'HTTP_X_FORWARDED_FOR' in request.META:
+        return request.META['HTTP_X_FORWARDED_FOR']
+    else:
+        return request.META['REMOTE_ADDR']
