@@ -247,7 +247,7 @@ class ReCaptchaView(View):
         if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
             resp = request.d.response
             if not resp or not Recaptcha.verify(resp):
-                return error_response(Error.ERROR_PARAM_FORMAT)
+                return error_response(Error.ERROR_PARAM_FORMAT, append_msg='，人机验证失败')
         if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
             code = request.d.code
             if not code:

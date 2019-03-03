@@ -43,12 +43,13 @@ class AppView(View):
 
         if relation == App.R_OWNER:
             o_apps = App.get_apps_by_owner(o_user)
-            app_list = [o_app.to_dict(relation=relation) for o_app in o_apps]
+            app_list = [o_app.to_dict(relation=relation, base=True) for o_app in o_apps]
         else:
             frequent = request.d.frequent
             count = request.d.count
             user_app_list = UserApp.get_user_app_list_by_o_user(o_user, frequent, count)
-            app_list = [o_user_app.app.to_dict(relation=relation, base=True) for o_user_app in user_app_list]
+            app_list = [o_user_app.app.to_dict(relation=relation, base=True)
+                        for o_user_app in user_app_list]
         return response(body=app_list)
 
     @staticmethod
