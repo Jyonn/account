@@ -22,12 +22,12 @@ from User.models import User
 class UserView(View):
     @staticmethod
     def get_token_info(o_user):
-        ret = jwt_e(dict(user_id=o_user.pk, type=JWType.LOGIN_TOKEN))
+        ret = jwt_e(dict(user_id=o_user.user_str_id, type=JWType.LOGIN_TOKEN))
         if ret.error is not Error.OK:
             return error_response(ret)
         token, dict_ = ret.body
         dict_['token'] = token
-        dict_['avatar'] = o_user.get_avatar_url()
+        dict_['user'] = o_user.to_dict()
         return dict_
 
     @staticmethod

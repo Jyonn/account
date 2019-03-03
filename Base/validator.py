@@ -311,7 +311,7 @@ def require_login_func(request):
             return Ret(Error.STRANGE)
 
         from User.models import User
-        ret = User.get_user_by_id(user_id)
+        ret = User.get_user_by_str_id(user_id)
         if ret.error is not Error.OK:
             return ret
         o_user = ret.body
