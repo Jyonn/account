@@ -98,7 +98,7 @@ class Scope(models.Model):
     @classmethod
     def get_scope_list(cls):
         scopes = cls.objects.all()
-        return [o_scope.to_dict() for o_scope in scopes];
+        return [o_scope.to_dict() for o_scope in scopes]
 
 
 class App(models.Model):
@@ -244,7 +244,14 @@ class App(models.Model):
             return Ret(Error.ERROR_MODIFY_APP, append_msg=str(err))
         return Ret()
 
-    def to_dict(self, relation=R_USER):
+    def to_dict(self, relation=R_USER, base=False):
+        if base:
+            return dict(
+                app_name=self.name,
+                app_id=self.id,
+                logo=self.get_logo_url(),
+                app_desc=self.desc,
+            )
         scopes = self.scopes.all()
         scope_list = [o_scope.to_dict() for o_scope in scopes]
 
@@ -255,7 +262,7 @@ class App(models.Model):
             redirect_uri=self.redirect_uri,
             logo=self.get_logo_url(),
             app_desc=self.desc,
-            owner=self.owner.to_dict(),
+            owner=self.owner.to_dict(base=True),
         )
         if relation == App.R_OWNER:
             dict_['app_secret'] = self.secret

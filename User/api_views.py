@@ -4,7 +4,6 @@
 """
 from django.views import View
 
-from App.models import UserApp
 from Base.common import deprint
 from Base.scope import ScopeInstance
 from Base.validator import require_json, require_post, require_login, require_get, \
@@ -222,7 +221,7 @@ class AvatarView(View):
 
 def set_unique_user_str_id(request):
     for o_user in User.objects.all():
-        if not o_user.user_str_id:
-            o_user.user_str_id = User.get_unique_user_str_id()
-            o_user.save()
+        # if not o_user.user_str_id:
+        o_user.user_str_id = User.get_unique_user_str_id()
+        o_user.save()
     return response()

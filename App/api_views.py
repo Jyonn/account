@@ -1,5 +1,3 @@
-import datetime
-
 from django.views import View
 
 from App.models import App, Scope, UserApp
@@ -50,7 +48,7 @@ class AppView(View):
             frequent = request.d.frequent
             count = request.d.count
             user_app_list = UserApp.get_user_app_list_by_o_user(o_user, frequent, count)
-            app_list = [o_user_app.app.to_dict(relation=relation) for o_user_app in user_app_list]
+            app_list = [o_user_app.app.to_dict(relation=relation, base=True) for o_user_app in user_app_list]
         return response(body=app_list)
 
     @staticmethod

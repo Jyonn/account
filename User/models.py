@@ -27,7 +27,7 @@ class User(models.Model):
         'phone': 20,
         'qitian': 20,
         'description': 20,
-        'user_str_id': 6,
+        'user_str_id': 32,
     }
     MIN_L = {
         'password': 6,
@@ -235,10 +235,17 @@ class User(models.Model):
     def allow_qitian_modify(self):
         return self.qitian_modify_time == 0
 
-    def to_dict(self, oauth=False):
+    def to_dict(self, oauth=False, base=False):
         """把用户对象转换为字典"""
         if oauth:
             return dict(
+                avatar=self.get_avatar_url(),
+                nickname=self.nickname,
+                description=self.description,
+            )
+        elif base:
+            return dict(
+                user_str_id=self.user_str_id,
                 avatar=self.get_avatar_url(),
                 nickname=self.nickname,
                 description=self.description,
@@ -251,7 +258,6 @@ class User(models.Model):
                 nickname=self.nickname,
                 description=self.description,
                 allow_qitian_modify=int(self.allow_qitian_modify()),
-                bind_phone=int(self.phone is not None),
             )
 
     @classmethod
