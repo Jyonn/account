@@ -192,8 +192,8 @@ class AvatarView(View):
 
         import datetime
         crt_time = datetime.datetime.now().timestamp()
-        key = 'user/%s/avatar/%s/%s' % (o_user.pk, crt_time, filename)
-        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, get_avatar_policy(o_user.pk))
+        key = 'user/%s/avatar/%s/%s' % (o_user.user_str_id, crt_time, filename)
+        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, get_avatar_policy(o_user.user_str_id))
         return response(body=dict(upload_token=qn_token, key=key))
 
     @staticmethod
@@ -210,7 +210,7 @@ class AvatarView(View):
 
         key = request.d.key
         user_id = request.d.user_id
-        ret = User.get_user_by_id(user_id)
+        ret = User.get_user_by_str_id(user_id)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_user = ret.body
@@ -218,3 +218,11 @@ class AvatarView(View):
             return error_response(Error.STRANGE)
         o_user.modify_avatar(key)
         return response(body=o_user.to_dict())
+
+
+def set_unique_user_str_id(request):
+    for o_user in User.objects.all():
+        if not o_user.user_str_id:
+            o_user.user_str_id = User.get_unique_user_str_id()
+            o_user.save()
+    return response()

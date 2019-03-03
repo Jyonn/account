@@ -321,15 +321,15 @@ class UserApp(models.Model):
         verbose_name='上一次申请auth_code的时间，防止被多次使用',
         max_length=L['last_auth_code_time'],
     )
-    # frequent_score = models.FloatField(
-    #     verbose_name='频繁访问分数，按分值排序为常用应用',
-    #     default=0,
-    # )
-    # last_score_changed_time = models.CharField(
-    #     default=None,
-    #     verbose_name='上一次分数变化的时间',
-    #     max_length=L['last_score_changed_time'],
-    # )
+    frequent_score = models.FloatField(
+        verbose_name='频繁访问分数，按分值排序为常用应用',
+        default=0,
+    )
+    last_score_changed_time = models.CharField(
+        default=None,
+        verbose_name='上一次分数变化的时间',
+        max_length=L['last_score_changed_time'],
+    )
 
     def to_dict(self):
         return dict(
@@ -340,8 +340,13 @@ class UserApp(models.Model):
         )
 
     @classmethod
-    def get_user_app_list_by_o_user(cls, o_user):
-        return cls.objects.filter(user=o_user, bind=True)
+    def get_user_app_list_by_o_user(cls, o_user, frequent, count):
+        app_list = cls.objects.filter(user=o_user, bind=True)
+        if frequent:
+            if count < 0:
+                count = 3
+            app_list = app_list.order_by('-frequent_score')[:count]
+        return app_list
 
     @classmethod
     def get_user_app_by_o_user_o_app(cls, o_user, o_app):
@@ -383,6 +388,8 @@ class UserApp(models.Model):
                 return Ret(Error.STRANGE)
             o_user_app.bind = True
             o_user_app.last_auth_code_time = crt_timestamp
+            o_user_app.frequent_score += 1
+            o_user_app.last_score_changed_time = crt_timestamp
             o_user_app.save()
         else:
             try:
@@ -391,7 +398,9 @@ class UserApp(models.Model):
                     app=o_app,
                     user_app_id=cls.get_unique_user_app_id(),
                     bind=True,
-                    last_auth_code_time=crt_timestamp
+                    last_auth_code_time=crt_timestamp,
+                    frequent_score=1,
+                    last_score_changed_time=crt_timestamp,
                 )
                 o_user_app.save()
             except Exception as err:
@@ -413,3 +422,26 @@ class UserApp(models.Model):
             deprint('UserApp-check_bind_strange')
             return False
         return o_user_app.bind
+
+    @classmethod
+    def refresh_frequent_score(cls):
+        from Config.models import Config
+        crt_date = datetime.datetime.now().date()
+        crt_time = datetime.datetime.now().timestamp()
+        last_date = Config.get_value_by_key('last-refresh-frequent-score-date').body
+        last_date = datetime.datetime.strptime(last_date, '%Y-%m-%d').date()
+
+        if last_date >= crt_date:
+            return Ret(Error.SCORE_REFRESHED)
+
+        from OAuth.api_views import OAUTH_TOKEN_EXPIRE_TIME
+
+        Config.update_value('last-refresh-frequent-score-date', crt_date.strftime('%Y-%m-%d'))
+        for o_user_app in cls.objects.all():
+            if crt_time - float(o_user_app.last_auth_code_time) > OAUTH_TOKEN_EXPIRE_TIME + 24 * 60 * 60:
+                if crt_time - float(o_user_app.last_score_changed_time) > OAUTH_TOKEN_EXPIRE_TIME:
+                    o_user_app.frequent_score /= 2
+                    o_user_app.last_score_changed_time = crt_time
+                    o_user_app.save()
+
+        return Ret()

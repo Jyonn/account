@@ -7,6 +7,8 @@ from Base.error import Error
 from Base.jtoken import jwt_d, JWType, jwt_e
 from Base.response import error_response, response
 
+OAUTH_TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60
+
 
 class OAuthView(View):
     @staticmethod
@@ -102,7 +104,7 @@ class OAuthTokenView(View):
                 user_app_id=o_user_app.user_app_id,
                 type=JWType.AUTH_TOKEN,
             ),
-            expire_second=365 * 24 * 60 * 60
+            expire_second=OAUTH_TOKEN_EXPIRE_TIME,
         )
         if ret.error is not Error.OK:
             return error_response(ret)

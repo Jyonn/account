@@ -27,11 +27,20 @@ class User(models.Model):
         'phone': 20,
         'qitian': 20,
         'description': 20,
+        'user_str_id': 6,
     }
     MIN_L = {
         'password': 6,
         'qitian': 4,
     }
+    user_str_id = models.CharField(
+        verbose_name='唯一随机用户ID，弃用user_id',
+        default=None,
+        null=True,
+        blank=True,
+        max_length=L['user_str_id'],
+        unique=True,
+    )
     qitian = models.CharField(
         default=None,
         unique=True,
@@ -76,6 +85,15 @@ class User(models.Model):
         default=0,
     )
     FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description']
+
+    @classmethod
+    def get_unique_user_str_id(cls):
+        while True:
+            user_str_id = get_random_string(length=cls.L['user_str_id'])
+            ret = cls.get_user_by_str_id(user_str_id)
+            if ret.error == Error.NOT_FOUND_USER:
+                return user_str_id
+            deprint('generate user_str_id: %s, conflict.' % user_str_id)
 
     @classmethod
     def get_unique_qitian_id(cls):
@@ -140,6 +158,7 @@ class User(models.Model):
                 nickname='',
                 description=None,
                 qitian_modify_time=0,
+                user_str_id=cls.get_unique_user_str_id(),
             )
             o_user.save()
         except ValueError as err:
@@ -175,31 +194,40 @@ class User(models.Model):
         from Base.common import md5
         return md5(s)
 
-    @staticmethod
-    def get_user_by_phone(phone):
+    @classmethod
+    def get_user_by_str_id(cls, user_str_id):
+        try:
+            o_user = cls.objects.get(user_str_id=user_str_id)
+        except cls.DoesNotExist as err:
+            deprint(str(err))
+            return Ret(Error.NOT_FOUND_USER)
+        return Ret(o_user)
+
+    @classmethod
+    def get_user_by_phone(cls, phone):
         """根据手机号获取用户对象"""
         try:
-            o_user = User.objects.get(phone=phone)
-        except User.DoesNotExist as err:
+            o_user = cls.objects.get(phone=phone)
+        except cls.DoesNotExist as err:
             deprint(str(err))
             return Ret(Error.NOT_FOUND_USER, append_msg='，手机号未注册')
         return Ret(o_user)
 
-    @staticmethod
-    def get_user_by_qitian(qitian_id):
+    @classmethod
+    def get_user_by_qitian(cls, qitian_id):
         try:
-            o_user = User.objects.get(qitian=qitian_id)
-        except User.DoesNotExist as err:
+            o_user = cls.objects.get(qitian=qitian_id)
+        except cls.DoesNotExist as err:
             deprint(str(err))
             return Ret(Error.NOT_FOUND_USER, append_msg='，不存在的齐天号')
         return Ret(o_user)
 
-    @staticmethod
-    def get_user_by_id(user_id):
+    @classmethod
+    def get_user_by_id(cls, user_id):
         """根据用户ID获取用户对象"""
         try:
-            o_user = User.objects.get(pk=user_id)
-        except User.DoesNotExist as err:
+            o_user = cls.objects.get(pk=user_id)
+        except cls.DoesNotExist as err:
             deprint(str(err))
             return Ret(Error.NOT_FOUND_USER)
         return Ret(o_user)
@@ -217,7 +245,7 @@ class User(models.Model):
             )
         else:
             return dict(
-                user_id=self.pk,
+                user_str_id=self.user_str_id,
                 qitian=self.qitian,
                 avatar=self.get_avatar_url(),
                 nickname=self.nickname,

@@ -331,7 +331,6 @@ def require_login_func(request):
         if not isinstance(o_user_app, UserApp):
             return Ret(Error.STRANGE)
 
-        print(o_user_app.app.field_change_time, ctime)
         if float(o_user_app.app.field_change_time) > ctime:
             return Ret(Error.APP_FIELD_CHANGE)
 

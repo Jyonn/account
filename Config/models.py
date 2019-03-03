@@ -36,16 +36,49 @@ class Config(models.Model):
         return field_validator(dict_, Config)
 
     @classmethod
-    def get_value_by_key(cls, key, default=__ConfigNone()):
+    def get_config_by_key(cls, key):
         ret = cls._validate(locals())
         if ret.error is not Error.OK:
             return ret
+
         try:
             o_config = cls.objects.get(key=key)
         except Exception as err:
             deprint(str(err))
+            return Ret(Error.NOT_FOUND_CONFIG)
+        return Ret(o_config)
+
+    @classmethod
+    def get_value_by_key(cls, key, default=__ConfigNone()):
+        ret = cls.get_config_by_key(key)
+        if ret.error is not Error.OK:
             if isinstance(default, cls.__ConfigNone):
-                return Ret(Error.NOT_FOUND_CONFIG)
+                return ret
             else:
                 return Ret(default)
-        return Ret(o_config.value)
+        return Ret(ret.body.value)
+
+    @classmethod
+    def update_value(cls, key, value):
+        ret = cls._validate(locals())
+        if ret.error is not Error.OK:
+            return ret
+
+        ret = cls.get_config_by_key(key)
+        if ret.error is Error.OK:
+            o_config = ret.body
+            o_config.value = value
+            o_config.save()
+            return Ret()
+
+        try:
+            o_config = cls(
+                key=key,
+                value=value,
+            )
+            o_config.save()
+        except Exception as err:
+            deprint(str(err))
+            return Ret(Error.ERROR_CREATE_CONFIG)
+
+        return Ret(o_config)

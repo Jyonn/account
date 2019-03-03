@@ -1,3 +1,5 @@
+import datetime
+
 from django.views import View
 
 from App.models import App, Scope, UserApp
@@ -23,6 +25,13 @@ class AppView(View):
         "default": True,
         "default_value": App.R_USER,
         "process": relation_process,
+    }, (
+            'frequent', None, None
+    ), {
+        "value": 'count',
+        "default": True,
+        "default_value": 3,
+        "process": int,
     }])
     @require_login
     @require_scope(deny_all_auth_token=True)
@@ -38,7 +47,9 @@ class AppView(View):
             o_apps = App.get_apps_by_owner(o_user)
             app_list = [o_app.to_dict(relation=relation) for o_app in o_apps]
         else:
-            user_app_list = UserApp.get_user_app_list_by_o_user(o_user)
+            frequent = request.d.frequent
+            count = request.d.count
+            user_app_list = UserApp.get_user_app_list_by_o_user(o_user, frequent, count)
             app_list = [o_user_app.app.to_dict(relation=relation) for o_user_app in user_app_list]
         return response(body=app_list)
 
@@ -255,3 +266,9 @@ class UserAppIdView(View):
             return error_response(Error.ERROR_APP_SECRET)
 
         return response(body=o_user_app.user.to_dict())
+
+
+@require_get()
+def refresh_frequent_score(request):
+    ret = UserApp.refresh_frequent_score()
+    return error_response(ret)

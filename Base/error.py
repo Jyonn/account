@@ -76,6 +76,9 @@ class Error:
     ERROR_APP_SECRET = E("错误的应用密钥")
     QITIAN_EXIST = E("已存在此齐天号")
 
+    SCORE_REFRESHED = E("频率分数已经刷新")
+    ERROR_CREATE_CONFIG = E("创建配置错误")
+
 
 ERROR_DICT = dict()
 REVERSED_ERROR_DICT = dict()
