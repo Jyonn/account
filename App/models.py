@@ -160,6 +160,10 @@ class App(models.Model):
         blank=True,
         max_length=L['logo'],
     )
+    mark = models.SlugField(
+        default='0-0-0-0-0',
+        verbose_name='1-5分评分人数',
+    )
 
     FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope', 'desc', 'logo']
 
@@ -336,6 +340,10 @@ class UserApp(models.Model):
         default=None,
         verbose_name='上一次分数变化的时间',
         max_length=L['last_score_changed_time'],
+    )
+    mark = models.PositiveSmallIntegerField(
+        verbose_name='此用户的打分，0表示没打分',
+        default=0,
     )
 
     def to_dict(self):
