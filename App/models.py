@@ -207,7 +207,7 @@ class App(models.Model):
         return cls.objects.filter(owner=owner)
 
     @classmethod
-    def create(cls, name, desc, redirect_uri, scopes, owner):
+    def create(cls, name, desc, redirect_uri, scopes, owner, info):
         ret = cls._validate(locals())
         if ret.error is not Error.OK:
             return ret
@@ -225,6 +225,7 @@ class App(models.Model):
                 redirect_uri=redirect_uri,
                 owner=owner,
                 field_change_time=datetime.datetime.now().timestamp(),
+                info=info,
             )
             o_app.save()
             o_app.scopes.add(*scopes)
@@ -252,7 +253,7 @@ class App(models.Model):
             return Ret(Error.ERROR_MODIFY_APP, append_msg=str(err))
         return Ret()
 
-    def to_dict(self, relation=R_USER, base=False):
+    def to_dict(self, base=False):
         if base:
             return dict(
                 app_name=self.name,
@@ -263,9 +264,10 @@ class App(models.Model):
         scopes = self.scopes.all()
         scope_list = [o_scope.to_dict() for o_scope in scopes]
 
-        dict_ = dict(
+        return dict(
             app_name=self.name,
             app_id=self.id,
+            app_info=self.info,
             scopes=scope_list,
             redirect_uri=self.redirect_uri,
             logo=self.get_logo_url(),
@@ -273,9 +275,6 @@ class App(models.Model):
             owner=self.owner.to_dict(base=True),
             mark=list(map(int, self.mark.split('-'))),
         )
-        if relation == App.R_OWNER:
-            dict_['app_secret'] = self.secret
-        return dict_
 
     def get_logo_url(self, small=True):
         """获取应用logo地址"""
@@ -353,8 +352,8 @@ class UserApp(models.Model):
 
     def to_dict(self):
         return dict(
-            user=self.user.to_dict(),
-            app=self.app.to_dict(relation=App.R_USER),
+            user=self.user.to_dict(base=True),
+            app=self.app.to_dict(base=True),
             user_app_id=self.user_app_id,
             bind=self.bind,
         )

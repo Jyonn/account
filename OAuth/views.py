@@ -25,4 +25,4 @@ class OAuthView(View):
         if not isinstance(o_app, App):
             return error_response(Error.STRANGE)
 
-        return render(request, 'user/oauth.html', dict(app_info=o_app.to_dict(relation=App.R_USER)))
+        return render(request, 'user/oauth.html', dict(app_info=o_app.to_dict()))

@@ -43,19 +43,19 @@ class AppView(View):
 
         if relation == App.R_OWNER:
             o_apps = App.get_apps_by_owner(o_user)
-            app_list = [o_app.to_dict(relation=relation, base=True) for o_app in o_apps]
+            app_list = [o_app.to_dict(base=True) for o_app in o_apps]
         else:
             frequent = request.d.frequent
             count = request.d.count
             user_app_list = UserApp.get_user_app_list_by_o_user(o_user, frequent, count)
-            app_list = [o_user_app.app.to_dict(relation=relation, base=True)
-                        for o_user_app in user_app_list]
+            app_list = [o_user_app.app.to_dict(base=True) for o_user_app in user_app_list]
         return response(body=app_list)
 
     @staticmethod
     @require_json
     @require_post([
         'name',
+        'info',
         'description',
         'redirect_uri',
         {
@@ -72,15 +72,16 @@ class AppView(View):
         """
         o_user = request.user
         name = request.d.name
+        info = request.d.info
         description = request.d.description
         redirect_uri = request.d.redirect_uri
         scopes = request.d.scopes
 
-        ret = App.create(name, description, redirect_uri, scopes, o_user)
+        ret = App.create(name, description, redirect_uri, scopes, o_user, info)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_app = ret.body
-        return response(body=o_app.to_dict(relation=App.R_OWNER))
+        return response(body=o_app.to_dict())
 
 
 class AppIDSecretView(View):
@@ -121,7 +122,7 @@ class AppIDView(View):
         if not isinstance(o_app, App):
             return error_response(Error.STRANGE)
 
-        dict_ = o_app.to_dict(relation=App.R_USER)
+        dict_ = o_app.to_dict()
         dict_['belong'] = o_app.belong(o_user)
         return response(body=dict_)
 
@@ -158,7 +159,7 @@ class AppIDView(View):
         ret = o_app.modify(name, desc, redirect_uri, scopes)
         if ret.error is not Error.OK:
             return error_response(ret)
-        return response(body=o_app.to_dict(relation=App.R_OWNER))
+        return response(body=o_app.to_dict())
 
     @staticmethod
     @require_delete()
@@ -239,7 +240,7 @@ class AppLogoView(View):
         if not isinstance(o_app, App):
             return error_response(Error.STRANGE)
         o_app.modify_logo(key)
-        return response(body=o_app.to_dict(relation=App.R_USER))
+        return response(body=o_app.to_dict())
 
 
 class UserAppIdView(View):
