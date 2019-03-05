@@ -17,6 +17,7 @@ class OAuthView(View):
     @require_scope(deny_all_auth_token=True)
     def get(request):
         """GET /api/oauth/?app_id=:app_id"""
+        # 可在新版本之后删除
         o_user = request.user
         app_id = request.d.app_id
 
@@ -52,7 +53,10 @@ class OAuthView(View):
     @require_login
     @require_scope(deny_all_auth_token=True)
     def post(request):
-        """POST /api/oauth/"""
+        """POST /api/oauth/
+
+        授权应用
+        """
         o_user = request.user
         app_id = request.d.app_id
 

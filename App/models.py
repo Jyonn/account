@@ -360,6 +360,7 @@ class UserApp(models.Model):
         return dict(
             bind=self.bind,
             mark=self.mark,
+            rebind=float(self.last_auth_code_time) < self.app.field_change_time,
         )
 
     @classmethod

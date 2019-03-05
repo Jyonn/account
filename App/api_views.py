@@ -112,7 +112,10 @@ class AppIDView(View):
     @maybe_login
     @require_scope(deny_all_auth_token=True, allow_no_login=True)
     def get(request, app_id):
-        """GET /api/app/:app_id"""
+        """GET /api/app/:app_id
+
+        获取应用信息以及用户与应用的关系（属于、绑定、打分，仅限用户登录时）
+        """
         o_user = request.user
 
         ret = App.get_app_by_id(app_id)
@@ -123,11 +126,10 @@ class AppIDView(View):
             return error_response(Error.STRANGE)
 
         dict_ = o_app.to_dict()
-        relation = {}
 
         ret = UserApp.get_user_app_by_o_user_o_app(o_user, o_app)
         if ret.error is not Error.OK:
-            relation['bind'] = False
+            relation = dict(bind=False, rebind=False, mark=0, belong=False)
         else:
             o_user_app = ret.body
             if not isinstance(o_user_app, UserApp):
@@ -136,6 +138,8 @@ class AppIDView(View):
 
         relation['belong'] = o_app.belong(o_user)
         dict_['relation'] = relation
+
+        dict_['belong'] = relation['belong']  # 老版本兼容
 
         return response(body=dict_)
 
