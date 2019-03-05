@@ -272,3 +272,9 @@ class UserAppIdView(View):
 def refresh_frequent_score(request):
     ret = UserApp.refresh_frequent_score()
     return error_response(ret)
+
+
+@require_get()
+def calculate_app_user_num(request):
+    ret = UserApp.calculate_app_user_num()
+    return error_response(ret)

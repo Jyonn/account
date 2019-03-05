@@ -168,8 +168,12 @@ class App(models.Model):
         default=None,
         verbose_name='应用介绍信息',
     )
+    user_num = models.IntegerField(
+        default=0,
+        verbose_name='用户人数',
+    )
 
-    FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope', 'desc', 'logo', 'mark', 'info']
+    FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope', 'desc', 'logo', 'mark', 'info', 'user_num']
 
     @classmethod
     def _validate(cls, d, allow_none=False):
@@ -422,6 +426,8 @@ class UserApp(models.Model):
                     last_score_changed_time=crt_timestamp,
                 )
                 o_user_app.save()
+                o_user_app.app.user_num += 1
+                o_user_app.app.save()
             except Exception as err:
                 deprint(str(err))
                 return Ret(Error.ERROR_BIND_USER_APP)
@@ -463,6 +469,13 @@ class UserApp(models.Model):
                     o_user_app.last_score_changed_time = crt_time
                     o_user_app.save()
 
+        return Ret()
+
+    @classmethod
+    def calculate_app_user_num(cls):
+        for o_user_app in cls.objects.all():
+            o_user_app.app.user_num += 1
+            o_user_app.app.save()
         return Ret()
 
     def do_mark(self, mark):
