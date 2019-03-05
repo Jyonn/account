@@ -264,6 +264,7 @@ class App(models.Model):
                 app_id=self.id,
                 logo=self.get_logo_url(),
                 app_desc=self.desc,
+                user_num=self.user_num,
             )
         scopes = self.scopes.all()
         scope_list = [o_scope.to_dict() for o_scope in scopes]
@@ -469,13 +470,6 @@ class UserApp(models.Model):
                     o_user_app.last_score_changed_time = crt_time
                     o_user_app.save()
 
-        return Ret()
-
-    @classmethod
-    def calculate_app_user_num(cls):
-        for o_user_app in cls.objects.all():
-            o_user_app.app.user_num += 1
-            o_user_app.app.save()
         return Ret()
 
     def do_mark(self, mark):
