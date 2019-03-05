@@ -27,6 +27,7 @@ JWT_ENCODE_ALGO = 'HS256'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+APPEND_SLASH = False
 
 ALLOWED_HOSTS = ['*']
 
