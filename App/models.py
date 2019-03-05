@@ -358,10 +358,8 @@ class UserApp(models.Model):
 
     def to_dict(self):
         return dict(
-            user=self.user.to_dict(base=True),
-            app=self.app.to_dict(base=True),
-            user_app_id=self.user_app_id,
             bind=self.bind,
+            mark=self.mark,
         )
 
     @classmethod

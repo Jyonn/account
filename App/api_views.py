@@ -123,7 +123,20 @@ class AppIDView(View):
             return error_response(Error.STRANGE)
 
         dict_ = o_app.to_dict()
-        dict_['belong'] = o_app.belong(o_user)
+        relation = {}
+
+        ret = UserApp.get_user_app_by_o_user_o_app(o_user, o_app)
+        if ret.error is not Error.OK:
+            relation['bind'] = False
+        else:
+            o_user_app = ret.body
+            if not isinstance(o_user_app, UserApp):
+                return error_response(Error.STRANGE)
+            relation = o_user_app.to_dict()
+
+        relation['belong'] = o_app.belong(o_user)
+        dict_['relation'] = relation
+
         return response(body=dict_)
 
     @staticmethod
