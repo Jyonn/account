@@ -164,8 +164,12 @@ class App(models.Model):
         default='0-0-0-0-0',
         verbose_name='1-5分评分人数',
     )
+    info = models.TextField(
+        default=None,
+        verbose_name='应用介绍信息',
+    )
 
-    FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope', 'desc', 'logo']
+    FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope', 'desc', 'logo', 'mark', 'info']
 
     @classmethod
     def _validate(cls, d, allow_none=False):
@@ -267,6 +271,7 @@ class App(models.Model):
             logo=self.get_logo_url(),
             app_desc=self.desc,
             owner=self.owner.to_dict(base=True),
+            mark=list(map(int, self.mark.split('-'))),
         )
         if relation == App.R_OWNER:
             dict_['app_secret'] = self.secret
@@ -460,3 +465,17 @@ class UserApp(models.Model):
                     o_user_app.save()
 
         return Ret()
+
+    def do_mark(self, mark):
+        if mark < 1 or mark > 5:
+            return Ret(Error.ERROR_MARK)
+        self.mark = mark
+        self.save()
+
+        mark_list = list(map(int, self.app.mark.split('-')))
+        mark_list[mark - 1] += 1
+        self.app.mark = '-'.join(map(str, mark_list))
+        self.app.save()
+
+        return Ret()
+

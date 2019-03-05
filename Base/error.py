@@ -79,6 +79,8 @@ class Error:
     SCORE_REFRESHED = E("频率分数已经刷新")
     ERROR_CREATE_CONFIG = E("创建配置错误")
 
+    ERROR_MARK = E("评分失败")
+
 
 ERROR_DICT = dict()
 REVERSED_ERROR_DICT = dict()
