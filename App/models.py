@@ -270,6 +270,7 @@ class App(models.Model):
         scope_list = [o_scope.to_dict() for o_scope in scopes]
 
         return dict(
+            user_num=self.user_num,
             app_name=self.name,
             app_id=self.id,
             app_info=self.info,
