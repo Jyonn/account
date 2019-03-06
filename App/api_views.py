@@ -3,6 +3,7 @@ from django.views import View
 from App.models import App, Scope, UserApp
 from Base.policy import get_logo_policy
 from Base.qn import QN_RES_MANAGER
+from Base.valid_param import ValidParam
 from Base.validator import require_get, require_login, require_post, require_put, require_delete, \
     require_json, require_scope, maybe_login
 from Base.error import Error
@@ -18,19 +19,11 @@ class AppView(View):
         return relation
 
     @staticmethod
-    @require_get([{
-        "value": 'relation',
-        "default": True,
-        "default_value": App.R_USER,
-        "process": relation_process,
-    }, (
-            'frequent', None, None
-    ), {
-        "value": 'count',
-        "default": True,
-        "default_value": 3,
-        "process": int,
-    }])
+    @require_get([
+        ValidParam('relation').df(App.R_USER).p(relation_process),
+        ValidParam('frequent').df(),
+        ValidParam('count').df(3).p(int),
+    ])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def get(request):
@@ -58,10 +51,7 @@ class AppView(View):
         'info',
         'description',
         'redirect_uri',
-        {
-            "value": 'scopes',
-            "process": Scope.list_to_scope_list,
-        }
+        ValidParam('scopes').p(Scope.list_to_scope_list),
     ])
     @require_login
     @require_scope(deny_all_auth_token=True)
@@ -149,10 +139,7 @@ class AppIDView(View):
         'name',
         'description',
         'redirect_uri',
-        {
-            "value": 'scopes',
-            "process": Scope.list_to_scope_list,
-        }
+        ValidParam('scopes').p(Scope.list_to_scope_list),
     ])
     @require_login
     @require_scope(deny_all_auth_token=True)

@@ -6,6 +6,7 @@ from django.views import View
 
 from Base.common import deprint
 from Base.scope import ScopeInstance
+from Base.valid_param import ValidParam
 from Base.validator import require_json, require_post, require_login, require_get, \
     require_put, require_scope
 from Base.error import Error
@@ -74,12 +75,12 @@ class UserView(View):
     @require_json
     @require_put(
         [
-            ('password', None, None),
-            ('old_password', None, None),
-            ('nickname', None, None),
-            ('description', None, None),
-            ('qitian', None, None),
-            ('birthday', None, None),
+            ValidParam('password').df(),
+            ValidParam('old_password').df(),
+            ValidParam('nickname').df(),
+            ValidParam('description').df(),
+            ValidParam('qitian').df(),
+            ValidParam('birthday').df(),
         ]
     )
     @require_login

@@ -11,7 +11,7 @@ class ValidParam:
         self.func = func
         return self
 
-    def df(self, default_value):
+    def df(self, default_value=None):
         self.default = True
         self.default_value = default_value
         return self
