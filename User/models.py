@@ -314,26 +314,17 @@ class User(models.Model):
         self.save()
         return Ret()
 
-    def set_default(self, dict_):
-        for item in dict_:
-            if hasattr(self, item) and not dict_[item]:
-                dict_[item] = getattr(self, item)
-        return dict_
-
     def modify_info(self, nickname, description, qitian, birthday):
         """修改用户信息"""
-        # if nickname is None:
-        #     nickname = self.nickname
-        # if description is None:
-        #     description = self.description
-        # if qitian is None:
-        #     qitian = self.qitian
-        # if birthday is None:
-        #     birthday = self.birthday
-        dict_ = self.set_default(locals())
-        print(dict_)
-        print(locals())
-        ret = self._validate(dict_)
+        if nickname is None:
+            nickname = self.nickname
+        if description is None:
+            description = self.description
+        if qitian is None:
+            qitian = self.qitian
+        if birthday is None:
+            birthday = self.birthday
+        ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
 
