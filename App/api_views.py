@@ -2,7 +2,7 @@ from django.views import View
 
 from App.models import App, Scope, UserApp, Premise
 from Base.policy import get_logo_policy
-from Base.qn import QN_RES_MANAGER, QN_PUBLIC_MANAGER
+from Base.qn import QN_PUBLIC_MANAGER
 from Base.valid_param import ValidParam
 from Base.validator import require_get, require_login, require_post, require_put, require_delete, \
     require_json, require_scope, maybe_login
@@ -11,11 +11,11 @@ from Base.response import error_response, response
 from User.models import User
 
 VP_APP_NAME = ValidParam('name', '应用名称')
-VP_APP_INFO = ValidParam('info', '应用详细信息'),
-VP_APP_DESC = ValidParam('description', '应用标语'),
-VP_APP_URI = ValidParam('redirect_uri', '应用回调地址'),
-VP_APP_SCOPE = ValidParam('scopes').p(Scope.list_to_scope_list).r('应用权限列表'),
-VP_APP_PREMISE = ValidParam('premises').p(Premise.list_to_premise_list).r('应用要求列表'),
+VP_APP_INFO = ValidParam('info', '应用详细信息')
+VP_APP_DESC = ValidParam('description', '应用标语')
+VP_APP_URI = ValidParam('redirect_uri', '应用回调地址')
+VP_APP_SCOPE = ValidParam('scopes').p(Scope.list_to_scope_list).r('应用权限列表')
+VP_APP_PREMISE = ValidParam('premises').p(Premise.list_to_premise_list).r('应用要求列表')
 VP_APP_ID = ValidParam('app_id', '应用ID')
 VP_APP_SECRET = ValidParam('app_secret', '应用密钥')
 
