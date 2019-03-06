@@ -32,6 +32,7 @@ def validate_params(valid_param_list, g_params):
     if not valid_param_list:
         return Ret()
     for o_valid_param in valid_param_list:
+        print(o_valid_param)
         if isinstance(o_valid_param, ValidParam):  # 'f'
             if o_valid_param.param is None:
                 continue
@@ -40,13 +41,17 @@ def validate_params(valid_param_list, g_params):
         else:  # 忽略
             continue
 
+        print('in')
         o_valid_param.readable = o_valid_param.readable or o_valid_param.param
 
+        print('readable', o_valid_param.readable)
         if o_valid_param.param not in g_params:  # 如果传入数据中没有变量名
             return Ret(Error.REQUIRE_PARAM, append_msg=o_valid_param.readable)  # 报错
 
+        print('in gparam')
         req_value = g_params[o_valid_param.param]
 
+        print('value')
         if isinstance(o_valid_param.func, str):
             if re.match(o_valid_param.func, req_value) is None:
                 return Ret(Error.ERROR_PARAM_FORMAT, append_msg=o_valid_param.readable)

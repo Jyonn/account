@@ -23,3 +23,6 @@ class ValidParam:
     def r(self, readable):
         self.readable = readable
         return self
+
+    def __str__(self):
+        return 'param: ' + self.param
