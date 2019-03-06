@@ -318,6 +318,7 @@ class User(models.Model):
         for item in dict_:
             if hasattr(self, item) and not dict_[item]:
                 dict_[item] = getattr(self, item)
+        return dict_
 
     def modify_info(self, nickname, description, qitian, birthday):
         """修改用户信息"""
@@ -329,8 +330,10 @@ class User(models.Model):
         #     qitian = self.qitian
         # if birthday is None:
         #     birthday = self.birthday
-        self.set_default(locals())
-        ret = self._validate(locals())
+        dict_ = self.set_default(locals())
+        print(dict_)
+        print(locals())
+        ret = self._validate(dict_)
         if ret.error is not Error.OK:
             return ret
 
