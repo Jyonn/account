@@ -84,7 +84,11 @@ class User(models.Model):
         help_text='一般只能修改一次',
         default=0,
     )
-    FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description']
+    birthday = models.DateField(
+        verbose_name='生日',
+        default=None,
+    )
+    FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description', 'birthday']
 
     @classmethod
     def get_unique_user_str_id(cls):
@@ -118,6 +122,19 @@ class User(models.Model):
         valid_chars = '^[A-Za-z0-9!@#$%^&*()_+-=,.?;:]{6,16}$'
         if re.match(valid_chars, password) is None:
             return Ret(Error.INVALID_PASSWORD)
+        return Ret()
+
+    @staticmethod
+    def _valid_birthday(birthday):
+        """验证生日是否合法"""
+        import datetime
+        try:
+            b = datetime.datetime.strptime(birthday, '%Y-%m-%d').date()
+        except Exception as err:
+            deprint(str(err))
+            return Ret(Error.ERROR_DATE_FORMAT)
+        if b > datetime.datetime.now().date():
+            return Ret(Error.ERROR_BIRTHDAY_FORMAT)
         return Ret()
 
     @classmethod
@@ -159,6 +176,7 @@ class User(models.Model):
                 description=None,
                 qitian_modify_time=0,
                 user_str_id=cls.get_unique_user_str_id(),
+                birthday=None,
             )
             o_user.save()
         except ValueError as err:
@@ -252,6 +270,7 @@ class User(models.Model):
             )
         else:
             return dict(
+                birthday=self.birthday.strftime('%Y-%m-%d'),
                 user_str_id=self.user_str_id,
                 qitian=self.qitian,
                 avatar=self.get_avatar_url(),
@@ -294,14 +313,22 @@ class User(models.Model):
         self.save()
         return Ret()
 
-    def modify_info(self, nickname, description, qitian):
+    def set_default(self, dict_):
+        for item in dict_:
+            if hasattr(self, item) and not dict_[item]:
+                dict_[item] = getattr(self, item)
+
+    def modify_info(self, nickname, description, qitian, birthday):
         """修改用户信息"""
-        if nickname is None:
-            nickname = self.nickname
-        if description is None:
-            description = self.description
-        if qitian is None:
-            qitian = self.qitian
+        # if nickname is None:
+        #     nickname = self.nickname
+        # if description is None:
+        #     description = self.description
+        # if qitian is None:
+        #     qitian = self.qitian
+        # if birthday is None:
+        #     birthday = self.birthday
+        self.set_default(locals())
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
@@ -316,5 +343,6 @@ class User(models.Model):
                     return Ret(Error.QITIAN_EXIST)
         self.nickname = nickname
         self.description = description
+        self.birthday = birthday
         self.save()
         return Ret()

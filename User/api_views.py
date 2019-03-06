@@ -79,6 +79,7 @@ class UserView(View):
             ('nickname', None, None),
             ('description', None, None),
             ('qitian', None, None),
+            ('birthday', None, None),
         ]
     )
     @require_login
@@ -97,11 +98,14 @@ class UserView(View):
         qitian = request.d.qitian
         old_password = request.d.old_password
         description = request.d.description
+        birthday = request.d.birthday
         if password is not None:
             ret = o_user.change_password(password, old_password)
             if ret.error is not Error.OK:
                 return error_response(ret)
-        o_user.modify_info(nickname, description, qitian)
+        ret = o_user.modify_info(nickname, description, qitian, birthday)
+        if ret.error is not Error.OK:
+            return error_response(ret)
         return response(body=o_user.to_dict())
 
 

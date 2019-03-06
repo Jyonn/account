@@ -176,8 +176,8 @@ class App(models.Model):
     FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope', 'desc', 'logo', 'mark', 'info', 'user_num']
 
     @classmethod
-    def _validate(cls, d, allow_none=False):
-        return field_validator(d, cls, allow_none=allow_none)
+    def _validate(cls, d):
+        return field_validator(d, cls)
 
     @classmethod
     def get_app_by_name(cls, name):

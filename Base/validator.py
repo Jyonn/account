@@ -17,6 +17,7 @@ from Base.error import Error
 from Base.jtoken import JWType
 from Base.param import Param
 from Base.response import Ret, error_response
+from Base.valid_param import ValidParam
 
 
 def validate_params(r_param_valid_list, g_params):
@@ -32,8 +33,10 @@ def validate_params(r_param_valid_list, g_params):
             "func": valid_e_func,
             "default": True,
             "default_value": default_e_value,
-            "process": process_e_value (str to int)
-        }
+            "process": process_e_value (str to int),
+            "readable": using by response error
+        },
+        class ValidParam "f"
     ]
     """
     import re
@@ -43,60 +46,70 @@ def validate_params(r_param_valid_list, g_params):
     for r_param_valid in r_param_valid_list:
         # has_default_value = False
         # default_value = None  # 默认值
-        valid_method = None  # 验证参数的方式（如果是字符串则为正则匹配，如果是函数则带入函数，否则忽略）
-        process = None
+        
+        # valid_method = None  # 验证参数的方式（如果是字符串则为正则匹配，如果是函数则带入函数，否则忽略）
+        # process = None
+        # readable = None
 
         if isinstance(r_param_valid, str):  # 如果rpv只是个字符串，则符合例子中的'b'情况
-            r_param = r_param_valid
-
+            current_param = ValidParam(r_param_valid)
         elif isinstance(r_param_valid, tuple):  # 如果rpv是tuple，则依次为变量名、验证方式、默认值 'c'
             if not r_param_valid:  # 忽略
                 continue
-            r_param = r_param_valid[0]  # 得到变量名
+            current_param = ValidParam(r_param_valid[0])  # 得到变量名
             if len(r_param_valid) > 1:
-                valid_method = r_param_valid[1]  # 得到验证方式
-                if len(r_param_valid) > 2:
+                current_param.fc(r_param_valid[1])  # 得到验证方式
+                if len(r_param_valid) > 2:  # d
                     # has_default_value = True
-                    g_params.setdefault(r_param, r_param_valid[2])
-        elif isinstance(r_param_valid, dict):  # 'd'
-            r_param = r_param_valid.get('value', None)
-            if r_param is None:
+                    g_params.setdefault(current_param.param, r_param_valid[2])
+        elif isinstance(r_param_valid, dict):  # 'e'
+            current_param = ValidParam(r_param_valid.get('value', None))
+            if current_param.param is None:
                 continue
-            valid_method = r_param_valid.get('func', None)
+            current_param.fc(r_param_valid.get('func', None))
             default = r_param_valid.get('default', False)
             default_value = r_param_valid.get('default_value', None)
             if default:
-                g_params.setdefault(r_param, default_value)
-            process = r_param_valid.get('process', None)
+                g_params.setdefault(current_param.param, default_value)
+            current_param.p(r_param_valid.get('process', None))
+            current_param.r(r_param_valid.get('readable', None))
+        elif isinstance(r_param_valid, ValidParam):  # 'f'
+            current_param = r_param_valid
+            if current_param.param is None:
+                continue
+            if current_param.default:
+                g_params.setdefault(current_param.param, current_param.default_value)
         else:  # 忽略
             continue
 
-        if r_param not in g_params:  # 如果传入数据中没有变量名
-            return Ret(Error.REQUIRE_PARAM, append_msg=r_param)  # 报错
+        current_param.readable = current_param.readable or current_param.param
 
-        req_value = g_params[r_param]
+        if current_param.param not in g_params:  # 如果传入数据中没有变量名
+            return Ret(Error.REQUIRE_PARAM, append_msg=current_param.readable)  # 报错
 
-        if isinstance(valid_method, str):
-            if re.match(valid_method, req_value) is None:
-                return Ret(Error.ERROR_PARAM_FORMAT, append_msg=r_param)
-        elif callable(valid_method):
+        req_value = g_params[current_param.param]
+
+        if isinstance(current_param.func, str):
+            if re.match(current_param.func, req_value) is None:
+                return Ret(Error.ERROR_PARAM_FORMAT, append_msg=current_param.readable)
+        elif callable(current_param.func):
             try:
-                ret = valid_method(req_value)
+                ret = current_param.func(req_value)
                 if ret.error is not Error.OK:
                     return ret
             except Exception as err:
                 deprint(str(err))
                 return Ret(Error.ERROR_VALIDATION_FUNC)
-        if process is not None and callable(process):
+        if current_param.process and callable(current_param.process):
             try:
-                g_params[r_param] = process(req_value)
+                g_params[current_param.param] = current_param.process(req_value)
             except Exception as err:
                 deprint(str(err))
                 return Ret(Error.ERROR_PROCESS_FUNC)
     return Ret(g_params)
 
 
-def field_validator(dict_, cls, allow_none=False):
+def field_validator(dict_, cls):
     """
     针对model的验证函数
     事先需要FIELD_LIST存放需要验证的属性
@@ -117,7 +130,7 @@ def field_validator(dict_, cls, allow_none=False):
 
     for k in dict_.keys():
         if k in getattr(cls, 'FIELD_LIST'):
-            if allow_none and dict_[k] is None:
+            if dict_[k] is None:
                 continue
             if isinstance(_meta.get_field(k), models.CharField):
                 try:

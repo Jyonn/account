@@ -80,6 +80,8 @@ class Error:
     ERROR_CREATE_CONFIG = E("创建配置错误")
 
     ERROR_MARK = E("评分失败")
+    ERROR_DATE_FORMAT = E("日期格式错误")
+    ERROR_BIRTHDAY_FORMAT = E("错误的生日时间")
 
 
 ERROR_DICT = dict()
