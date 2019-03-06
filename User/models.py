@@ -87,6 +87,7 @@ class User(models.Model):
     birthday = models.DateField(
         verbose_name='生日',
         default=None,
+        null=True,
     )
     FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description', 'birthday']
 
