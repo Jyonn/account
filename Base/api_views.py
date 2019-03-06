@@ -283,7 +283,7 @@ class CaptchaView(View):
         ValidParam('validate', '极验参数'),
         ValidParam('seccode', '极验参数'),
         ValidParam('account', '齐天号或手机号'),
-        ValidParam('type', '验证模式').fc(int)
+        ValidParam('type', '验证模式').p(int)
     ])
     def post(request):
         challenge = request.d.challenge
