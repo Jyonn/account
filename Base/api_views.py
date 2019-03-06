@@ -3,11 +3,15 @@ from django.views import View
 from Base import country
 from Base.recaptcha import Recaptcha
 from Base.captcha import Captcha
+from Base.valid_param import ValidParam
 from Base.validator import require_get, require_json, require_post
 from Base.error import Error, ERROR_DICT
 from Base.response import response, error_response, Ret
 from Base.send_mobile import SendMobile
 from Base.session import Session
+
+VP_PHONE = ValidParam('phone', '手机号')
+VP_PWD = ValidParam('pwd', '密码')
 
 
 class ErrorView(View):
@@ -24,12 +28,7 @@ class RegionView(View):
         return lang
 
     @staticmethod
-    @require_get([{
-        'value': 'lang',
-        'default': True,
-        'default_value': 'cn',
-        'process': process_lang,
-    }])
+    @require_get([ValidParam('lang', '语言').df('cn').p(process_lang)])
     def get(request):
         lang = request.d.lang
         lang_cn = lang == country.LANG_CN
@@ -85,7 +84,7 @@ class ReCaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['phone'])
+    @require_post([VP_PHONE])
     def login_phone_code_handler(request):
         phone = request.d.phone
 
@@ -106,7 +105,7 @@ class ReCaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['phone'])
+    @require_post([VP_PHONE])
     def register_handler(request):
         phone = request.d.phone
 
@@ -127,7 +126,7 @@ class ReCaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['phone'])
+    @require_post([VP_PHONE])
     def find_pwd_handler(request):
         phone = request.d.phone
         from User.models import User
@@ -142,7 +141,7 @@ class ReCaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['phone', 'pwd'])
+    @require_post([VP_PHONE, VP_PWD])
     def login_phone_pwd_handler(request):
         phone = request.d.phone
         pwd = request.d.pwd
@@ -160,7 +159,7 @@ class ReCaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['qt', 'pwd'])
+    @require_post([ValidParam('qt', '齐天号'), VP_PWD])
     def login_qt_pwd_handler(request):
         qt = request.d.qt
         pwd = request.d.pwd
@@ -196,7 +195,7 @@ class ReCaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['pwd'])
+    @require_post([VP_PWD])
     def register_code_handler(request):
         phone = request.phone
         pwd = request.d.pwd
@@ -214,7 +213,7 @@ class ReCaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['pwd'])
+    @require_post([VP_PWD])
     def find_pwd_code_handler(request):
         phone = request.phone
         pwd = request.d.pwd
@@ -237,9 +236,9 @@ class ReCaptchaView(View):
     @staticmethod
     @require_json
     @require_post([
-        ('response', None, None),
-        ('code', None, None),
-        ('mode', mode_validate),
+        ValidParam('response', '人机验证码').df(),
+        ValidParam('code', '短信验证码').df(),
+        ValidParam('mode', '登录模式').fc(mode_validate),
     ])
     def post(request):
         mode = request.d.mode
@@ -279,8 +278,13 @@ class CaptchaView(View):
 
     @staticmethod
     @require_json
-    @require_post(['challenge', 'validate', 'seccode', 'account',
-                   {"value": 'type', "process": int}])
+    @require_post([
+        ValidParam('challenge', '极验参数'),
+        ValidParam('validate', '极验参数'),
+        ValidParam('seccode', '极验参数'),
+        ValidParam('account', '齐天号或手机号'),
+        ValidParam('type', '验证模式').fc(int)
+    ])
     def post(request):
         challenge = request.d.challenge
         validate = request.d.validate
