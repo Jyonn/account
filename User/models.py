@@ -270,7 +270,7 @@ class User(models.Model):
             )
         else:
             return dict(
-                birthday=self.birthday.strftime('%Y-%m-%d'),
+                birthday=self.birthday.strftime('%Y-%m-%d') if self.birthday else None,
                 user_str_id=self.user_str_id,
                 qitian=self.qitian,
                 avatar=self.get_avatar_url(),
