@@ -48,7 +48,10 @@ class UserView(View):
 
     @staticmethod
     @require_json
-    @require_post(['password', 'code'])
+    @require_post([
+        ValidParam('password', '密码'),
+        ValidParam('code', '验证码')
+    ])
     def post(request):
         """ POST /api/user/
 
@@ -75,12 +78,12 @@ class UserView(View):
     @require_json
     @require_put(
         [
-            ValidParam('password').df(),
-            ValidParam('old_password').df(),
-            ValidParam('nickname').df(),
-            ValidParam('description').df(),
-            ValidParam('qitian').df(),
-            ValidParam('birthday').df(),
+            ValidParam('password').df().r('新密码'),
+            ValidParam('old_password').df().r('旧密码'),
+            ValidParam('nickname').df().r('昵称'),
+            ValidParam('description').df().r('个性签名'),
+            ValidParam('qitian').df().r('齐天号'),
+            ValidParam('birthday').df().r('生日'),
         ]
     )
     @require_login
@@ -152,7 +155,7 @@ class UserView(View):
 class TokenView(View):
     @staticmethod
     @require_json
-    @require_post(['password'])
+    @require_post([ValidParam('password', '密码')])
     def post(request):
         """ POST /api/user/token
 
@@ -180,7 +183,7 @@ class TokenView(View):
 
 class AvatarView(View):
     @staticmethod
-    @require_get(['filename'])
+    @require_get([ValidParam('filename', '文件名')])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def get(request):
@@ -202,7 +205,10 @@ class AvatarView(View):
 
     @staticmethod
     @require_json
-    @require_post(['key', 'user_id'])
+    @require_post([
+        ValidParam('key', '七牛存储键'),
+        ValidParam('user_id', '用户ID')
+    ])
     def post(request):
         """ POST /api/user/avatar
 

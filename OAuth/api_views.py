@@ -1,7 +1,9 @@
 from django.views import View
 
+from App.api_views import VP_APP_ID, VP_APP_SECRET
 from App.models import App, UserApp
 from Base.common import deprint
+from Base.valid_param import ValidParam
 from Base.validator import require_post, require_login, require_scope, require_get
 from Base.error import Error
 from Base.jtoken import jwt_d, JWType, jwt_e
@@ -12,7 +14,7 @@ OAUTH_TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60
 
 class OAuthView(View):
     @staticmethod
-    @require_get(['app_id'])
+    @require_get([VP_APP_ID])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def get(request):
@@ -49,7 +51,7 @@ class OAuthView(View):
             return error_response(Error.APP_UNBINDED)
 
     @staticmethod
-    @require_post(['app_id'])
+    @require_post([VP_APP_ID])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def post(request):
@@ -75,7 +77,7 @@ class OAuthView(View):
 
 class OAuthTokenView(View):
     @staticmethod
-    @require_post(['code', 'app_secret'])
+    @require_post([ValidParam('code', '授权码'), VP_APP_SECRET])
     def post(request):
         """POST /api/oauth/token"""
         code = request.d.code

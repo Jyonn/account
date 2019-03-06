@@ -1,11 +1,11 @@
 class ValidParam:
-    def __init__(self, param):
+    def __init__(self, param, readable=None):
         self.param = param
         self.func = None
         self.default = False
         self.default_value = None
         self.process = None
-        self.readable = None
+        self.readable = readable
 
     def fc(self, func):
         self.func = func

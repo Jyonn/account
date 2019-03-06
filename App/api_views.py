@@ -1,6 +1,6 @@
 from django.views import View
 
-from App.models import App, Scope, UserApp
+from App.models import App, Scope, UserApp, Premise
 from Base.policy import get_logo_policy
 from Base.qn import QN_RES_MANAGER
 from Base.valid_param import ValidParam
@@ -9,6 +9,15 @@ from Base.validator import require_get, require_login, require_post, require_put
 from Base.error import Error
 from Base.response import error_response, response
 from User.models import User
+
+VP_APP_NAME = ValidParam('name', '应用名称')
+VP_APP_INFO = ValidParam('info', '应用详细信息'),
+VP_APP_DESC = ValidParam('description', '应用标语'),
+VP_APP_URI = ValidParam('redirect_uri', '应用回调地址'),
+VP_APP_SCOPE = ValidParam('scopes').p(Scope.list_to_scope_list).r('应用权限列表'),
+VP_APP_PREMISE = ValidParam('premises').p(Premise.list_to_premise_list).r('应用要求列表'),
+VP_APP_ID = ValidParam('app_id', '应用ID')
+VP_APP_SECRET = ValidParam('app_secret', '应用密钥')
 
 
 class AppView(View):
@@ -46,13 +55,7 @@ class AppView(View):
 
     @staticmethod
     @require_json
-    @require_post([
-        'name',
-        'info',
-        'description',
-        'redirect_uri',
-        ValidParam('scopes').p(Scope.list_to_scope_list),
-    ])
+    @require_post([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def post(request):
@@ -66,8 +69,9 @@ class AppView(View):
         description = request.d.description
         redirect_uri = request.d.redirect_uri
         scopes = request.d.scopes
+        premises = request.d.premises
 
-        ret = App.create(name, description, redirect_uri, scopes, o_user, info)
+        ret = App.create(name, description, redirect_uri, scopes, premises, o_user, info)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_app = ret.body
@@ -135,20 +139,17 @@ class AppIDView(View):
 
     @staticmethod
     @require_json
-    @require_put([
-        'name',
-        'description',
-        'redirect_uri',
-        ValidParam('scopes').p(Scope.list_to_scope_list),
-    ])
+    @require_put([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def put(request, app_id):
         o_user = request.user
         name = request.d.name
         desc = request.d.description
+        info = request.d.info
         redirect_uri = request.d.redirect_uri
         scopes = request.d.scopes
+        premises = request.d.premise
 
         ret = App.get_app_by_id(app_id)
         if ret.error is not Error.OK:
@@ -160,7 +161,7 @@ class AppIDView(View):
         if not o_app.belong(o_user):
             return error_response(Error.APP_NOT_BELONG)
 
-        ret = o_app.modify(name, desc, redirect_uri, scopes)
+        ret = o_app.modify(name, desc, info, redirect_uri, scopes, premises)
         if ret.error is not Error.OK:
             return error_response(ret)
         return response(body=o_app.to_dict())
@@ -192,7 +193,10 @@ class ScopeView(View):
 
 class AppLogoView(View):
     @staticmethod
-    @require_get(['filename', 'app_id'])
+    @require_get([
+        ValidParam('filename', '文件名'),
+        VP_APP_ID,
+    ])
     @require_login
     @require_scope(deny_all_auth_token=True)
     def get(request):
@@ -225,7 +229,10 @@ class AppLogoView(View):
 
     @staticmethod
     @require_json
-    @require_post(['key', 'app_id'])
+    @require_post([
+        ValidParam('key', '七牛存储键'),
+        VP_APP_ID
+    ])
     def post(request):
         """ POST /api/app/logo
 
@@ -250,7 +257,7 @@ class AppLogoView(View):
 class UserAppIdView(View):
     @staticmethod
     @require_json
-    @require_post(['app_secret'])
+    @require_post([VP_APP_SECRET])
     def post(request, user_app_id):
         """ POST /api/app/user/:user_app_id
 

@@ -10,6 +10,92 @@ from Base.jtoken import jwt_e, JWType
 from Base.response import Ret
 
 
+class Premise(models.Model):
+    """要求类，不满足要求无法进入应用"""
+    L = {
+        'name': 10,
+        'desc': 20,
+    }
+    name = models.CharField(
+        verbose_name='要求英文简短名称',
+        max_length=L['name'],
+        unique=True,
+    )
+    desc = models.CharField(
+        verbose_name='要求介绍',
+        max_length=L['desc'],
+    )
+    FIELD_LIST = ['name', 'desc']
+
+    class __PremiseNone:
+        pass
+
+    @classmethod
+    def _validate(cls, d):
+        return field_validator(d, cls)
+
+    @classmethod
+    def get_premise_by_id(cls, pid):
+        try:
+            o_premise = cls.objects.get(pk=pid)
+        except cls.DoesNotExist as err:
+            deprint('Premise-get_premise_by_id', str(err))
+            return Ret(Error.NOT_FOUND_PREMISE)
+        return Ret(o_premise)
+
+    @classmethod
+    def get_premise_by_name(cls, name, default=__PremiseNone()):
+        try:
+            o_premise = cls.objects.get(name=name)
+        except Exception as err:
+            deprint(str(err))
+            if isinstance(default, cls.__PremiseNone):
+                return Ret(Error.NOT_FOUND_PREMISE)
+            else:
+                return Ret(default)
+        return Ret(o_premise)
+
+    @classmethod
+    def create(cls, name, desc):
+        ret = cls._validate(locals())
+        if ret.error is not Error.OK:
+            return ret
+
+        try:
+            o_premise = cls(
+                name=name,
+                desc=desc,
+            )
+            o_premise.save()
+        except Exception as err:
+            deprint('create-premise', str(err))
+            return Ret(Error.ERROR_CREATE_PREMISE)
+        return Ret(o_premise)
+
+    def to_dict(self):
+        return dict(
+            pid=self.pk,
+            name=self.name,
+            desc=self.desc,
+        )
+
+    @classmethod
+    def list_to_premise_list(cls, premises):
+        premise_list = []
+        if not isinstance(premises, list):
+            return []
+        for pid in premises:
+            ret = cls.get_premise_by_id(pid)
+            if ret.error is Error.OK:
+                premise_list.append(ret.body)
+        return premise_list
+
+    @classmethod
+    def get_premise_list(cls):
+        premises = cls.objects.all()
+        return [o_premise.to_dict() for o_premise in premises]
+
+
 class Scope(models.Model):
     """权限类"""
     L = {
@@ -140,6 +226,10 @@ class App(models.Model):
         'Scope',
         default=None,
     )
+    premises = models.ManyToManyField(
+        'Premise',
+        default=None,
+    )
     owner = models.ForeignKey(
         'User.User',
         on_delete=models.CASCADE,
@@ -173,7 +263,8 @@ class App(models.Model):
         verbose_name='用户人数',
     )
 
-    FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scope', 'desc', 'logo', 'mark', 'info', 'user_num']
+    FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scopes', 'premises',
+                  'desc', 'logo', 'mark', 'info']
 
     @classmethod
     def _validate(cls, d):
@@ -211,7 +302,7 @@ class App(models.Model):
         return cls.objects.filter(owner=owner)
 
     @classmethod
-    def create(cls, name, desc, redirect_uri, scopes, owner, info):
+    def create(cls, name, desc, redirect_uri, scopes, premises, owner, info):
         ret = cls._validate(locals())
         if ret.error is not Error.OK:
             return ret
@@ -233,22 +324,26 @@ class App(models.Model):
             )
             o_app.save()
             o_app.scopes.add(*scopes)
+            o_app.premises.add(*premises)
             o_app.save()
         except Exception as err:
             deprint('App-create', str(err))
             return Ret(Error.ERROR_CREATE_APP, append_msg=str(err))
         return Ret(o_app)
 
-    def modify(self, name, desc, redirect_uri, scopes):
+    def modify(self, name, desc, info, redirect_uri, scopes, premises):
         """修改应用信息"""
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
         self.name = name
         self.desc = desc
+        self.info = info
         self.redirect_uri = redirect_uri
         self.scopes.remove()
         self.scopes.add(*scopes)
+        self.premises.remove()
+        self.premises.add(*premises)
         self.field_change_time = datetime.datetime.now().timestamp()
         try:
             self.save()
@@ -268,6 +363,8 @@ class App(models.Model):
             )
         scopes = self.scopes.all()
         scope_list = [o_scope.to_dict() for o_scope in scopes]
+        premises = self.premises.all()
+        premise_list = [o_premise.to_dict() for o_premise in premises]
 
         return dict(
             user_num=self.user_num,
@@ -275,6 +372,7 @@ class App(models.Model):
             app_id=self.id,
             app_info=self.info,
             scopes=scope_list,
+            premises=premise_list,
             redirect_uri=self.redirect_uri,
             logo=self.get_logo_url(),
             app_desc=self.desc,

@@ -20,89 +20,47 @@ from Base.response import Ret, error_response
 from Base.valid_param import ValidParam
 
 
-def validate_params(r_param_valid_list, g_params):
+def validate_params(valid_param_list, g_params):
     """ 验证参数
 
     [
-        ('a', '[a-z]+'),
-        'b',
-        ('c', valid_c_func),
-        ('d', valid_d_func, default_d_value)
-        {
-            "value": "e",
-            "func": valid_e_func,
-            "default": True,
-            "default_value": default_e_value,
-            "process": process_e_value (str to int),
-            "readable": using by response error
-        },
         class ValidParam "f"
     ]
     """
     import re
 
-    if not r_param_valid_list:
+    if not valid_param_list:
         return Ret()
-    for r_param_valid in r_param_valid_list:
-        # has_default_value = False
-        # default_value = None  # 默认值
-        
-        # valid_method = None  # 验证参数的方式（如果是字符串则为正则匹配，如果是函数则带入函数，否则忽略）
-        # process = None
-        # readable = None
-
-        if isinstance(r_param_valid, str):  # 如果rpv只是个字符串，则符合例子中的'b'情况
-            current_param = ValidParam(r_param_valid)
-        elif isinstance(r_param_valid, tuple):  # 如果rpv是tuple，则依次为变量名、验证方式、默认值 'c'
-            if not r_param_valid:  # 忽略
+    for o_valid_param in valid_param_list:
+        if isinstance(o_valid_param, ValidParam):  # 'f'
+            if o_valid_param.param is None:
                 continue
-            current_param = ValidParam(r_param_valid[0])  # 得到变量名
-            if len(r_param_valid) > 1:
-                current_param.fc(r_param_valid[1])  # 得到验证方式
-                if len(r_param_valid) > 2:  # d
-                    # has_default_value = True
-                    g_params.setdefault(current_param.param, r_param_valid[2])
-        elif isinstance(r_param_valid, dict):  # 'e'
-            current_param = ValidParam(r_param_valid.get('value', None))
-            if current_param.param is None:
-                continue
-            current_param.fc(r_param_valid.get('func', None))
-            default = r_param_valid.get('default', False)
-            default_value = r_param_valid.get('default_value', None)
-            if default:
-                g_params.setdefault(current_param.param, default_value)
-            current_param.p(r_param_valid.get('process', None))
-            current_param.r(r_param_valid.get('readable', None))
-        elif isinstance(r_param_valid, ValidParam):  # 'f'
-            current_param = r_param_valid
-            if current_param.param is None:
-                continue
-            if current_param.default:
-                g_params.setdefault(current_param.param, current_param.default_value)
+            if o_valid_param.default:
+                g_params.setdefault(o_valid_param.param, o_valid_param.default_value)
         else:  # 忽略
             continue
 
-        current_param.readable = current_param.readable or current_param.param
+        o_valid_param.readable = o_valid_param.readable or o_valid_param.param
 
-        if current_param.param not in g_params:  # 如果传入数据中没有变量名
-            return Ret(Error.REQUIRE_PARAM, append_msg=current_param.readable)  # 报错
+        if o_valid_param.param not in g_params:  # 如果传入数据中没有变量名
+            return Ret(Error.REQUIRE_PARAM, append_msg=o_valid_param.readable)  # 报错
 
-        req_value = g_params[current_param.param]
+        req_value = g_params[o_valid_param.param]
 
-        if isinstance(current_param.func, str):
-            if re.match(current_param.func, req_value) is None:
-                return Ret(Error.ERROR_PARAM_FORMAT, append_msg=current_param.readable)
-        elif callable(current_param.func):
+        if isinstance(o_valid_param.func, str):
+            if re.match(o_valid_param.func, req_value) is None:
+                return Ret(Error.ERROR_PARAM_FORMAT, append_msg=o_valid_param.readable)
+        elif callable(o_valid_param.func):
             try:
-                ret = current_param.func(req_value)
+                ret = o_valid_param.func(req_value)
                 if ret.error is not Error.OK:
                     return ret
             except Exception as err:
                 deprint(str(err))
                 return Ret(Error.ERROR_VALIDATION_FUNC)
-        if current_param.process and callable(current_param.process):
+        if o_valid_param.process and callable(o_valid_param.process):
             try:
-                g_params[current_param.param] = current_param.process(req_value)
+                g_params[o_valid_param.param] = o_valid_param.process(req_value)
             except Exception as err:
                 deprint(str(err))
                 return Ret(Error.ERROR_PROCESS_FUNC)

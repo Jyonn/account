@@ -41,7 +41,7 @@ class Error:
     INVALID_USERNAME = E("用户名只能包含字母数字和下划线")
     UNAUTH_CALLBACK = E("未经授权的回调函数")
     PHONE_EXIST = E("手机号已注册")
-    JWT_EXPIRED = E("身份认证过期")
+    JWT_EXPIRED = E("身份认证过期，请重新登录")
     ERROR_JWT_FORMAT = E("身份认证错误，请登录")
     JWT_PARAM_INCOMPLETE = E("身份认证缺少参数，请登录")
     REQUIRE_DICT = E("需要字典数据")
@@ -82,6 +82,8 @@ class Error:
     ERROR_MARK = E("评分失败")
     ERROR_DATE_FORMAT = E("日期格式错误")
     ERROR_BIRTHDAY_FORMAT = E("错误的生日时间")
+    NOT_FOUND_PREMISE = E("不存在的要求")
+    ERROR_CREATE_PREMISE = E("创建要求错误")
 
 
 ERROR_DICT = dict()
