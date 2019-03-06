@@ -31,8 +31,9 @@ def validate_params(valid_param_list, g_params):
 
     if not valid_param_list:
         return Ret()
+    print(len(valid_param_list))
     for o_valid_param in valid_param_list:
-        print(o_valid_param)
+        print(o_valid_param.param)
         if isinstance(o_valid_param, ValidParam):  # 'f'
             if o_valid_param.param is None:
                 continue
@@ -63,12 +64,16 @@ def validate_params(valid_param_list, g_params):
             except Exception as err:
                 deprint(str(err))
                 return Ret(Error.ERROR_VALIDATION_FUNC)
+
+        print('after func')
         if o_valid_param.process and callable(o_valid_param.process):
             try:
                 g_params[o_valid_param.param] = o_valid_param.process(req_value)
             except Exception as err:
                 deprint(str(err))
                 return Ret(Error.ERROR_PROCESS_FUNC)
+
+        print('succ', o_valid_param.param)
     return Ret(g_params)
 
 
