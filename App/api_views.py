@@ -2,7 +2,7 @@ from django.views import View
 
 from App.models import App, Scope, UserApp, Premise
 from Base.policy import get_logo_policy
-from Base.qn import QN_RES_MANAGER
+from Base.qn import QN_RES_MANAGER, QN_PUBLIC_MANAGER
 from Base.valid_param import ValidParam
 from Base.validator import require_get, require_login, require_post, require_put, require_delete, \
     require_json, require_scope, maybe_login
@@ -224,7 +224,7 @@ class AppLogoView(View):
         import datetime
         crt_time = datetime.datetime.now().timestamp()
         key = 'app/%s/logo/%s/%s' % (app_id, crt_time, filename)
-        qn_token, key = QN_RES_MANAGER.get_upload_token(key, get_logo_policy(app_id))
+        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, get_logo_policy(app_id))
         return response(body=dict(upload_token=qn_token, key=key))
 
     @staticmethod
@@ -238,7 +238,7 @@ class AppLogoView(View):
 
         七牛上传应用logo回调函数
         """
-        ret = QN_RES_MANAGER.qiniu_auth_callback(request)
+        ret = QN_PUBLIC_MANAGER.qiniu_auth_callback(request)
         if ret.error is not Error.OK:
             return error_response(ret)
 

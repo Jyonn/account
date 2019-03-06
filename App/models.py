@@ -384,18 +384,18 @@ class App(models.Model):
         """获取应用logo地址"""
         if self.logo is None:
             return None
-        from Base.qn import QN_RES_MANAGER
+        from Base.qn import QN_PUBLIC_MANAGER
         key = "%s-small" % self.logo if small else self.logo
-        return QN_RES_MANAGER.get_resource_url(key)
+        return QN_PUBLIC_MANAGER.get_resource_url(key)
 
     def modify_logo(self, logo):
         """修改应用logo"""
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
-        from Base.qn import QN_RES_MANAGER
+        from Base.qn import QN_PUBLIC_MANAGER
         if self.logo:
-            ret = QN_RES_MANAGER.delete_res(self.logo)
+            ret = QN_PUBLIC_MANAGER.delete_res(self.logo)
             if ret.error is not Error.OK:
                 return ret
         self.logo = logo
