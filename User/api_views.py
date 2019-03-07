@@ -7,8 +7,8 @@ from django.views import View
 from Base.common import deprint
 from Base.scope import ScopeInstance
 from Base.valid_param import ValidParam
-from Base.validator import require_json, require_post, require_login, require_get, \
-    require_put, require_scope
+from Base.validator import require_json, require_post, require_get, \
+    require_put, require_login
 from Base.error import Error
 from Base.jtoken import jwt_e, JWType
 from Base.policy import get_avatar_policy
@@ -33,8 +33,7 @@ class UserView(View):
 
     @staticmethod
     @require_get()
-    @require_login
-    @require_scope([ScopeInstance.r_base_info])
+    @require_login([ScopeInstance.r_base_info])
     def get(request):
         """ GET /api/user/
 
@@ -86,8 +85,7 @@ class UserView(View):
             ValidParam('birthday').df().r('生日'),
         ]
     )
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def put(request):
         """ PUT /api/user/
 
@@ -111,45 +109,6 @@ class UserView(View):
         if ret.error is not Error.OK:
             return error_response(ret)
         return response(body=o_user.to_dict())
-
-
-# class QitianView(View):
-    # @staticmethod
-    # @require_get()
-    # def get(request, qitian):
-    #     """ GET /api/user/@:qitian
-    #
-    #     获取用户信息
-    #     """
-    #     ret = User.get_user_by_qitian(qitian)
-    #     if ret.error is not Error.OK:
-    #         return error_response(ret)
-    #     o_user = ret.body
-    #     if not isinstance(o_user, User):
-    #         return error_response(Error.STRANGE)
-    #     return response(body=o_user.to_dict())
-
-    # @staticmethod
-    # @require_delete()
-    # @require_root
-    # @require_scope(deny_all_auth_token=True)
-    # def delete(request, username):
-    #     """ DELETE /api/user/@:username
-    #
-    #     删除用户
-    #     """
-    #     o_user = request.user
-    #     if not isinstance(o_user, User):
-    #         return error_response(Error.STRANGE)
-    #
-    #     ret = User.get_user_by_phone(username)
-    #     if ret.error is not Error.OK:
-    #         return error_response(ret)
-    #     o_user = ret.body
-    #     if not isinstance(o_user, User):
-    #         return error_response(Error.STRANGE)
-    #     o_user.delete()
-    #     return response()
 
 
 class TokenView(View):
@@ -184,8 +143,7 @@ class TokenView(View):
 class AvatarView(View):
     @staticmethod
     @require_get([ValidParam('filename', '文件名')])
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def get(request):
         """ GET /api/user/avatar
 

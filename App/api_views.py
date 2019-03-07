@@ -4,8 +4,8 @@ from App.models import App, Scope, UserApp, Premise
 from Base.policy import get_logo_policy
 from Base.qn import QN_PUBLIC_MANAGER
 from Base.valid_param import ValidParam
-from Base.validator import require_get, require_login, require_post, require_put, require_delete, \
-    require_json, require_scope, maybe_login
+from Base.validator import require_get, require_post, require_put, require_delete, \
+    require_json, require_login
 from Base.error import Error
 from Base.response import error_response, response
 from User.models import User
@@ -33,8 +33,7 @@ class AppView(View):
         ValidParam('frequent').df(),
         ValidParam('count').df(3).p(int),
     ])
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def get(request):
         """GET /api/app/
 
@@ -56,8 +55,7 @@ class AppView(View):
     @staticmethod
     @require_json
     @require_post([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def post(request):
         """POST /api/app/
 
@@ -81,8 +79,7 @@ class AppView(View):
 class AppIDSecretView(View):
     @staticmethod
     @require_get()
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def get(request, app_id):
         """GET /api/app/:app_id/secret"""
         o_user = request.user
@@ -103,8 +100,7 @@ class AppIDSecretView(View):
 class AppIDView(View):
     @staticmethod
     @require_get()
-    @maybe_login
-    @require_scope(deny_all_auth_token=True, allow_no_login=True)
+    @require_login(deny_auth_token=True, allow_no_login=True)
     def get(request, app_id):
         """GET /api/app/:app_id
 
@@ -140,8 +136,7 @@ class AppIDView(View):
     @staticmethod
     @require_json
     @require_put([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def put(request, app_id):
         o_user = request.user
         name = request.d.name
@@ -168,8 +163,7 @@ class AppIDView(View):
 
     @staticmethod
     @require_delete()
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def delete(request, app_id):
         o_user = request.user
 
@@ -197,8 +191,7 @@ class AppLogoView(View):
         ValidParam('filename', '文件名'),
         VP_APP_ID,
     ])
-    @require_login
-    @require_scope(deny_all_auth_token=True)
+    @require_login(deny_auth_token=True)
     def get(request):
         """ GET /api/app/logo
 

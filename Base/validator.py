@@ -128,44 +128,6 @@ def field_validator(dict_, cls):
     return Ret()
 
 
-def require_scope(scope_list=list(), deny_all_auth_token=False, allow_no_login=False):
-    def decorator(func):
-        """decorator"""
-        @wraps(func)
-        def wrapper(request, *args, **kwargs):
-            type_ = getattr(request, 'type_', None)
-            if not type_:
-                if allow_no_login:
-                    return func(request, *args, **kwargs)
-                else:
-                    return error_response(Error.REQUIRE_LOGIN)
-
-            if type_ != JWType.AUTH_TOKEN:
-                return func(request, *args, **kwargs)
-
-            if deny_all_auth_token:
-                return error_response(Error.DENY_ALL_AUTH_TOKEN)
-            o_app = request.user_app.app
-
-            from App.models import App, Scope
-            if not isinstance(o_app, App):
-                deprint('Base-validator-scope_validator-o_app')
-                return error_response(Error.STRANGE)
-
-            if not isinstance(scope_list, list):
-                deprint('Base-validator-scope_validator-scope_list')
-                return error_response(Error.STRANGE)
-            for o_scope in scope_list:
-                if not isinstance(o_scope, Scope):
-                    decorator_generator('Base-validator-scope_validator-o_scope')
-                    return error_response(Error.STRANGE)
-                if o_scope not in o_app.scopes.all():
-                    return error_response(Error.SCOPE_NOT_SATISFIED, append_msg=o_scope.desc)
-            return func(request, *args, **kwargs)
-        return wrapper
-    return decorator
-
-
 def require_method(method, r_params=None, decode=True):
     """generate decorator, validate func with proper method and params"""
     def decorator(func):
@@ -321,26 +283,46 @@ def require_login_func(request):
     return Ret()
 
 
-def maybe_login_func(request):
-    """decorator, maybe require login"""
-    require_login_func(request)
-    return Ret()
+def require_login(scope_list=None, deny_auth_token=False, allow_no_login=False, require_root=False):
+    def decorator(func):
+        """decorator"""
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            _scope_list = scope_list or []
 
+            ret = require_login_func(request)
+            if ret.error is not Error.OK:
+                if allow_no_login and not require_root:
+                    return func(request, *args, **kwargs)
+                else:
+                    return error_response(Error.REQUIRE_LOGIN)
+            if require_root:
+                o_user = request.user
+                from User.models import User
+                if not isinstance(o_user, User):
+                    return error_response(Error.STRANGE)
+                if o_user.pk != User.ROOT_ID:
+                    return error_response(Error.REQUIRE_ROOT)
 
-def require_root_func(request):
-    """decorator, require root login"""
-    ret = require_login_func(request)
-    if ret.error is not Error.OK:
-        return ret
-    o_user = request.user
-    from User.models import User
-    if not isinstance(o_user, User):
-        return Ret(Error.STRANGE)
-    if o_user.pk != User.ROOT_ID:
-        return Ret(Error.REQUIRE_ROOT)
-    return Ret()
+            if request.type_ != JWType.AUTH_TOKEN:
+                return func(request, *args, **kwargs)
 
+            if deny_auth_token:
+                return error_response(Error.DENY_ALL_AUTH_TOKEN)
+            o_app = request.user_app.app
 
-require_login = decorator_generator(require_login_func)
-maybe_login = decorator_generator(maybe_login_func)
-require_root = decorator_generator(require_root_func)
+            from App.models import App, Scope
+            if not isinstance(o_app, App):
+                deprint('Base-validator-scope_validator-o_app')
+                return error_response(Error.STRANGE)
+
+            for o_scope in _scope_list:
+                if not isinstance(o_scope, Scope):
+                    deprint('Base-validator-scope_validator-o_scope')
+                    return error_response(Error.STRANGE)
+                if o_scope not in o_app.scopes.all():
+                    return error_response(Error.SCOPE_NOT_SATISFIED, append_msg=o_scope.desc)
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
