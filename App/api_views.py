@@ -185,6 +185,13 @@ class ScopeView(View):
         return response(body=Scope.get_scope_list())
 
 
+class PremiseView(View):
+    @staticmethod
+    @require_get()
+    def get(request):
+        return response(body=Premise.get_premise_list())
+
+
 class AppLogoView(View):
     @staticmethod
     @require_get([

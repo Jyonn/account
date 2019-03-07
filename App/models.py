@@ -13,7 +13,7 @@ from Base.response import Ret
 class Premise(models.Model):
     """要求类，不满足要求无法进入应用"""
     L = {
-        'name': 10,
+        'name': 20,
         'desc': 20,
     }
     name = models.CharField(
@@ -99,7 +99,7 @@ class Premise(models.Model):
 class Scope(models.Model):
     """权限类"""
     L = {
-        'name': 10,
+        'name': 20,
         'desc': 20,
     }
     name = models.CharField(
