@@ -3,6 +3,7 @@ from django.views import View
 from App.models import App, Scope, UserApp, Premise
 from Base.policy import get_logo_policy
 from Base.qn import QN_PUBLIC_MANAGER
+from Base.scope import ScopeInstance
 from Base.valid_param import ValidParam
 from Base.validator import require_get, require_post, require_put, require_delete, \
     require_json, require_login
@@ -33,7 +34,7 @@ class AppView(View):
         ValidParam('frequent').df(),
         ValidParam('count').df(3).p(int),
     ])
-    @require_login(deny_auth_token=True)
+    @require_login([ScopeInstance.read_app_list])
     def get(request):
         """GET /api/app/
 

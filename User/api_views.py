@@ -33,7 +33,7 @@ class UserView(View):
 
     @staticmethod
     @require_get()
-    @require_login([ScopeInstance.r_base_info])
+    @require_login([ScopeInstance.read_base_info])
     def get(request):
         """ GET /api/user/
 

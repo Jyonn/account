@@ -2,13 +2,13 @@ from App.models import Scope
 
 
 class ScopeInstance:
-    r_base_info = Scope.get_scope_by_name('rBaseInfo', default=None).body
-    w_base_info = Scope.get_scope_by_name('wBaseInfo', default=None).body
+    read_base_info = Scope.get_scope_by_name('readBaseInfo', default=None).body
+    write_base_info = Scope.get_scope_by_name('writeBaseInfo', default=None).body
     send_email = Scope.get_scope_by_name('sendEmail', default=None).body
     send_mobile = Scope.get_scope_by_name('sendMobile', default=None).body
-    r_app_list = Scope.get_scope_by_name('rAppList', default=None).body
-    assert r_base_info
-    assert w_base_info
+    read_app_list = Scope.get_scope_by_name('readMyAppList', default=None).body
+    assert read_base_info
+    assert write_base_info
     assert send_email
     assert send_mobile
-    assert r_app_list
+    assert read_app_list
