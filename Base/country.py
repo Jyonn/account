@@ -36,7 +36,8 @@ countries = [
         "ename": "Hong Kong",
         "num": "852",
         "carea": "亚洲-东亚",
-        "shortcut": "HK"
+        "shortcut": "HK",
+        "detail": "中国香港特别行政区"
     },
     {
         "flag": "🇹🇼",
@@ -45,7 +46,8 @@ countries = [
         "ename": "Taiwan",
         "num": "886",
         "carea": "亚洲-东亚",
-        "shortcut": "TW"
+        "shortcut": "TW",
+        "detail": "部分机型在中文-简体（语言）下无法显示中国台湾省的旗帜",
     },
     {
         "flag": "🇯🇵",
@@ -1431,7 +1433,8 @@ countries = [
         "ename": "Macau",
         "num": "853",
         "carea": "亚洲-东亚",
-        "shortcut": "MO"
+        "shortcut": "MO",
+        "detail": "中国澳门特别行政区"
     },
     {
         "flag": "🇸🇨",
