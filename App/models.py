@@ -15,6 +15,7 @@ class Premise(models.Model):
     L = {
         'name': 20,
         'desc': 20,
+        'detail': 100,
     }
     name = models.CharField(
         verbose_name='要求英文简短名称',
@@ -25,7 +26,12 @@ class Premise(models.Model):
         verbose_name='要求介绍',
         max_length=L['desc'],
     )
-    FIELD_LIST = ['name', 'desc']
+    detail = models.CharField(
+        verbose_name='要求详细说明',
+        max_length=L['detail'],
+        default=None,
+    )
+    FIELD_LIST = ['name', 'desc', 'detail']
 
     class __PremiseNone:
         pass
@@ -56,7 +62,7 @@ class Premise(models.Model):
         return Ret(o_premise)
 
     @classmethod
-    def create(cls, name, desc):
+    def create(cls, name, desc, detail):
         ret = cls._validate(locals())
         if ret.error is not Error.OK:
             return ret
@@ -65,6 +71,7 @@ class Premise(models.Model):
             o_premise = cls(
                 name=name,
                 desc=desc,
+                detail=detail,
             )
             o_premise.save()
         except Exception as err:
@@ -77,6 +84,7 @@ class Premise(models.Model):
             pid=self.pk,
             name=self.name,
             desc=self.desc,
+            detail=self.detail,
         )
 
     @classmethod
@@ -101,6 +109,7 @@ class Scope(models.Model):
     L = {
         'name': 20,
         'desc': 20,
+        'detail': 100,
     }
     name = models.CharField(
         verbose_name='权限英文简短名称',
@@ -115,7 +124,12 @@ class Scope(models.Model):
         verbose_name="Null 可有可无 True 一直可选 False 一直不可选",
         default=None,
     )
-    FIELD_LIST = ['name', 'desc']
+    detail = models.CharField(
+        verbose_name='权限详细说明',
+        max_length=L['detail'],
+        default=None,
+    )
+    FIELD_LIST = ['name', 'desc', 'detail']
 
     class __ScopeNone:
         pass
@@ -146,7 +160,7 @@ class Scope(models.Model):
         return Ret(o_scope)
 
     @classmethod
-    def create(cls, name, desc):
+    def create(cls, name, desc, detail):
         ret = cls._validate(locals())
         if ret.error is not Error.OK:
             return ret
@@ -155,6 +169,8 @@ class Scope(models.Model):
             o_scope = cls(
                 name=name,
                 desc=desc,
+                detail=detail,
+                always=None,
             )
             o_scope.save()
         except Exception as err:
@@ -168,6 +184,7 @@ class Scope(models.Model):
             name=self.name,
             desc=self.desc,
             always=self.always,
+            detail=self.detail,
         )
 
     @classmethod
