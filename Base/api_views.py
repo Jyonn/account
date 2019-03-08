@@ -36,7 +36,8 @@ class RegionView(View):
             dict(
                 num=c['num'],
                 name=c['cname'] if lang_cn else c['ename'],
-                flag=c['flag']
+                flag=c['flag'],
+                detail=c.get('detail'),
             ) for c in country.countries
         ]
         return response(body=regions)
