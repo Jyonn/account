@@ -92,8 +92,8 @@ class Premise(models.Model):
         premise_list = []
         if not isinstance(premises, list):
             return []
-        for pid in premises:
-            ret = cls.get_premise_by_id(pid)
+        for premise_name in premises:
+            ret = cls.get_premise_by_name(premise_name)
             if ret.error is Error.OK:
                 premise_list.append(ret.body)
         return premise_list
@@ -192,16 +192,30 @@ class Scope(models.Model):
         scope_list = []
         if not isinstance(scopes, list):
             return []
-        for sid in scopes:
-            ret = cls.get_scope_by_id(sid)
-            if ret.error is Error.OK:
+        for scope_name in scopes:
+            ret = cls.get_scope_by_name(scope_name)
+            if ret.error is Error.OK and ret.body.always != False:  # 直接忽略false
                 scope_list.append(ret.body)
-        return scope_list
+
+        # 仍然存在always是True的但没有被添加的情况 于是double_check
+        return cls.double_check(scope_list)
 
     @classmethod
     def get_scope_list(cls):
         scopes = cls.objects.all()
         return [o_scope.to_dict() for o_scope in scopes]
+
+    @classmethod
+    def double_check(cls, scope_list):
+        total_scope_list = cls.objects.all()
+        final_list = []
+        for o_scope in total_scope_list:
+            if o_scope.always:
+                final_list.append(o_scope)
+        for o_scope in scope_list:
+            if o_scope.always is None:  # false被忽略，true已经添加
+                final_list.append(o_scope)
+        return final_list
 
 
 class App(models.Model):
