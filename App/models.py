@@ -81,7 +81,6 @@ class Premise(models.Model):
 
     def to_dict(self):
         return dict(
-            pid=self.pk,
             name=self.name,
             desc=self.desc,
             detail=self.detail,
@@ -180,7 +179,6 @@ class Scope(models.Model):
 
     def to_dict(self):
         return dict(
-            sid=self.pk,
             name=self.name,
             desc=self.desc,
             always=self.always,
@@ -288,6 +286,7 @@ class App(models.Model):
     info = models.TextField(
         default=None,
         verbose_name='应用介绍信息',
+        null=True,
     )
     user_num = models.IntegerField(
         default=0,
@@ -333,7 +332,7 @@ class App(models.Model):
         return cls.objects.filter(owner=owner)
 
     @classmethod
-    def create(cls, name, desc, redirect_uri, scopes, premises, owner, info):
+    def create(cls, name, desc, redirect_uri, scopes, premises, owner):
         ret = cls._validate(locals())
         if ret.error is not Error.OK:
             return ret
@@ -351,7 +350,7 @@ class App(models.Model):
                 redirect_uri=redirect_uri,
                 owner=owner,
                 field_change_time=datetime.datetime.now().timestamp(),
-                info=info,
+                info=None,
             )
             o_app.save()
             o_app.scopes.add(*scopes)

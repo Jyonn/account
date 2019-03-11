@@ -55,7 +55,7 @@ class AppView(View):
 
     @staticmethod
     @require_json
-    @require_post([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
+    @require_post([VP_APP_NAME, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
     @require_login(deny_auth_token=True)
     def post(request):
         """POST /api/app/
@@ -64,17 +64,16 @@ class AppView(View):
         """
         o_user = request.user
         name = request.d.name
-        info = request.d.info
         description = request.d.description
         redirect_uri = request.d.redirect_uri
         scopes = request.d.scopes
         premises = request.d.premises
 
-        ret = App.create(name, description, redirect_uri, scopes, premises, o_user, info)
+        ret = App.create(name, description, redirect_uri, scopes, premises, o_user)
         if ret.error is not Error.OK:
             return error_response(ret)
         o_app = ret.body
-        return response(body=o_app.to_dict())
+        return response(body=o_app.to_dict(base=True))
 
 
 class AppIDSecretView(View):
