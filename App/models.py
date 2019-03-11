@@ -370,9 +370,11 @@ class App(models.Model):
         self.desc = desc
         self.info = info
         self.redirect_uri = redirect_uri
-        self.scopes.remove()
+        for o_scope in self.scopes.all():
+            self.scopes.remove(o_scope)
         self.scopes.add(*scopes)
-        self.premises.remove()
+        for o_premise in self.premises.all():
+            self.premises.remove(o_premise)
         self.premises.add(*premises)
         self.field_change_time = datetime.datetime.now().timestamp()
         try:
