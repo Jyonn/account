@@ -144,7 +144,7 @@ class AppIDView(View):
         info = request.d.info
         redirect_uri = request.d.redirect_uri
         scopes = request.d.scopes
-        premises = request.d.premise
+        premises = request.d.premises
 
         ret = App.get_app_by_id(app_id)
         if ret.error is not Error.OK:
