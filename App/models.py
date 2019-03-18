@@ -507,7 +507,7 @@ class UserApp(models.Model):
     def get_user_app_by_o_user_o_app(cls, o_user, o_app):
         try:
             o_user_app = cls.objects.get(user=o_user, app=o_app)
-        except cls.DoesNotExist as err:
+        except Exception as err:
             deprint('UserApp-get_user_app_by_o_user_o_app', str(err))
             return Ret(Error.NOT_FOUND_USER_APP)
         return Ret(o_user_app)
@@ -516,8 +516,8 @@ class UserApp(models.Model):
     def get_user_app_by_user_app_id(cls, user_app_id, check_bind=False):
         try:
             o_user_app = cls.objects.get(user_app_id=user_app_id)
-        except cls.DoesNotExist as err:
-            deprint('UserApp-get_user_app_by_user_app_id')
+        except Exception as err:
+            deprint('UserApp-get_user_app_by_user_app_id', str(err))
             return Ret(Error.NOT_FOUND_USER_APP)
         if check_bind and not o_user_app.bind:
             return Ret(Error.APP_UNBINDED)
