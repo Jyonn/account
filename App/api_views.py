@@ -308,7 +308,7 @@ class UserAppIdView(View):
         ret = o_user_app.do_mark(mark)
         if ret.error is not Error.OK:
             return error_response(ret)
-        return AppIDView.get(request, o_user_app.app.id)
+        return response(body=list(map(int, o_user_app.app.mark.split('-'))))
 
 
 @require_get()
