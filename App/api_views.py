@@ -119,7 +119,7 @@ class AppIDView(View):
 
         ret = UserApp.get_user_app_by_o_user_o_app(o_user, o_app)
         if ret.error is not Error.OK:
-            relation = dict(bind=False, rebind=False, mark=0, belong=False)
+            relation = dict(bind=False, rebind=False, mark=0, belong=False, user_app_id=None)
         else:
             o_user_app = ret.body
             if not isinstance(o_user_app, UserApp):
@@ -308,7 +308,7 @@ class UserAppIdView(View):
         ret = o_user_app.do_mark(mark)
         if ret.error is not Error.OK:
             return error_response(ret)
-        return response()
+        return AppIDView.get(request, o_user_app.app.id)
 
 
 @require_get()

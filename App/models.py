@@ -606,10 +606,13 @@ class UserApp(models.Model):
     def do_mark(self, mark):
         if mark < 1 or mark > 5:
             return Ret(Error.ERROR_MARK)
+        original_mark = self.mark
         self.mark = mark
         self.save()
 
         mark_list = list(map(int, self.app.mark.split('-')))
+        if 5 >= original_mark > 0:
+            mark_list[original_mark - 1] -= 1
         mark_list[mark - 1] += 1
         self.app.mark = '-'.join(map(str, mark_list))
         self.app.save()
