@@ -36,7 +36,7 @@ class AppView(View):
     ])
     @require_login([ScopeInstance.read_app_list])
     def get(request):
-        """GET /api/app/
+        """ GET /api/app/
 
         获取与我相关的app列表
         """
@@ -58,7 +58,7 @@ class AppView(View):
     @require_post([VP_APP_NAME, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
     @require_login(deny_auth_token=True)
     def post(request):
-        """POST /api/app/
+        """ POST /api/app/
 
         创建我的app
         """
@@ -81,7 +81,7 @@ class AppIDSecretView(View):
     @require_get()
     @require_login(deny_auth_token=True)
     def get(request, app_id):
-        """GET /api/app/:app_id/secret"""
+        """ GET /api/app/:app_id/secret"""
         o_user = request.user
 
         ret = App.get_app_by_id(app_id)
@@ -102,7 +102,7 @@ class AppIDView(View):
     @require_get()
     @require_login(deny_auth_token=True, allow_no_login=True)
     def get(request, app_id):
-        """GET /api/app/:app_id
+        """ GET /api/app/:app_id
 
         获取应用信息以及用户与应用的关系（属于、绑定、打分，仅限用户登录时）
         """
@@ -138,6 +138,10 @@ class AppIDView(View):
     @require_put([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
     @require_login(deny_auth_token=True)
     def put(request, app_id):
+        """ PUT /api/app/:app_id
+
+        修改应用信息
+        """
         o_user = request.user
         name = request.d.name
         desc = request.d.description
@@ -165,6 +169,10 @@ class AppIDView(View):
     @require_delete()
     @require_login(deny_auth_token=True)
     def delete(request, app_id):
+        """ DELETE /api/app/:app_id
+
+        删除应用
+        """
         o_user = request.user
 
         ret = App.get_app_by_id(app_id)
@@ -278,8 +286,36 @@ class UserAppIdView(View):
 
         return response(body=o_user_app.user.to_dict())
 
+    @staticmethod
+    @require_json
+    @require_put([ValidParam('mark', '应用评分').p(int)])
+    @require_login(deny_auth_token=True)
+    def put(request, user_app_id):
+        """ PUT /api/app/user/:user_app_id
+
+        给app评分
+        """
+        ret = UserApp.get_user_app_by_user_app_id(user_app_id)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_user_app = ret.body
+        if not isinstance(o_user_app, UserApp):
+            return error_response(Error.STRANGE)
+        if o_user_app.user.user_str_id != request.user.user_str_id:
+            return error_response(Error.ILLEGAL_ACCESS_RIGHT)
+        mark = request.d.mark
+
+        ret = o_user_app.do_mark(mark)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        return response()
+
 
 @require_get()
 def refresh_frequent_score(request):
+    """ GET /api/app/refresh-frequent-score
+
+    更新用户应用的使用频率度，判断是否为常用应用
+    """
     ret = UserApp.refresh_frequent_score()
     return error_response(ret)

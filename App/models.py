@@ -491,6 +491,7 @@ class UserApp(models.Model):
             bind=self.bind,
             mark=self.mark,
             rebind=float(self.last_auth_code_time) < self.app.field_change_time,
+            user_app_id=self.user_app_id,
         )
 
     @classmethod
@@ -614,4 +615,3 @@ class UserApp(models.Model):
         self.app.save()
 
         return Ret()
-

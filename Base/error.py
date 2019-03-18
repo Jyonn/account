@@ -85,6 +85,10 @@ class Error:
     NOT_FOUND_PREMISE = E("不存在的要求")
     ERROR_CREATE_PREMISE = E("创建要求错误")
 
+    SEND_EMAIL_ERROR = E("邮件发送错误")
+    EMAIL_NOT_EXIST = E("不存在邮箱")
+    ILLEGAL_ACCESS_RIGHT = E("非法访问权限")
+
 
 ERROR_DICT = dict()
 REVERSED_ERROR_DICT = dict()

@@ -89,7 +89,14 @@ class User(models.Model):
         default=None,
         null=True,
     )
-    FIELD_LIST = ['qitian', 'password', 'avatar', 'nickname', 'phone', 'description', 'birthday']
+    email = models.EmailField(
+        verbose_name='邮箱',
+        default=None,
+        null=True,
+    )
+    FIELD_LIST = [
+        'qitian', 'password', 'avatar', 'nickname', 'phone',
+        'description', 'birthday', 'email']
 
     @classmethod
     def get_unique_user_str_id(cls):
