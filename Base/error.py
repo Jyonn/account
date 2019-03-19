@@ -89,6 +89,8 @@ class Error:
     EMAIL_NOT_EXIST = E("不存在邮箱")
     ILLEGAL_ACCESS_RIGHT = E("非法访问权限")
 
+    IDCARD_DETECT_ERROR = E("身份证自动验证错误")
+
 
 ERROR_DICT = dict()
 REVERSED_ERROR_DICT = dict()

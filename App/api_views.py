@@ -1,12 +1,11 @@
 from django.views import View
 
 from App.models import App, Scope, UserApp, Premise
-from Base.policy import get_logo_policy
+from Base.policy import Policy
 from Base.qn import QN_PUBLIC_MANAGER
 from Base.scope import ScopeInstance
 from Base.valid_param import ValidParam
-from Base.validator import require_get, require_post, require_put, require_delete, \
-    require_json, require_login
+from Base.validator import require_param, require_json, require_login
 from Base.error import Error
 from Base.response import error_response, response
 from User.models import User
@@ -29,7 +28,7 @@ class AppView(View):
         return relation
 
     @staticmethod
-    @require_get([
+    @require_param(q=[
         ValidParam('relation').df(App.R_USER).p(relation_process),
         ValidParam('frequent').df(),
         ValidParam('count').df(3).p(int),
@@ -55,7 +54,7 @@ class AppView(View):
 
     @staticmethod
     @require_json
-    @require_post([VP_APP_NAME, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
+    @require_param([VP_APP_NAME, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
     @require_login(deny_auth_token=True)
     def post(request):
         """ POST /api/app/
@@ -78,7 +77,6 @@ class AppView(View):
 
 class AppIDSecretView(View):
     @staticmethod
-    @require_get()
     @require_login(deny_auth_token=True)
     def get(request, app_id):
         """ GET /api/app/:app_id/secret"""
@@ -99,7 +97,6 @@ class AppIDSecretView(View):
 
 class AppIDView(View):
     @staticmethod
-    @require_get()
     @require_login(deny_auth_token=True, allow_no_login=True)
     def get(request, app_id):
         """ GET /api/app/:app_id
@@ -135,7 +132,7 @@ class AppIDView(View):
 
     @staticmethod
     @require_json
-    @require_put([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
+    @require_param([VP_APP_NAME, VP_APP_INFO, VP_APP_DESC, VP_APP_URI, VP_APP_SCOPE, VP_APP_PREMISE])
     @require_login(deny_auth_token=True)
     def put(request, app_id):
         """ PUT /api/app/:app_id
@@ -166,7 +163,7 @@ class AppIDView(View):
         return response(body=o_app.to_dict())
 
     @staticmethod
-    @require_delete()
+    @require_param()
     @require_login(deny_auth_token=True)
     def delete(request, app_id):
         """ DELETE /api/app/:app_id
@@ -188,21 +185,19 @@ class AppIDView(View):
 
 class ScopeView(View):
     @staticmethod
-    @require_get()
     def get(request):
         return response(body=Scope.get_scope_list())
 
 
 class PremiseView(View):
     @staticmethod
-    @require_get()
     def get(request):
         return response(body=Premise.get_premise_list())
 
 
 class AppLogoView(View):
     @staticmethod
-    @require_get([
+    @require_param(q=[
         ValidParam('filename', '文件名'),
         VP_APP_ID,
     ])
@@ -232,12 +227,12 @@ class AppLogoView(View):
         import datetime
         crt_time = datetime.datetime.now().timestamp()
         key = 'app/%s/logo/%s/%s' % (app_id, crt_time, filename)
-        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, get_logo_policy(app_id))
+        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, Policy.logo(app_id))
         return response(body=dict(upload_token=qn_token, key=key))
 
     @staticmethod
     @require_json
-    @require_post([
+    @require_param([
         ValidParam('key', '七牛存储键'),
         VP_APP_ID
     ])
@@ -265,7 +260,7 @@ class AppLogoView(View):
 class UserAppIdView(View):
     @staticmethod
     @require_json
-    @require_post([VP_APP_SECRET])
+    @require_param([VP_APP_SECRET])
     def post(request, user_app_id):
         """ POST /api/app/user/:user_app_id
 
@@ -288,7 +283,7 @@ class UserAppIdView(View):
 
     @staticmethod
     @require_json
-    @require_put([ValidParam('mark', '应用评分').p(int)])
+    @require_param([ValidParam('mark', '应用评分').p(int)])
     @require_login(deny_auth_token=True)
     def put(request, user_app_id):
         """ PUT /api/app/user/:user_app_id
@@ -311,7 +306,7 @@ class UserAppIdView(View):
         return response(body=list(map(int, o_user_app.app.mark.split('-'))))
 
 
-@require_get()
+@require_param(method='GET')
 def refresh_frequent_score(request):
     """ GET /api/app/refresh-frequent-score
 

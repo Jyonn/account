@@ -2,14 +2,14 @@ from django.shortcuts import render
 from django.views import View
 
 from App.models import App
-from Base.validator import require_get
+from Base.validator import require_param
 from Base.error import Error
 from Base.response import error_response
 
 
 class OAuthView(View):
     @staticmethod
-    @require_get(['app_id'])
+    @require_param(q=['app_id'])
     def oauth(request):
         """GET /oauth?app_id=:app_id
 

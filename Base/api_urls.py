@@ -6,6 +6,7 @@ from django.urls import path
 
 from Base.api_views import ErrorView, RegionView, CaptchaView, ReCaptchaView
 
+
 urlpatterns = [
     path('errors', ErrorView.as_view()),
     path('regions', RegionView.as_view()),

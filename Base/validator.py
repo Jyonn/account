@@ -5,7 +5,6 @@
 把最终参数字典存储在request.d中
 """
 
-import base64
 import json
 from functools import wraps
 
@@ -128,7 +127,7 @@ def field_validator(dict_, cls):
     return Ret()
 
 
-def require_method(method, r_params=None, decode=True):
+def require_param(b=None, q=None, method=None):
     """generate decorator, validate func with proper method and params"""
     def decorator(func):
         """decorator"""
@@ -137,52 +136,26 @@ def require_method(method, r_params=None, decode=True):
             """wrapper"""
             if not isinstance(request, HttpRequest):
                 return error_response(Error.STRANGE)
-            if request.method != method:
-                return error_response(Error.ERROR_METHOD, append_msg='，需要%s请求' % method)
-            if request.method == "GET":
-                request.DICT = request.GET.dict()
-            else:
-                try:
-                    request.DICT = json.loads(request.body.decode())
-                except json.JSONDecodeError as err:
-                    deprint(str(err))
-                    request.DICT = {}
-            if decode:
-                for k in request.DICT.keys():
-                    import binascii
-                    try:
-                        base64.decodebytes(bytes(request.DICT[k], encoding='utf8')).decode()
-                    except binascii.Error as err:
-                        deprint(str(err))
-                        return error_response(Error.REQUIRE_BASE64)
-            ret = validate_params(r_params, request.DICT)
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            request.d = Param(ret.body)
+            if not method and method != request.method:
+                return error_response(Error.ERROR_METHOD)
+
+            request.QDICT = request.GET.dict() or {}
+            try:
+                request.BDICT = json.loads(request.body.decode())
+            except json.JSONDecodeError as err:
+                deprint(str(err))
+                request.BDICT = {}
+            ret_b = validate_params(b, request.BDICT)
+            if ret_b.error is not Error.OK:
+                return error_response(ret_b)
+            ret_q = validate_params(q, request.QDICT)
+            if ret_q.error is not Error.OK:
+                return error_response(ret_q)
+            request.d = Param(ret_b.body.update(ret_q.body))
             return func(request, *args, **kwargs)
 
         return wrapper
     return decorator
-
-
-def require_post(r_params=None, decode=False):
-    """decorator, require post method"""
-    return require_method('POST', r_params, decode)
-
-
-def require_get(r_params=None, decode=False):
-    """decorator, require get method"""
-    return require_method('GET', r_params, decode)
-
-
-def require_put(r_params=None, decode=False):
-    """decorator, require put method"""
-    return require_method('PUT', r_params, decode)
-
-
-def require_delete(r_params=None, decode=False):
-    """decorator, require delete method"""
-    return require_method('DELETE', r_params, decode)
 
 
 def require_json(func):

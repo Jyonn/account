@@ -7,17 +7,19 @@ from django.views import View
 from Base.common import deprint
 from Base.scope import ScopeInstance
 from Base.valid_param import ValidParam
-from Base.validator import require_json, require_post, require_get, \
-    require_put, require_login
+from Base.validator import require_json, require_param, require_login
 from Base.error import Error
 from Base.jtoken import jwt_e, JWType
-from Base.policy import get_avatar_policy
-from Base.qn import QN_PUBLIC_MANAGER
+from Base.policy import Policy
+from Base.qn import QN_PUBLIC_MANAGER, QN_RES_MANAGER
 from Base.response import response, error_response
 from Base.send_mobile import SendMobile
 from Base.session import Session
 
 from User.models import User
+
+
+VP_BACK = ValidParam('back', '侧别').p(int)
 
 
 class UserView(View):
@@ -32,7 +34,6 @@ class UserView(View):
         return dict_
 
     @staticmethod
-    @require_get()
     @require_login([ScopeInstance.read_base_info])
     def get(request):
         """ GET /api/user/
@@ -47,7 +48,7 @@ class UserView(View):
 
     @staticmethod
     @require_json
-    @require_post([
+    @require_param([
         ValidParam('password', '密码'),
         ValidParam('code', '验证码')
     ])
@@ -75,7 +76,7 @@ class UserView(View):
 
     @staticmethod
     @require_json
-    @require_put(
+    @require_param(
         [
             ValidParam('password').df().r('新密码'),
             ValidParam('old_password').df().r('旧密码'),
@@ -114,7 +115,7 @@ class UserView(View):
 class TokenView(View):
     @staticmethod
     @require_json
-    @require_post([ValidParam('password', '密码')])
+    @require_param([ValidParam('password', '密码')])
     def post(request):
         """ POST /api/user/token
 
@@ -142,7 +143,7 @@ class TokenView(View):
 
 class AvatarView(View):
     @staticmethod
-    @require_get([ValidParam('filename', '文件名')])
+    @require_param(q=[ValidParam('filename', '文件名')])
     @require_login(deny_auth_token=True)
     def get(request):
         """ GET /api/user/avatar
@@ -158,12 +159,12 @@ class AvatarView(View):
         import datetime
         crt_time = datetime.datetime.now().timestamp()
         key = 'user/%s/avatar/%s/%s' % (o_user.user_str_id, crt_time, filename)
-        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, get_avatar_policy(o_user.user_str_id))
+        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, Policy.avatar(o_user.user_str_id))
         return response(body=dict(upload_token=qn_token, key=key))
 
     @staticmethod
     @require_json
-    @require_post([
+    @require_param([
         ValidParam('key', '七牛存储键'),
         ValidParam('user_id', '用户ID')
     ])
@@ -185,6 +186,61 @@ class AvatarView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
         o_user.modify_avatar(key)
+        return response(body=o_user.to_dict())
+
+
+class VerifyView(View):
+    @staticmethod
+    @require_param(q=[ValidParam('filename', '文件名'), VP_BACK])
+    @require_login(deny_auth_token=True)
+    def get(request):
+        """ GET /api/user/verify?back=[0, 1]
+
+        获取七牛上传token
+        """
+        o_user = request.user
+        filename = request.d.filename
+        back = request.d.back
+
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        import datetime
+        crt_time = datetime.datetime.now().timestamp()
+        key = 'user/%s/avatar/%s/%s' % (o_user.user_str_id, crt_time, filename)
+        policy = Policy.verify_back if back else Policy.verify_front
+        qn_token, key = QN_RES_MANAGER.get_upload_token(key, policy(o_user.user_str_id))
+        return response(body=dict(upload_token=qn_token, key=key))
+
+    @staticmethod
+    @require_json
+    @require_param(b=[
+        ValidParam('key', '七牛存储键'),
+        ValidParam('user_id', '用户ID')
+    ], q=[VP_BACK])
+    def post(request):
+        """ POST /api/user/verify?back=[0, 1]
+
+        七牛上传用户实名认证回调函数
+        """
+        ret = QN_PUBLIC_MANAGER.qiniu_auth_callback(request)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+
+        key = request.d.key
+        user_id = request.d.user_id
+        back = request.d.back
+
+        ret = User.get_user_by_str_id(user_id)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        o_user = ret.body
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+        if back:
+            o_user.upload_verify_back(key)
+        else:
+            o_user.upload_verify_front(key)
         return response(body=o_user.to_dict())
 
 

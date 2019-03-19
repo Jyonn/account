@@ -28,11 +28,25 @@ class User(models.Model):
         'qitian': 20,
         'description': 20,
         'user_str_id': 32,
+        'real_name': 32,
+        'idcard': 18,
+        'card_image_front': 1024,
+        'card_image_back': 1024,
     }
     MIN_L = {
         'password': 6,
         'qitian': 4,
     }
+
+    VERIFY_NONE = 0
+    VERIFY_CHINA = 1
+    VERIFY_ABROAD = 2
+    VERIFY_TUPLE = (
+        (VERIFY_NONE, '暂未认证'),
+        (VERIFY_CHINA, '中国大陆身份证认证'),
+        (VERIFY_ABROAD, '其他地区身份认证'),
+    )
+
     user_str_id = models.CharField(
         verbose_name='唯一随机用户ID，弃用user_id',
         default=None,
@@ -94,6 +108,37 @@ class User(models.Model):
         default=None,
         null=True,
     )
+
+    real_verify_type = models.SmallIntegerField(
+        verbose_name='实名认证类型',
+        default=0,
+    )
+    real_name = models.CharField(
+        verbose_name='真实姓名',
+        default=None,
+        max_length=L['real_name'],
+    )
+    male = models.NullBooleanField(
+        verbose_name='是否为男性',
+        default=None,
+    )
+    idcard = models.CharField(
+        verbose_name='身份证号',
+        default=None,
+        max_length=L['idcard'],
+        choices=VERIFY_TUPLE,
+    )
+    card_image_front = models.CharField(
+        verbose_name='身份证正面照',
+        max_length=L['card_image_front'],
+        default=None,
+    )
+    card_image_back = models.CharField(
+        verbose_name='身份证背面照',
+        max_length=L['card_image_back'],
+        default=None,
+    )
+
     FIELD_LIST = [
         'qitian', 'password', 'avatar', 'nickname', 'phone',
         'description', 'birthday', 'email']
@@ -321,6 +366,24 @@ class User(models.Model):
         self.save()
         return Ret()
 
+    def upload_verify_front(self, card_image_front):
+        ret = self._validate(locals())
+        if ret.error is not Error.OK:
+            return ret
+
+        self.card_image_front = card_image_front
+        self.save()
+        return Ret()
+
+    def upload_verify_back(self, card_image_back):
+        ret = self._validate(locals())
+        if ret.error is not Error.OK:
+            return ret
+
+        self.card_image_back = card_image_back
+        self.save()
+        return Ret()
+
     def modify_info(self, nickname, description, qitian, birthday):
         """修改用户信息"""
         if nickname is None:
@@ -348,3 +411,4 @@ class User(models.Model):
         self.birthday = birthday
         self.save()
         return Ret()
+
