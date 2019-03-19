@@ -5,6 +5,7 @@
 from django.views import View
 
 from Base.common import deprint
+from Base.idcard import IDCard
 from Base.scope import ScopeInstance
 from Base.valid_param import ValidParam
 from Base.validator import require_json, require_param, require_login
@@ -189,12 +190,12 @@ class AvatarView(View):
         return response(body=o_user.to_dict())
 
 
-class VerifyView(View):
+class IDCardView(View):
     @staticmethod
     @require_param(q=[ValidParam('filename', '文件名'), VP_BACK])
     @require_login(deny_auth_token=True)
     def get(request):
-        """ GET /api/user/verify?back=[0, 1]
+        """ GET /api/user/idcard?back=[0, 1]
 
         获取七牛上传token
         """
@@ -219,7 +220,7 @@ class VerifyView(View):
         ValidParam('user_id', '用户ID')
     ], q=[VP_BACK])
     def post(request):
-        """ POST /api/user/verify?back=[0, 1]
+        """ POST /api/user/idcard?back=[0, 1]
 
         七牛上传用户实名认证回调函数
         """
@@ -242,6 +243,20 @@ class VerifyView(View):
         else:
             o_user.upload_verify_front(key)
         return response(body=o_user.to_dict())
+
+    @staticmethod
+    @require_login(deny_auth_token=True)
+    def put(request):
+        """ POST /api/user/idcard
+
+        自动实名认证
+        """
+        user = request.user
+        if not isinstance(user, User):
+            return error_response(Error.STRANGE)
+
+        if user.real_verify_type != User.VERIFY_NONE:
+            return error_response(Error.REAL_VERIFIED)
 
 
 def set_unique_user_str_id(request):

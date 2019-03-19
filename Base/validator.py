@@ -136,7 +136,7 @@ def require_param(b=None, q=None, method=None):
             """wrapper"""
             if not isinstance(request, HttpRequest):
                 return error_response(Error.STRANGE)
-            if not method and method != request.method:
+            if method and method != request.method:
                 return error_response(Error.ERROR_METHOD)
 
             request.QDICT = request.GET.dict() or {}
@@ -151,7 +151,9 @@ def require_param(b=None, q=None, method=None):
             ret_q = validate_params(q, request.QDICT)
             if ret_q.error is not Error.OK:
                 return error_response(ret_q)
-            request.d = Param(ret_b.body.update(ret_q.body))
+            param = ret_b.body or {}
+            param.update(ret_q.body or {})
+            request.d = Param(param)
             return func(request, *args, **kwargs)
 
         return wrapper
