@@ -48,7 +48,7 @@ class SendMobile:
         text = text.replace("#code#", code)
 
         SendMobile._send_sms(yunpian_appkey, text, mobile)
-        # print(code)
+        print(code)
         Session.save_captcha(request, SendMobile.PHONE, code)
         Session.save(request, SendMobile.PHONE_NUMBER, mobile)
 

@@ -38,11 +38,9 @@ class User(models.Model):
         'qitian': 4,
     }
 
-    VERIFY_NONE = 0
-    VERIFY_CHINA = 1
-    VERIFY_ABROAD = 2
+    VERIFY_CHINA = 0
+    VERIFY_ABROAD = 1
     VERIFY_TUPLE = (
-        (VERIFY_NONE, '暂未认证'),
         (VERIFY_CHINA, '中国大陆身份证认证'),
         (VERIFY_ABROAD, '其他地区身份认证'),
     )
@@ -109,9 +107,13 @@ class User(models.Model):
         null=True,
     )
 
+    is_verified = models.BooleanField(
+        verbose_name='是否通过实名认证',
+        default=False,
+    )
     real_verify_type = models.SmallIntegerField(
         verbose_name='实名认证类型',
-        default=0,
+        default=None,
     )
     real_name = models.CharField(
         verbose_name='真实姓名',
@@ -230,6 +232,7 @@ class User(models.Model):
                 qitian_modify_time=0,
                 user_str_id=cls.get_unique_user_str_id(),
                 birthday=None,
+                is_verified=False,
             )
             o_user.save()
         except ValueError as err:
