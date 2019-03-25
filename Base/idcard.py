@@ -30,7 +30,7 @@ class IDCard:
         resp = resp['data']
 
         try:
-            birth = datetime.datetime.strptime(resp['birth'], '%Y/%m/%d').date()
+            birth = datetime.datetime.strptime(resp['birth'], '%Y/%m/%d').strftime('%Y-%m-%d')
         except Exception as err:
             deprint(str(err))
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，生日验证错误')
@@ -54,8 +54,8 @@ class IDCard:
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，验证错误' + str(resp['msg']))
         resp = resp['data']
         try:
-            valid_start = datetime.datetime.strptime(resp['valid_date'][:10], '%Y.%m.%d').timestamp()
-            valid_end = datetime.datetime.strptime(resp['valid_date'][-10:], '%Y.%m.%d').timestamp()
+            valid_start = datetime.datetime.strptime(resp['valid_date'][:10], '%Y.%m.%d').strftime('%Y-%m-%d')
+            valid_end = datetime.datetime.strptime(resp['valid_date'][-10:], '%Y.%m.%d').strftime('%Y-%m-%d')
         except Exception as err:
             deprint(str(err))
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，生日验证错误')
