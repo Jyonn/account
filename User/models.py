@@ -345,6 +345,8 @@ class User(models.Model):
                 nickname=self.nickname,
                 description=self.description,
                 allow_qitian_modify=int(self.allow_qitian_modify()),
+                verify_status=self.verify_status,
+                verify_type=self.real_verify_type,
             )
 
     @classmethod
@@ -388,6 +390,11 @@ class User(models.Model):
         if ret.error is not Error.OK:
             return ret
 
+        if self.avatar:
+            from Base.qn import QN_PUBLIC_MANAGER
+            ret = QN_PUBLIC_MANAGER.delete_res(self.avatar)
+            if ret.error is not Error.OK:
+                return ret
         self.avatar = avatar
         self.save()
         return Ret()
@@ -397,18 +404,30 @@ class User(models.Model):
         if ret.error is not Error.OK:
             return ret
 
+        from Base.qn import QN_RES_MANAGER
+        if self.card_image_front:
+            ret = QN_RES_MANAGER.delete_res(self.card_image_front)
+            if ret.error is not Error.OK:
+                return ret
+
         self.card_image_front = card_image_front
         self.save()
-        return Ret()
+        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_front))
 
     def upload_verify_back(self, card_image_back):
         ret = self._validate(locals())
         if ret.error is not Error.OK:
             return ret
 
+        from Base.qn import QN_RES_MANAGER
+        if self.card_image_back:
+            ret = QN_RES_MANAGER.delete_res(self.card_image_back)
+            if ret.error is not Error.OK:
+                return ret
+
         self.card_image_back = card_image_back
         self.save()
-        return Ret()
+        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_back))
 
     def modify_info(self, nickname, description, qitian, birthday):
         """修改用户信息"""

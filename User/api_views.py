@@ -195,7 +195,9 @@ class AvatarView(View):
         o_user = ret.body
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
-        o_user.modify_avatar(key)
+        ret = o_user.modify_avatar(key)
+        if ret.error is not Error.OK:
+            return error_response(ret)
         return response(body=o_user.to_dict())
 
 
@@ -226,7 +228,7 @@ class IDCardView(View):
     @require_json
     @require_param(b=[
         ValidParam('key', '七牛存储键'),
-        ValidParam('user_id', '用户ID')
+        ValidParam('user_id', '用户ID'),
     ], q=[VP_BACK])
     def post(request):
         """ POST /api/user/idcard?back=[0, 1]
@@ -248,10 +250,12 @@ class IDCardView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
         if back:
-            o_user.upload_verify_back(key)
+            ret = o_user.upload_verify_back(key)
         else:
-            o_user.upload_verify_front(key)
-        return response(body=o_user.to_dict())
+            ret = o_user.upload_verify_front(key)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        return response(body=ret.body)
 
     @staticmethod
     @require_login(deny_auth_token=True)
@@ -280,19 +284,25 @@ class IDCardView(View):
             return error_response(ret)
         back_info = ret.body
 
-        crt_time = datetime.datetime.now().timestamp()
-        if back_info['valid_start'] > crt_time or crt_time > back_info['valid_end']:
-            return error_response(Error.CARD_VALID_EXPIRED)
-
-        ret = user.update_card_info(
-            front_info['real_name'],
-            front_info['male'],
-            front_info['idcard'],
-            front_info['birthday'],
-        )
+        # crt_time = datetime.datetime.now().timestamp()
+        # if back_info['valid_start'] > crt_time or crt_time > back_info['valid_end']:
+        #     return error_response(Error.CARD_VALID_EXPIRED)
+        #
+        # ret = user.update_card_info(
+        #     front_info['real_name'],
+        #     front_info['male'],
+        #     front_info['idcard'],
+        #     front_info['birthday'],
+        # )
+        # if ret.error is not Error.OK:
+        #     return error_response(ret)
+        back_info.update(front_info)
+        ret = jwt_e(back_info)
         if ret.error is not Error.OK:
-            return error_response(ret)
-        return response()
+            return ret
+        token, verify_info = ret.body
+        verify_info['token'] = token
+        return response(body=verify_info)
 
 
 def set_unique_user_str_id(request):
