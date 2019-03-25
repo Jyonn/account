@@ -500,7 +500,9 @@ class UserApp(models.Model):
         if frequent:
             if count < 0:
                 count = 3
+            print(frequent, count)
             app_list = app_list.order_by('-frequent_score')[:count]
+            print(len(app_list))
         return app_list
 
     @classmethod

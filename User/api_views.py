@@ -2,6 +2,8 @@
 
 用户API处理函数
 """
+import datetime
+
 from django.views import View
 
 from Base.common import deprint
@@ -107,7 +109,14 @@ class UserView(View):
             ret = o_user.change_password(password, old_password)
             if ret.error is not Error.OK:
                 return error_response(ret)
-        ret = o_user.modify_info(nickname, description, qitian, birthday)
+        try:
+            birthday = datetime.datetime.strptime(birthday, '%Y-%m-%d')
+        except Exception as err:
+            deprint(str(err))
+            return error_response(Error.ERROR_BIRTHDAY_FORMAT)
+        if birthday.timestamp() > datetime.datetime.now().timestamp():
+            return error_response(Error.ERROR_BIRTHDAY_FORMAT)
+        ret = o_user.modify_info(nickname, description, qitian, birthday.date())
         if ret.error is not Error.OK:
             return error_response(ret)
         return response(body=o_user.to_dict())
@@ -255,8 +264,35 @@ class IDCardView(View):
         if not isinstance(user, User):
             return error_response(Error.STRANGE)
 
-        if user.real_verify_type != User.VERIFY_NONE:
+        if user.verify_status:
             return error_response(Error.REAL_VERIFIED)
+
+        urls = user.get_card_urls()
+        if not urls['front'] or not urls['back']:
+            return error_response(Error.CARD_NOT_COMPLETE)
+
+        ret = IDCard.detect_front(urls['front'])
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        front_info = ret.body
+        ret = IDCard.detect_back(urls['back'])
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        back_info = ret.body
+
+        crt_time = datetime.datetime.now().timestamp()
+        if back_info['valid_start'] > crt_time or crt_time > back_info['valid_end']:
+            return error_response(Error.CARD_VALID_EXPIRED)
+
+        ret = user.update_card_info(
+            front_info['real_name'],
+            front_info['male'],
+            front_info['idcard'],
+            front_info['birthday'],
+        )
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        return response()
 
 
 def set_unique_user_str_id(request):

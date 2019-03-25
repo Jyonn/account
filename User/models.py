@@ -38,6 +38,17 @@ class User(models.Model):
         'qitian': 4,
     }
 
+    VERIFY_STATUS_UNVERIFIED = 0
+    VERIFY_STATUS_UNDER_AUTO = 1
+    VERIFY_STATUS_UNDER_MANUAL = 2
+    VERIFY_STATUS_DONE = 3
+    VERIFY_STATUS_TUPLE = (
+        (VERIFY_STATUS_UNVERIFIED, '没有认证'),
+        (VERIFY_STATUS_UNDER_AUTO, '自动认证阶段'),
+        (VERIFY_STATUS_UNDER_MANUAL, '人工认证阶段'),
+        (VERIFY_STATUS_DONE, '成功认证'),
+    )
+
     VERIFY_CHINA = 0
     VERIFY_ABROAD = 1
     VERIFY_TUPLE = (
@@ -107,9 +118,10 @@ class User(models.Model):
         null=True,
     )
 
-    is_verified = models.BooleanField(
+    verify_status = models.SmallIntegerField(
         verbose_name='是否通过实名认证',
-        default=False,
+        default=0,
+        choices=VERIFY_STATUS_TUPLE,
     )
     real_verify_type = models.SmallIntegerField(
         verbose_name='实名认证类型',
@@ -232,7 +244,7 @@ class User(models.Model):
                 qitian_modify_time=0,
                 user_str_id=cls.get_unique_user_str_id(),
                 birthday=None,
-                is_verified=False,
+                verify_status=cls.VERIFY_STATUS_UNVERIFIED,
             )
             o_user.save()
         except ValueError as err:
@@ -359,6 +371,17 @@ class User(models.Model):
         key = "%s-small" % self.avatar if small else self.avatar
         return QN_PUBLIC_MANAGER.get_resource_url(key)
 
+    def get_card_urls(self):
+        from Base.qn import QN_RES_MANAGER
+        front_url = QN_RES_MANAGER.get_resource_url(self.card_image_front) \
+            if self.card_image_front else None
+        back_url = QN_RES_MANAGER.get_resource_url(self.card_image_back) \
+            if self.card_image_back else None
+        return dict(
+            front=front_url,
+            back=back_url,
+        )
+
     def modify_avatar(self, avatar):
         """修改用户头像"""
         ret = self._validate(locals())
@@ -395,7 +418,7 @@ class User(models.Model):
             description = self.description
         if qitian is None:
             qitian = self.qitian
-        if birthday is None:
+        if birthday is None or (self.verify_status and self.real_verify_type == User.VERIFY_CHINA):
             birthday = self.birthday
         ret = self._validate(locals())
         if ret.error is not Error.OK:
@@ -415,3 +438,19 @@ class User(models.Model):
         self.save()
         return Ret()
 
+    def update_card_info(self, real_name, male, idcard, birthday):
+        ret = self._validate(locals())
+        if ret.error is not Error.OK:
+            return ret
+
+        self.real_name = real_name
+        self.male = male
+        self.idcard = idcard
+        self.birthday = birthday
+        try:
+            self.save()
+        except Exception as err:
+            deprint(str(err))
+            return Ret(Error.VERIFY_FAILIED)
+
+        return Ret()
