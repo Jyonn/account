@@ -212,14 +212,14 @@ class IDCardView(View):
         """
         o_user = request.user
         filename = request.d.filename
-        back = request.d.back
+        back = int(bool(request.d.back))
 
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
         import datetime
         crt_time = datetime.datetime.now().timestamp()
-        key = 'user/%s/avatar/%s/%s' % (o_user.user_str_id, crt_time, filename)
+        key = 'user/%s/card/%s/%s/%s' % (o_user.user_str_id, ['front', 'back'][back], crt_time, filename)
         policy = Policy.verify_back if back else Policy.verify_front
         qn_token, key = QN_RES_MANAGER.get_upload_token(key, policy(o_user.user_str_id))
         return response(body=dict(upload_token=qn_token, key=key))
