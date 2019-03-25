@@ -412,7 +412,7 @@ class User(models.Model):
 
         self.card_image_front = card_image_front
         self.save()
-        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_front))
+        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_front + '-small'))
 
     def upload_verify_back(self, card_image_back):
         ret = self._validate(locals())
@@ -427,7 +427,7 @@ class User(models.Model):
 
         self.card_image_back = card_image_back
         self.save()
-        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_back))
+        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_back + '-small'))
 
     def modify_info(self, nickname, description, qitian, birthday):
         """修改用户信息"""
