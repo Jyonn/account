@@ -497,6 +497,8 @@ class UserApp(models.Model):
     @classmethod
     def get_user_app_list_by_o_user(cls, o_user, frequent, count):
         app_list = cls.objects.filter(user=o_user, bind=True)
+        print(len(app_list))
+        print(o_user.to_dict())
         if frequent:
             if count < 0:
                 count = 3
