@@ -352,6 +352,8 @@ class VerifyView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
+        print(o_user.verify_status)
+        print(User.VERIFY_STATUS_DONE)
         if o_user.verify_status == User.VERIFY_STATUS_DONE:
             return error_response(Error.ALREADY_VERIFIED)
 
