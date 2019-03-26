@@ -12,7 +12,7 @@ from Base.scope import ScopeInstance
 from Base.valid_param import ValidParam
 from Base.validator import require_json, require_param, require_login
 from Base.error import Error
-from Base.jtoken import jwt_e, JWType
+from Base.jtoken import jwt_e, JWType, jwt_d
 from Base.policy import Policy
 from Base.qn import QN_PUBLIC_MANAGER, QN_RES_MANAGER
 from Base.response import response, error_response
@@ -284,25 +284,114 @@ class IDCardView(View):
             return error_response(ret)
         back_info = ret.body
 
-        # crt_time = datetime.datetime.now().timestamp()
-        # if back_info['valid_start'] > crt_time or crt_time > back_info['valid_end']:
-        #     return error_response(Error.CARD_VALID_EXPIRED)
-        #
-        # ret = user.update_card_info(
-        #     front_info['real_name'],
-        #     front_info['male'],
-        #     front_info['idcard'],
-        #     front_info['birthday'],
-        # )
-        # if ret.error is not Error.OK:
-        #     return error_response(ret)
         back_info.update(front_info)
+        back_info['type'] = 'idcard-verify'
         ret = jwt_e(back_info)
         if ret.error is not Error.OK:
             return ret
         token, verify_info = ret.body
         verify_info['token'] = token
         return response(body=verify_info)
+
+
+class VerifyView(View):
+    @staticmethod
+    @require_login(deny_auth_token=True)
+    def get(request):
+        """ GET /api/user/verify
+
+        自动实名认证
+        """
+        o_user = request.user
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        if o_user.verify_status:
+            return error_response(Error.REAL_VERIFIED)
+
+        urls = o_user.get_card_urls()
+        if not urls['front'] or not urls['back']:
+            return error_response(Error.CARD_NOT_COMPLETE)
+
+        ret = IDCard.detect_front(urls['front'])
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        front_info = ret.body
+        ret = IDCard.detect_back(urls['back'])
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        back_info = ret.body
+
+        back_info.update(front_info)
+        back_info['type'] = 'idcard-verify'
+        back_info['user_id'] = o_user.user_str_id
+        ret = jwt_e(back_info, expire_second=60 * 5)
+        if ret.error is not Error.OK:
+            return ret
+        token, verify_info = ret.body
+        verify_info['token'] = token
+        o_user.update_verify_type(User.VERIFY_CHINA)
+        return response(body=verify_info)
+
+    @staticmethod
+    @require_param([
+        ValidParam('name', '真实姓名').df(),
+        ValidParam('birthday', '生日').df(),
+        ValidParam('idcard', '身份证号').df(),
+        ValidParam('male', '性别').df().p(bool),
+        ValidParam('token', '认证口令').df(),
+        ValidParam('auto', '自动认证').df(True).p(bool),
+    ])
+    @require_login(deny_auth_token=True)
+    def post(request):
+        """ POST /api/user/verify
+
+        确认认证信息
+        """
+        o_user = request.user
+        if not isinstance(o_user, User):
+            return error_response(Error.STRANGE)
+
+        if o_user.verify_status == User.VERIFY_STATUS_DONE:
+            return error_response(Error.ALREADY_VERIFIED)
+
+        if request.d.auto:
+            token = request.d.token
+            ret = jwt_d(token)
+            if ret.error is not Error.OK:
+                return error_response(ret)
+            if 'user_id' not in ret.body:
+                return error_response(Error.AUTO_VERIFY_FAILED)
+            if o_user.user_str_id != ret.body['user_id']:
+                return error_response(Error.AUTO_VERIFY_FAILED)
+
+            crt_time = datetime.datetime.now().timestamp()
+            if ret.body['valid_start'] > crt_time or crt_time > ret.body['valid_end']:
+                return error_response(Error.CARD_VALID_EXPIRED)
+
+            ret = o_user.update_card_info(
+                ret.body['name'],
+                ret.body['male'],
+                ret.body['idcard'],
+                datetime.datetime.strptime(ret.body['birthday'], '%Y-%m-%d'),
+            )
+            if ret.error is not Error.OK:
+                return error_response(ret)
+            o_user.update_verify_status(User.VERIFY_STATUS_DONE)
+        else:
+            name = request.d.name
+            birthday = request.d.birthday
+            idcard = request.d.idcard
+            male = request.d.male
+            if not (name and birthday and idcard and male):
+                return error_response(Error.REQUIRE_PARAM, append_msg='，人工验证信息不全')
+            ret = o_user.update_card_info(
+                name, male, idcard, datetime.datetime.strptime(birthday, '%Y-%m-%d'),
+            )
+            if ret.error is not Error.OK:
+                return error_response(ret)
+            o_user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
+        return response(body=o_user.to_dict())
 
 
 def set_unique_user_str_id(request):

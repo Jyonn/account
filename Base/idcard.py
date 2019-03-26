@@ -36,8 +36,8 @@ class IDCard:
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，生日验证错误')
 
         return Ret(dict(
-            nation=resp['nation'],
-            address=resp['address'],
+            # nation=resp['nation'],
+            # address=resp['address'],
             male=resp['sex'] == '男',
             name=resp['name'],
             idcard=resp['id'],
@@ -61,7 +61,7 @@ class IDCard:
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，生日验证错误')
 
         return Ret(dict(
-            authority=resp['authority'],
+            # authority=resp['authority'],
             valid_start=valid_start,
             valid_end=valid_end,
         ))

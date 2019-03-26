@@ -470,6 +470,14 @@ class User(models.Model):
             self.save()
         except Exception as err:
             deprint(str(err))
-            return Ret(Error.VERIFY_FAILIED)
+            return Ret(Error.AUTO_VERIFY_FAILED)
 
         return Ret()
+
+    def update_verify_status(self, status):
+        self.verify_status = status
+        self.save()
+
+    def update_verify_type(self, verify_type):
+        self.real_verify_type = verify_type
+        self.save()
