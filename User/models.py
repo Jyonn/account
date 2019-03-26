@@ -195,12 +195,9 @@ class User(models.Model):
     def _valid_birthday(birthday):
         """验证生日是否合法"""
         import datetime
-        try:
-            b = datetime.datetime.strptime(birthday, '%Y-%m-%d').date()
-        except Exception as err:
-            deprint(str(err))
+        if not isinstance(birthday, datetime.date):
             return Ret(Error.ERROR_DATE_FORMAT)
-        if b > datetime.datetime.now().date():
+        if birthday > datetime.datetime.now().date():
             return Ret(Error.ERROR_BIRTHDAY_FORMAT)
         return Ret()
 
