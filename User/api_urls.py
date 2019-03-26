@@ -4,7 +4,8 @@
 """
 from django.urls import path
 
-from User.api_views import UserView, TokenView, AvatarView, set_unique_user_str_id, IDCardView
+from User.api_views import UserView, TokenView, AvatarView, set_unique_user_str_id, IDCardView, \
+    VerifyView
 
 urlpatterns = [
     path('', UserView.as_view()),
@@ -12,6 +13,7 @@ urlpatterns = [
     path('token', TokenView.as_view()),
     path('avatar', AvatarView.as_view()),
     path('idcard', IDCardView.as_view()),
+    path('verify', VerifyView.as_view()),
 
     # path('@set-unique-user-str-id', set_unique_user_str_id)
 ]
