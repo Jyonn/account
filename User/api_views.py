@@ -268,7 +268,7 @@ class IDCardView(View):
         if not isinstance(user, User):
             return error_response(Error.STRANGE)
 
-        if user.verify_status:
+        if user.verify_status == User.VERIFY_STATUS_DONE:
             return error_response(Error.REAL_VERIFIED)
 
         urls = user.get_card_urls()
@@ -300,7 +300,7 @@ class VerifyView(View):
     def get(request):
         """ GET /api/user/verify
 
-        自动实名认证
+        自动识别身份信息
         """
         o_user = request.user
         if not isinstance(o_user, User):
@@ -352,10 +352,8 @@ class VerifyView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
-        print(o_user.verify_status)
-        print(User.VERIFY_STATUS_DONE)
         if o_user.verify_status == User.VERIFY_STATUS_DONE:
-            return error_response(Error.ALREADY_VERIFIED)
+            return error_response(Error.REAL_VERIFIED)
 
         if request.d.auto:
             token = request.d.token

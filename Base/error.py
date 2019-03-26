@@ -94,7 +94,6 @@ class Error:
     CARD_NOT_COMPLETE = E("身份证正反面照片没有完善")
     CARD_VALID_EXPIRED = E("身份证认证过期")
     AUTO_VERIFY_FAILED = E("自动实名认证失败，请尝试人工认证")
-    ALREADY_VERIFIED = E("已实名认证")
 
 
 ERROR_DICT = dict()
