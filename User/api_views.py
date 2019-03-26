@@ -375,7 +375,7 @@ class VerifyView(View):
                 ret.body['name'],
                 ret.body['male'],
                 ret.body['idcard'],
-                datetime.datetime.strptime(ret.body['birthday'], '%Y-%m-%d'),
+                datetime.datetime.strptime(ret.body['birthday'], '%Y-%m-%d').date(),
             )
             if ret.error is not Error.OK:
                 return error_response(ret)
@@ -388,7 +388,7 @@ class VerifyView(View):
             if not (name and birthday and idcard and male):
                 return error_response(Error.REQUIRE_PARAM, append_msg='，人工验证信息不全')
             ret = o_user.update_card_info(
-                name, male, idcard, datetime.datetime.strptime(birthday, '%Y-%m-%d'),
+                name, male, idcard, datetime.datetime.strptime(birthday, '%Y-%m-%d').date(),
             )
             if ret.error is not Error.OK:
                 return error_response(ret)
