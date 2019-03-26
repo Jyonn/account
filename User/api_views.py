@@ -366,14 +366,16 @@ class VerifyView(View):
                 return error_response(Error.AUTO_VERIFY_FAILED)
 
             crt_time = datetime.datetime.now().timestamp()
-            if ret.body['valid_start'] > crt_time or crt_time > ret.body['valid_end']:
+            valid_start = datetime.datetime.strptime(ret.body['valid_start'], '%Y-%m-%d').timestamp()
+            valid_end = datetime.datetime.strptime(ret.body['valid_end'], '%Y-%m-%d').timestamp()
+            if valid_start > crt_time or crt_time > valid_end:
                 return error_response(Error.CARD_VALID_EXPIRED)
 
             ret = o_user.update_card_info(
                 ret.body['name'],
                 ret.body['male'],
                 ret.body['idcard'],
-                datetime.datetime.strptime(ret.body['birthday'], '%Y-%m-%d'),
+                ret.body['birthday'],
             )
             if ret.error is not Error.OK:
                 return error_response(ret)
@@ -386,7 +388,7 @@ class VerifyView(View):
             if not (name and birthday and idcard and male):
                 return error_response(Error.REQUIRE_PARAM, append_msg='，人工验证信息不全')
             ret = o_user.update_card_info(
-                name, male, idcard, datetime.datetime.strptime(birthday, '%Y-%m-%d'),
+                name, male, idcard, birthday,
             )
             if ret.error is not Error.OK:
                 return error_response(ret)
