@@ -214,6 +214,12 @@ class IDCardView(View):
         filename = request.d.filename
         back = int(bool(request.d.back))
 
+        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return error_response(Error.VERIFYING, append_msg='，无法重新上传')
+            else:
+                return error_response(Error.REAL_VERIFIED, append_msg='，无法重新上传')
+
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
@@ -249,6 +255,14 @@ class IDCardView(View):
         o_user = ret.body
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
+
+        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
+                    o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return error_response(Error.VERIFYING, append_msg='，无法重新上传')
+            else:
+                return error_response(Error.REAL_VERIFIED, append_msg='，无法重新上传')
+
         if back:
             ret = o_user.upload_verify_back(key)
         else:
@@ -256,42 +270,6 @@ class IDCardView(View):
         if ret.error is not Error.OK:
             return error_response(ret)
         return response(body=ret.body)
-
-    @staticmethod
-    @require_login(deny_auth_token=True)
-    def put(request):
-        """ POST /api/user/idcard
-
-        自动实名认证
-        """
-        user = request.user
-        if not isinstance(user, User):
-            return error_response(Error.STRANGE)
-
-        if user.verify_status == User.VERIFY_STATUS_DONE:
-            return error_response(Error.REAL_VERIFIED)
-
-        urls = user.get_card_urls()
-        if not urls['front'] or not urls['back']:
-            return error_response(Error.CARD_NOT_COMPLETE)
-
-        ret = IDCard.detect_front(urls['front'])
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        front_info = ret.body
-        ret = IDCard.detect_back(urls['back'])
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        back_info = ret.body
-
-        back_info.update(front_info)
-        back_info['type'] = 'idcard-verify'
-        ret = jwt_e(back_info)
-        if ret.error is not Error.OK:
-            return ret
-        token, verify_info = ret.body
-        verify_info['token'] = token
-        return response(body=verify_info)
 
 
 class VerifyView(View):
@@ -306,8 +284,12 @@ class VerifyView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
-        if o_user.verify_status:
-            return error_response(Error.REAL_VERIFIED)
+        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
+                    o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return error_response(Error.VERIFYING, append_msg='，无法继续识别')
+            else:
+                return error_response(Error.REAL_VERIFIED, append_msg='，无法继续识别')
 
         urls = o_user.get_card_urls()
         if not urls['front'] or not urls['back']:
@@ -352,8 +334,12 @@ class VerifyView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
-        if o_user.verify_status == User.VERIFY_STATUS_DONE:
-            return error_response(Error.REAL_VERIFIED)
+        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
+                    o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return error_response(Error.VERIFYING, append_msg='，无法继续确认')
+            else:
+                return error_response(Error.REAL_VERIFIED, append_msg='，无法继续确认')
 
         if request.d.auto:
             token = request.d.token
