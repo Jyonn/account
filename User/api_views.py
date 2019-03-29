@@ -8,6 +8,7 @@ from django.views import View
 
 from Base.common import deprint
 from Base.idcard import IDCard
+from Base.mail import Email
 from Base.scope import ScopeInstance
 from Base.valid_param import ValidParam
 from Base.validator import require_json, require_param, require_login
@@ -342,6 +343,7 @@ class VerifyView(View):
                 return error_response(Error.REAL_VERIFIED, append_msg='，无法继续确认')
 
         if request.d.auto:
+            # 自动验证
             token = request.d.token
             ret = jwt_d(token)
             if ret.error is not Error.OK:
@@ -367,6 +369,7 @@ class VerifyView(View):
                 return error_response(ret)
             o_user.update_verify_status(User.VERIFY_STATUS_DONE)
         else:
+            # 人工验证
             name = request.d.name
             birthday = request.d.birthday
             idcard = request.d.idcard
@@ -379,6 +382,7 @@ class VerifyView(View):
             if ret.error is not Error.OK:
                 return error_response(ret)
             o_user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
+            Email.real_verify(o_user, '')
         return response(body=o_user.to_dict())
 
 
