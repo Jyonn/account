@@ -23,7 +23,7 @@ class IDCard:
     def detect_front(link):
         resp = client.idcard_detect(CIUrls([link]), 0)
         if resp['httpcode'] != 200:
-            return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，网络错误' + str(resp['httpcode']))
+            return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，' + resp['result_list'][0]['message'])
         resp = resp['result_list'][0]
         if resp['code'] != 0:
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，验证错误' + str(resp['msg']))
@@ -47,10 +47,8 @@ class IDCard:
     @staticmethod
     def detect_back(link):
         resp = client.idcard_detect(CIUrls([link]), 1)
-        print(resp['httpcode'])
-        print(resp)
         if resp['httpcode'] != 200:
-            return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，网络错误' + str(resp['httpcode']))
+            return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，' + resp['result_list'][0]['message'])
         resp = resp['result_list'][0]
         if resp['code'] != 0:
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，验证错误' + str(resp['msg']))
