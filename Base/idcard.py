@@ -47,6 +47,7 @@ class IDCard:
     @staticmethod
     def detect_back(link):
         resp = client.idcard_detect(CIUrls([link]), 1)
+        print(resp['httpcode'])
         print(resp)
         if resp['httpcode'] != 200:
             return Ret(Error.IDCARD_DETECT_ERROR, append_msg='，网络错误' + str(resp['httpcode']))
