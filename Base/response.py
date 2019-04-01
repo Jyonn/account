@@ -29,7 +29,7 @@ def response(e=Error.OK, msg=Error.OK.msg, body=None):
     """
     resp = {
         "status": 'debug' if DEBUG else 'release',
-        "identifier": REVERSED_ERROR_DICT[e.eid],
+        "identifier": REVERSED_ERROR_DICT[e.eid]['identifier'],
         "code": e.eid,
         "msg": msg,
         "body": body or [],

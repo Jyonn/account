@@ -107,4 +107,4 @@ for k in Error.__dict__:
         e = getattr(Error, k)
         if isinstance(e, E):
             ERROR_DICT[k] = dict(eid=e.eid, msg=e.msg)
-            REVERSED_ERROR_DICT[e.eid] = k
+            REVERSED_ERROR_DICT[e.eid] = dict(identifier=k, msg=e.msg)
