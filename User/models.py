@@ -126,31 +126,37 @@ class User(models.Model):
     real_verify_type = models.SmallIntegerField(
         verbose_name='实名认证类型',
         default=None,
+        null=True,
     )
     real_name = models.CharField(
         verbose_name='真实姓名',
         default=None,
         max_length=L['real_name'],
+        null=True,
     )
     male = models.NullBooleanField(
         verbose_name='是否为男性',
         default=None,
+        null=True,
     )
     idcard = models.CharField(
         verbose_name='身份证号',
         default=None,
         max_length=L['idcard'],
         choices=VERIFY_TUPLE,
+        null=True,
     )
     card_image_front = models.CharField(
         verbose_name='身份证正面照',
         max_length=L['card_image_front'],
         default=None,
+        null=True,
     )
     card_image_back = models.CharField(
         verbose_name='身份证背面照',
         max_length=L['card_image_back'],
         default=None,
+        null=True,
     )
 
     FIELD_LIST = [
