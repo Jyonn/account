@@ -463,8 +463,8 @@ class App(models.Model):
         from User.models import User
         if not isinstance(o_user, User):
             return Ret(Error.STRANGE, append_msg='，检查要求错误2')
-        from Base.premise import PremiseChecker
         premise_list = []
+        from Base.premise_checker import PremiseChecker
         for o_premise in self.premises.all():
             checker = getattr(PremiseChecker, o_premise.get_checker(), None)
             p_dict = o_premise.to_dict()
