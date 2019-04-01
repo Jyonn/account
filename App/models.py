@@ -462,7 +462,7 @@ class App(models.Model):
     def check_premise(self, o_user):
         from User.models import User
         if not isinstance(o_user, User):
-            return Ret(Error.STRANGE, append_msg='，检查要求错误2')
+            return Ret(Error.STRANGE, append_msg='，检查要求错误')
         premise_list = []
         from Base.premise_checker import PremiseChecker
         for o_premise in self.premises.all():
@@ -570,6 +570,17 @@ class UserApp(models.Model):
 
     @classmethod
     def do_bind(cls, o_user, o_app):
+        ret = o_app.check_premise(o_user)
+        if ret.error is not Error.OK:
+            return ret
+        premise_list = ret.body
+        for premise in premise_list:
+            error = getattr(Error, premise['check']['identifier'], None)
+            if not error:
+                return Ret(Error.ERROR_NOT_FOUND)
+            if error != Error.OK:
+                return Ret(error)
+
         crt_timestamp = datetime.datetime.now().timestamp()
 
         ret = cls.get_user_app_by_o_user_o_app(o_user, o_app)

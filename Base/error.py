@@ -98,6 +98,7 @@ class Error:
     PREMISE_UNSATISFIED = E("要求不满足")
     REQUIRE_REAL_VERIFY = E("需要实名认证")
     NOT_FOUND_CHECKER = E("不存在的要求检测")
+    DISALLOW_CHILD = E("需年满18周岁")
 
 
 ERROR_DICT = dict()
