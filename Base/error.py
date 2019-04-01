@@ -95,6 +95,9 @@ class Error:
     CARD_VALID_EXPIRED = E("身份证认证过期")
     AUTO_VERIFY_FAILED = E("自动实名认证失败，请尝试人工认证")
     VERIFYING = E("您已提交认证")
+    PREMISE_UNSATISFIED = E("要求不满足")
+    REQUIRE_REAL_VERIFY = E("需要实名认证")
+    NOT_FOUND_CHECKER = E("不存在的要求检测")
 
 
 ERROR_DICT = dict()

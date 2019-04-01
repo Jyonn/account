@@ -120,7 +120,7 @@ class Email:
         if not ROOT_USER.email:
             return Ret(Error.EMAIL_NOT_EXIST)
         return Email(
-            subject='开发者申请',
+            subject='实名认证',
             dear=Element('你好，管理员：'),
             content=Element('用户')
             .a(Element(o_user.nickname or '齐天簿用户').bold())

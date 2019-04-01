@@ -5,7 +5,7 @@ from django.utils.crypto import get_random_string
 
 from Base.common import deprint
 from Base.validator import field_validator
-from Base.error import Error
+from Base.error import Error, REVERSED_ERROR_DICT
 from Base.jtoken import jwt_e, JWType
 from Base.response import Ret
 
@@ -101,6 +101,20 @@ class Premise(models.Model):
     def get_premise_list(cls):
         premises = cls.objects.all()
         return [o_premise.to_dict() for o_premise in premises]
+
+    def get_checker(self):
+        p_name = self.name
+        c_name = p_name[0]
+        for i in range(1, len(p_name)):
+            if p_name[i].isupper() and not p_name[i - 1].isupper():
+                c_name += '_'
+                c_name += p_name[i]
+            elif p_name[i].isupper() and p_name[i - 1].isupper() and p_name[i + 1].islower():
+                c_name += '_'
+                c_name += p_name[i]
+            else:
+                c_name += p_name[i]
+        return c_name.lower() + '_checker'
 
 
 class Scope(models.Model):
@@ -384,7 +398,7 @@ class App(models.Model):
             return Ret(Error.ERROR_MODIFY_APP, append_msg=str(err))
         return Ret()
 
-    def to_dict(self, base=False):
+    def to_dict(self, base=False, o_user=None):
         if base:
             return dict(
                 app_name=self.name,
@@ -395,8 +409,13 @@ class App(models.Model):
             )
         scopes = self.scopes.all()
         scope_list = [o_scope.to_dict() for o_scope in scopes]
+
         premises = self.premises.all()
         premise_list = [o_premise.to_dict() for o_premise in premises]
+        if o_user:
+            ret = self.check_premise(o_user)
+            if ret.error is Error.OK:
+                premise_list = ret.body
 
         return dict(
             user_num=self.user_num,
@@ -439,6 +458,23 @@ class App(models.Model):
 
     def authentication(self, app_secret):
         return self.secret == app_secret
+
+    def check_premise(self, o_user):
+        from User.models import User
+        if not isinstance(o_user, User):
+            return Ret(Error.STRANGE, append_msg='，检查要求错误2')
+        from Base.premise import PremiseChecker
+        premise_list = []
+        for o_premise in self.premises.all():
+            checker = getattr(PremiseChecker, o_premise.get_checker(), None)
+            p_dict = o_premise.to_dict()
+            if checker and callable(checker):
+                ret = checker(o_user)
+                p_dict['check'] = REVERSED_ERROR_DICT[ret.error.eid]
+            else:
+                p_dict['check'] = REVERSED_ERROR_DICT[Error.NOT_FOUND_CHECKER.eid]
+            premise_list.append(p_dict)
+        return Ret(premise_list)
 
 
 class UserApp(models.Model):

@@ -112,7 +112,7 @@ class AppIDView(View):
         if not isinstance(o_app, App):
             return error_response(Error.STRANGE)
 
-        dict_ = o_app.to_dict()
+        dict_ = o_app.to_dict(o_user=o_user)
 
         ret = UserApp.get_user_app_by_o_user_o_app(o_user, o_app)
         if ret.error is not Error.OK:
@@ -160,7 +160,7 @@ class AppIDView(View):
         ret = o_app.modify(name, desc, info, redirect_uri, scopes, premises)
         if ret.error is not Error.OK:
             return error_response(ret)
-        return response(body=o_app.to_dict())
+        return response(body=o_app.to_dict(o_user=o_user))
 
     @staticmethod
     @require_param()

@@ -82,8 +82,8 @@ class UserView(View):
     @require_json
     @require_param(
         [
-            ValidParam('password').df().r('新密码'),
-            ValidParam('old_password').df().r('旧密码'),
+            # ValidParam('password').df().r('新密码'),
+            # ValidParam('old_password').df().r('旧密码'),
             ValidParam('nickname').df().r('昵称'),
             ValidParam('description').df().r('个性签名'),
             ValidParam('qitian').df().r('齐天号'),
@@ -100,16 +100,16 @@ class UserView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
-        password = request.d.password
+        # password = request.d.password
         nickname = request.d.nickname
         qitian = request.d.qitian
-        old_password = request.d.old_password
+        # old_password = request.d.old_password
         description = request.d.description
         birthday = request.d.birthday
-        if password is not None:
-            ret = o_user.change_password(password, old_password)
-            if ret.error is not Error.OK:
-                return error_response(ret)
+        # if password is not None:
+        #     ret = o_user.change_password(password, old_password)
+        #     if ret.error is not Error.OK:
+        #         return error_response(ret)
         try:
             birthday = datetime.datetime.strptime(birthday, '%Y-%m-%d')
         except Exception as err:

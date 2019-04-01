@@ -1,6 +1,10 @@
-from App.models import Premise
+from Base.error import Error
+from Base.response import Ret
+from User.models import User
 
 
-class PremiseInstance:
-    real_verified = Premise.get_premise_by_name('realVerified', None).body
-    assert real_verified
+class PremiseChecker:
+    @staticmethod
+    def real_verified_checker(o_user):
+        if not isinstance(o_user, User):
+            return Ret(Error.STRANGE)
