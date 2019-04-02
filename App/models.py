@@ -412,6 +412,7 @@ class App(models.Model):
                 logo=self.get_logo_url(),
                 app_desc=self.desc,
                 user_num=self.user_num,
+                create_time=self.create_time.timestamp(),
             )
         scopes = self.scopes.all()
         scope_list = [o_scope.to_dict() for o_scope in scopes]
@@ -435,6 +436,7 @@ class App(models.Model):
             app_desc=self.desc,
             owner=self.owner.to_dict(base=True),
             mark=list(map(int, self.mark.split('-'))),
+            create_time=self.create_time.timestamp(),
         )
 
     def get_logo_url(self, small=True):
@@ -447,11 +449,13 @@ class App(models.Model):
 
     @classmethod
     def get_app_list(cls, count=-1, last_create_time=0):
+        print(count)
         last_time = datetime.datetime.fromtimestamp(last_create_time)
         apps = cls.objects.filter(create_time__gt=last_time).order_by('create_time')
         if count < 0:
             count = 20
         count = max(count, 20)
+        print(count)
         return apps[:count]
 
     def modify_logo(self, logo):
