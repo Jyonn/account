@@ -32,6 +32,7 @@ class AppView(View):
         ValidParam('relation').df(App.R_USER).p(relation_process),
         ValidParam('frequent').df(),
         ValidParam('count').df(3).p(int),
+        ValidParam('last_time').df(0).p(float)
     ])
     @require_login([ScopeInstance.read_app_list])
     def get(request):
@@ -45,11 +46,17 @@ class AppView(View):
         if relation == App.R_OWNER:
             o_apps = App.get_apps_by_owner(o_user)
             app_list = [o_app.to_dict(base=True) for o_app in o_apps]
+        elif relation == App.R_NONE:
+            count = request.d.count
+            last_time = request.d.last_time
+            o_apps = App.get_app_list(count, last_time)
+            app_list = [o_app.to_dict(base=True) for o_app in o_apps]
         else:
             frequent = request.d.frequent
             count = request.d.count
             user_app_list = UserApp.get_user_app_list_by_o_user(o_user, frequent, count)
             app_list = [o_user_app.app.to_dict(base=True) for o_user_app in user_app_list]
+
         return response(body=app_list)
 
     @staticmethod

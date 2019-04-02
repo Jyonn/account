@@ -245,7 +245,8 @@ class App(models.Model):
 
     R_USER = 'user'
     R_OWNER = 'owner'
-    R_LIST = [R_USER, R_OWNER]
+    R_NONE = 'none'
+    R_LIST = [R_USER, R_OWNER, R_NONE]
 
     name = models.CharField(
         verbose_name='应用名称',
@@ -306,6 +307,9 @@ class App(models.Model):
         default=0,
         verbose_name='用户人数',
     )
+    create_time = models.DateTimeField(
+        default=None,
+    )
 
     FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scopes', 'premises',
                   'desc', 'logo', 'mark', 'info']
@@ -356,6 +360,7 @@ class App(models.Model):
             return Ret(Error.EXIST_APP_NAME)
 
         try:
+            crt_time = datetime.datetime.now()
             o_app = cls(
                 name=name,
                 desc=desc,
@@ -365,6 +370,7 @@ class App(models.Model):
                 owner=owner,
                 field_change_time=datetime.datetime.now().timestamp(),
                 info=None,
+                create_time=crt_time,
             )
             o_app.save()
             o_app.scopes.add(*scopes)
@@ -438,6 +444,15 @@ class App(models.Model):
         from Base.qn import QN_PUBLIC_MANAGER
         key = "%s-small" % self.logo if small else self.logo
         return QN_PUBLIC_MANAGER.get_resource_url(key)
+
+    @classmethod
+    def get_app_list(cls, count=-1, last_create_time=0):
+        last_time = datetime.datetime.fromtimestamp(last_create_time)
+        apps = cls.objects.filter(create_time__gt=last_time).order_by('create_time')
+        if count < 0:
+            count = 20
+        count = max(count, 20)
+        return apps[:count]
 
     def modify_logo(self, logo):
         """修改应用logo"""
