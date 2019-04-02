@@ -449,13 +449,11 @@ class App(models.Model):
 
     @classmethod
     def get_app_list(cls, count=-1, last_create_time=0):
-        print(count)
         last_time = datetime.datetime.fromtimestamp(last_create_time)
         apps = cls.objects.filter(create_time__gt=last_time).order_by('create_time')
         if count < 0:
             count = 20
-        count = max(count, 20)
-        print(count)
+        count = min(count, 20)
         return apps[:count]
 
     def modify_logo(self, logo):
