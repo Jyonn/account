@@ -9,7 +9,6 @@ from Base.error import Error, ERROR_DICT
 from Base.response import response, error_response, Ret
 from Base.send_mobile import SendMobile
 from Base.session import Session
-from Base.weixin import Weixin
 
 VP_PHONE = ValidParam('phone', '手机号')
 VP_PWD = ValidParam('pwd', '密码')
@@ -19,14 +18,6 @@ class ErrorView(View):
     @staticmethod
     def get(request):
         return response(body=ERROR_DICT)
-
-
-class WechatConfigView(View):
-    @staticmethod
-    @require_param(q=[ValidParam('url', '链接')])
-    def get(request):
-        url = request.d.url
-        return Weixin.get_config(url)
 
 
 class RegionView(View):

@@ -15,6 +15,11 @@ APP_SECRET = Config.get_value_by_key('weixin-app-secret', 'YOUR-APP-SECRET').bod
 class Weixin:
     @staticmethod
     def update_access_token():
+        crt_time = int(datetime.datetime.now().timestamp())
+        last_update = int(Config.get_value_by_key('weixin-last-update', '0').body)
+        if crt_time - last_update < 60 * 80:  # 80 mins
+            return Ret(Error.UPDATE_WEIXIN_TIME_NOT_EXPIRED)
+
         resp = requests.get('https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s' % (APP_ID, APP_SECRET))
         data = resp.json()
         resp.close()
@@ -34,6 +39,8 @@ class Weixin:
         ret = Config.update_value('weixin-jsapi-ticket', data['ticket'])
         if ret.error is not Error.OK:
             return ret
+
+        Config.update_value('weixin-last-update', str(crt_time))
 
         return Ret()
 

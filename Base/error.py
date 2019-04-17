@@ -102,6 +102,7 @@ class Error:
 
     UPDATE_WEIXIN_ACCESS_TOKEN_ERROR = E("更新微信Access Token错误")
     UPDATE_WEIXIN_JSAPI_TICKET_ERROR = E("更新微信JsApi Ticket错误")
+    UPDATE_WEIXIN_TIME_NOT_EXPIRED = E("更新间隔太短")
 
 
 ERROR_DICT = dict()
