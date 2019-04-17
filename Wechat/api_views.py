@@ -15,7 +15,7 @@ class WechatConfigView(View):
         ret = Weixin.get_config(url)
         if ret.error is not Error.OK:
             return error_response(ret)
-        return response(ret.body)
+        return response(body=ret.body)
 
 
 class WechatAutoView(View):
@@ -24,5 +24,5 @@ class WechatAutoView(View):
         ret = Weixin.update_access_token()
         if ret.error is not Error.OK:
             return error_response(ret)
-        return response(ret.body)
+        return response(body=ret.body)
 
