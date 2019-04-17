@@ -8,8 +8,8 @@ from Base.weixin import Weixin
 
 class WechatConfigView(View):
     @staticmethod
-    @require_param(q=[ValidParam('url', '链接')])
-    def get(request):
+    @require_param([ValidParam('url', '链接')])
+    def post(request):
         url = request.d.url
         ret = Weixin.get_config(url)
         return error_response(ret)
