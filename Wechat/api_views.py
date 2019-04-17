@@ -1,6 +1,7 @@
 from django.views import View
 
-from Base.response import error_response
+from Base.error import Error
+from Base.response import error_response, response
 from Base.valid_param import ValidParam
 from Base.validator import require_param
 from Base.weixin import Weixin
@@ -12,11 +13,16 @@ class WechatConfigView(View):
     def post(request):
         url = request.d.url
         ret = Weixin.get_config(url)
-        return error_response(ret)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        return response(ret.body)
 
 
 class WechatAutoView(View):
     @staticmethod
     def get(request):
         ret = Weixin.update_access_token()
-        return error_response(ret)
+        if ret.error is not Error.OK:
+            return error_response(ret)
+        return response(ret.body)
+
