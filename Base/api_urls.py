@@ -4,7 +4,7 @@ base子路由
 """
 from django.urls import path
 
-from Base.api_views import ErrorView, RegionView, CaptchaView, ReCaptchaView
+from Base.api_views import ErrorView, RegionView, CaptchaView, ReCaptchaView, WechatConfigView
 
 
 urlpatterns = [
@@ -12,4 +12,5 @@ urlpatterns = [
     path('regions', RegionView.as_view()),
     path('captcha', CaptchaView.as_view()),
     path('recaptcha', ReCaptchaView.as_view()),
+    path('wechat/config', WechatConfigView.as_view())
 ]

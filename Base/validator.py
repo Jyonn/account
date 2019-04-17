@@ -71,24 +71,27 @@ def validate_params(valid_param_list, g_params):
 def field_validator(dict_, cls):
     """
     针对model的验证函数
-    事先需要FIELD_LIST存放需要验证的属性
+    (*无需)事先需要FIELD_LIST存放需要验证的属性
     需要L字典存放CharField类型字段的最大长度
     可选MIN_L字典存放CharField字段最小长度
     可选创建_valid_<param>函数进行自校验
     """
-    field_list = getattr(cls, 'FIELD_LIST', None)
-    if field_list is None:
-        return Ret(Error.ERROR_VALIDATION_FUNC, append_msg='，不存在FIELD_LIST')
+    # field_list = getattr(cls, 'FIELD_LIST', None)
+    # if field_list is None:
+    #     return Ret(Error.ERROR_VALIDATION_FUNC, append_msg='，不存在FIELD_LIST')
     _meta = getattr(cls, '_meta', None)
     if _meta is None:
         return Ret(Error.ERROR_VALIDATION_FUNC, append_msg='，不是Django的models类')
+    field_list = []
+    for local_field in _meta.local_fields:
+        field_list.append(local_field.name)
     len_list = getattr(cls, 'L', None)
     if len_list is None:
         return Ret(Error.ERROR_VALIDATION_FUNC, append_msg='，不存在长度字典L')
     min_len_list = getattr(cls, 'MIN_L', None)
 
     for k in dict_.keys():
-        if k in getattr(cls, 'FIELD_LIST'):
+        if k in field_list:
             if dict_[k] is None:
                 continue
             if isinstance(_meta.get_field(k), models.CharField):

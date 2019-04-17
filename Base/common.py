@@ -19,6 +19,13 @@ def md5(s):
     return md5_.hexdigest()
 
 
+def sha1(s):
+    import hashlib
+    sha1_ = hashlib.sha1()
+    sha1_.update(s.encode())
+    return sha1_.hexdigest()
+
+
 def get_client_ip(request):
     if 'HTTP_X_FORWARDED_FOR' in request.META:
         return request.META['HTTP_X_FORWARDED_FOR']

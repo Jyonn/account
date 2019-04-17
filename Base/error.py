@@ -100,6 +100,9 @@ class Error:
     NOT_FOUND_CHECKER = E("不存在的要求检测")
     DISALLOW_CHILD = E("需年满18周岁")
 
+    UPDATE_WEIXIN_ACCESS_TOKEN_ERROR = E("更新微信Access Token错误")
+    UPDATE_WEIXIN_JSAPI_TICKET_ERROR = E("更新微信JsApi Ticket错误")
+
 
 ERROR_DICT = dict()
 REVERSED_ERROR_DICT = dict()
