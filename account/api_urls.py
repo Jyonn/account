@@ -9,4 +9,5 @@ urlpatterns = [
     path('base/', include('Base.api_urls')),
     path('app/', include('App.api_urls')),
     path('oauth/', include('OAuth.api_urls')),
+    path('wechat/', include('Wechat.api_urls')),
 ]
