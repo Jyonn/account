@@ -54,7 +54,6 @@ class Weixin:
         timestamp = int(datetime.datetime.now().timestamp())
         raw_string = 'jsapi_ticket=%s&noncestr=%s&timestamp=%s&url=%s' % (jsapi_ticket, noncestr, timestamp, url)
         signature = sha1(raw_string)
-        print(raw_string, signature)
         return Ret(dict(
             noncestr=noncestr,
             signature=signature,
