@@ -52,7 +52,9 @@ class Weixin:
         jsapi_ticket = ret.body
         noncestr = get_random_string(length=16)
         timestamp = int(datetime.datetime.now().timestamp())
-        signature = sha1('jsapi_ticket=%s&noncestr=%s&timestamp=%s&url=%s' % (jsapi_ticket, noncestr, timestamp, url))
+        raw_string = 'jsapi_ticket=%s&noncestr=%s&timestamp=%s&url=%s' % (jsapi_ticket, noncestr, timestamp, url)
+        signature = sha1(raw_string)
+        print(raw_string, signature)
         return Ret(dict(
             noncestr=noncestr,
             signature=signature,
