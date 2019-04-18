@@ -49,7 +49,7 @@ class Weixin:
         ret = Config.get_config_by_key('weixin-jsapi-ticket')
         if ret.error is not Error.OK:
             return ret
-        jsapi_ticket = ret.body
+        jsapi_ticket = ret.body.value
         noncestr = get_random_string(length=16)
         timestamp = int(datetime.datetime.now().timestamp())
         raw_string = 'jsapi_ticket=%s&noncestr=%s&timestamp=%s&url=%s' % (jsapi_ticket, noncestr, timestamp, url)
