@@ -392,7 +392,7 @@ class DevView(View):
         if o_user.verify_status != User.VERIFY_STATUS_DONE:
             return error_response(Error.REQUIRE_REAL_VERIFY)
         o_user.developing()
-        return response()
+        return response(body=o_user.to_dict())
 
 
 def set_unique_user_str_id(request):
