@@ -389,6 +389,8 @@ class DevView(View):
     @require_login(deny_auth_token=True)
     def post(request):
         o_user = request.user
+        if o_user.verify_status != User.VERIFY_STATUS_DONE:
+            return error_response(Error.REQUIRE_REAL_VERIFY)
         o_user.developing()
         return response()
 
