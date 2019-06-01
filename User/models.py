@@ -158,10 +158,14 @@ class User(models.Model):
         default=None,
         null=True,
     )
+    is_dev = models.BooleanField(
+        verbose_name='是否开发者',
+        default=False,
+    )
 
     FIELD_LIST = [
         'qitian', 'password', 'avatar', 'nickname', 'phone',
-        'description', 'birthday', 'email']
+        'description', 'birthday', 'email', 'is_dev']
 
     @classmethod
     def get_unique_user_str_id(cls):
@@ -248,6 +252,7 @@ class User(models.Model):
                 user_str_id=cls.get_unique_user_str_id(),
                 birthday=None,
                 verify_status=cls.VERIFY_STATUS_UNVERIFIED,
+                is_dev=False,
             )
             o_user.save()
         except ValueError as err:
@@ -350,6 +355,7 @@ class User(models.Model):
                 allow_qitian_modify=int(self.allow_qitian_modify()),
                 verify_status=self.verify_status,
                 verify_type=self.real_verify_type,
+                is_dev=self.is_dev,
             )
 
     @classmethod
@@ -483,4 +489,8 @@ class User(models.Model):
 
     def update_verify_type(self, verify_type):
         self.real_verify_type = verify_type
+        self.save()
+
+    def developer(self):
+        self.is_dev = True
         self.save()

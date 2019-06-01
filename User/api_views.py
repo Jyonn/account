@@ -82,8 +82,6 @@ class UserView(View):
     @require_json
     @require_param(
         [
-            # ValidParam('password').df().r('新密码'),
-            # ValidParam('old_password').df().r('旧密码'),
             ValidParam('nickname').df().r('昵称'),
             ValidParam('description').df().r('个性签名'),
             ValidParam('qitian').df().r('齐天号'),
@@ -384,6 +382,15 @@ class VerifyView(View):
             o_user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
             Email.real_verify(o_user, '')
         return response(body=o_user.to_dict())
+
+
+class DevView(View):
+    @staticmethod
+    @require_login(deny_auth_token=True)
+    def post(request):
+        o_user = request.user
+        o_user.developing()
+        return response()
 
 
 def set_unique_user_str_id(request):
