@@ -14,7 +14,10 @@ SENDER_EMAIL_PWD = Config.get_value_by_key('sender-email-pwd', 'YOUR-SENDER-EMAI
 SMTP_SERVER = Config.get_value_by_key('smtp-server', 'YOUR-SMTP-SERVER').body
 SMTP_PORT = Config.get_value_by_key('smtp-port', 'YOUR-SMTP-PORT').body
 SMTP_PORT = int(SMTP_PORT)
-ROOT_USER = User.get_user_by_id(1).body
+try:
+    ROOT_USER = User.get_user_by_id(1).body
+except Exception:
+    pass
 
 
 class Element:
