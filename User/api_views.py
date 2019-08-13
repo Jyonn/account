@@ -98,16 +98,10 @@ class UserView(View):
         if not isinstance(o_user, User):
             return error_response(Error.STRANGE)
 
-        # password = request.d.password
         nickname = request.d.nickname
         qitian = request.d.qitian
-        # old_password = request.d.old_password
         description = request.d.description
         birthday = request.d.birthday
-        # if password is not None:
-        #     ret = o_user.change_password(password, old_password)
-        #     if ret.error is not Error.OK:
-        #         return error_response(ret)
         try:
             birthday = datetime.datetime.strptime(birthday, '%Y-%m-%d')
         except Exception as err:
