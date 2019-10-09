@@ -133,7 +133,7 @@ class Scope(models.Model):
     )
     detail = models.CharField(
         verbose_name='权限详细说明',
-        max_length=20,
+        max_length=100,
         default=None,
     )
 
