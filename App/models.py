@@ -1,90 +1,90 @@
 import datetime
 
-from django.db import models
+from SmartDjango import models, ErrorCenter, E, Excp, BaseError, P
 from django.utils.crypto import get_random_string
 
-from Base.common import deprint
-from Base.validator import field_validator
-from Base.error import Error, REVERSED_ERROR_DICT
-from Base.jtoken import jwt_e, JWType
-from Base.response import Ret
+from Base.jtoken import JWType, JWT
+from Base.premise_checker import PremiseCheckerError
+from Config.models import CI
+
+
+class AppError(ErrorCenter):
+    PREMISE_NOT_FOUND = E("不存在的要求")
+    CREATE_PREMISE = E("创建要求错误")
+
+    CREATE_SCOPE = E("创建权限错误")
+    SCOPE_NOT_FOUND = E("不存在的权限")
+
+    APP_NOT_FOUND = E("不存在的应用")
+    CREATE_APP = E("创建应用错误")
+    EXIST_APP_NAME = E("已存在此应用名")
+    APP_NOT_BELONG = E("不是你的应用")
+    MODIFY_APP = E("修改应用信息错误")
+
+    USER_APP_NOT_FOUND = E("请仔细阅读应用所需权限")
+    BIND_USER_APP = E("无法绑定应用")
+    APP_UNBINDED = E("应用被用户解绑")
+
+    SCORE_REFRESHED = E("频率分数已经刷新")
+
+    MARK = E("评分失败")
+    APP_SECRET = E("错误的应用密钥")
+
+    ILLEGAL_ACCESS_RIGHT = E("非法访问权限")
+
+
+AppError.register()
 
 
 class Premise(models.Model):
     """要求类，不满足要求无法进入应用"""
-    L = {
-        'name': 20,
-        'desc': 20,
-        'detail': 100,
-    }
     name = models.CharField(
         verbose_name='要求英文简短名称',
-        max_length=L['name'],
+        max_length=20,
         unique=True,
     )
     desc = models.CharField(
         verbose_name='要求介绍',
-        max_length=L['desc'],
+        max_length=20,
     )
     detail = models.CharField(
         verbose_name='要求详细说明',
-        max_length=L['detail'],
+        max_length=100,
         default=None,
     )
-    FIELD_LIST = ['name', 'desc', 'detail']
-
-    class __PremiseNone:
-        pass
 
     @classmethod
-    def _validate(cls, d):
-        return field_validator(d, cls)
-
-    @classmethod
-    def get_premise_by_id(cls, pid):
+    @Excp.pack
+    def get_by_id(cls, pid):
         try:
-            o_premise = cls.objects.get(pk=pid)
-        except cls.DoesNotExist as err:
-            deprint('Premise-get_premise_by_id', str(err))
-            return Ret(Error.NOT_FOUND_PREMISE)
-        return Ret(o_premise)
+            return cls.objects.get(pk=pid)
+        except cls.DoesNotExist:
+            return AppError.PREMISE_NOT_FOUND
 
     @classmethod
-    def get_premise_by_name(cls, name, default=__PremiseNone()):
+    @Excp.pack
+    def get_by_name(cls, name):
         try:
-            o_premise = cls.objects.get(name=name)
-        except Exception as err:
-            deprint(str(err))
-            if isinstance(default, cls.__PremiseNone):
-                return Ret(Error.NOT_FOUND_PREMISE)
-            else:
-                return Ret(default)
-        return Ret(o_premise)
+            return cls.objects.get(name=name)
+        except Exception:
+            return AppError.PREMISE_NOT_FOUND
 
     @classmethod
+    @Excp.pack
     def create(cls, name, desc, detail):
-        ret = cls._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
         try:
-            o_premise = cls(
+            premise = cls(
                 name=name,
                 desc=desc,
                 detail=detail,
             )
-            o_premise.save()
-        except Exception as err:
-            deprint('create-premise', str(err))
-            return Ret(Error.ERROR_CREATE_PREMISE)
-        return Ret(o_premise)
+            premise.save()
+        except Exception:
+            return AppError.CREATE_PREMISE
+        return premise
 
-    def to_dict(self):
-        return dict(
-            name=self.name,
-            desc=self.desc,
-            detail=self.detail,
-        )
+    def d(self):
+        return self.dictor(['name', 'desc', 'detail'])
 
     @classmethod
     def list_to_premise_list(cls, premises):
@@ -92,18 +92,14 @@ class Premise(models.Model):
         if not isinstance(premises, list):
             return []
         for premise_name in premises:
-            ret = cls.get_premise_by_name(premise_name)
-            if ret.error is Error.OK:
-                premise_list.append(ret.body)
+            try:
+                premise_list.append(cls.get_by_name(premise_name))
+            except Exception:
+                pass
         return premise_list
 
-    @classmethod
-    def get_premise_list(cls):
-        premises = cls.objects.all()
-        return [o_premise.to_dict() for o_premise in premises]
-
-    def get_checker(self):
-        p_name = self.name
+    @staticmethod
+    def get_checker(p_name):
         c_name = p_name[0]
         for i in range(1, len(p_name)):
             if p_name[i].isupper() and not p_name[i - 1].isupper():
@@ -114,24 +110,22 @@ class Premise(models.Model):
                 c_name += p_name[i]
             else:
                 c_name += p_name[i]
-        return c_name.lower() + '_checker'
+        checker_name = c_name.lower() + '_checker'
+
+        from Base.premise_checker import PremiseChecker
+        return getattr(PremiseChecker, checker_name, None)
 
 
 class Scope(models.Model):
     """权限类"""
-    L = {
-        'name': 20,
-        'desc': 20,
-        'detail': 100,
-    }
     name = models.CharField(
         verbose_name='权限英文简短名称',
-        max_length=L['name'],
+        max_length=20,
         unique=True,
     )
     desc = models.CharField(
         verbose_name='权限介绍',
-        max_length=L['desc'],
+        max_length=20,
     )
     always = models.NullBooleanField(
         verbose_name="Null 可有可无 True 一直可选 False 一直不可选",
@@ -139,65 +133,43 @@ class Scope(models.Model):
     )
     detail = models.CharField(
         verbose_name='权限详细说明',
-        max_length=L['detail'],
+        max_length=20,
         default=None,
     )
-    FIELD_LIST = ['name', 'desc', 'detail']
-
-    class __ScopeNone:
-        pass
 
     @classmethod
-    def _validate(cls, d):
-        return field_validator(d, cls)
-
-    @classmethod
-    def get_scope_by_id(cls, sid):
+    @Excp.pack
+    def get_by_id(cls, sid):
         try:
-            o_scope = cls.objects.get(pk=sid)
-        except cls.DoesNotExist as err:
-            deprint('Scope-get_scope_by_id', str(err))
-            return Ret(Error.NOT_FOUND_SCOPE)
-        return Ret(o_scope)
+            return cls.objects.get(pk=sid)
+        except cls.DoesNotExist:
+            return AppError.SCOPE_NOT_FOUND
 
     @classmethod
-    def get_scope_by_name(cls, name, default=__ScopeNone()):
+    @Excp.pack
+    def get_by_name(cls, name):
         try:
-            o_scope = cls.objects.get(name=name)
-        except Exception as err:
-            deprint(str(err))
-            if isinstance(default, cls.__ScopeNone):
-                return Ret(Error.NOT_FOUND_SCOPE)
-            else:
-                return Ret(default)
-        return Ret(o_scope)
+            return cls.objects.get(name=name)
+        except Exception:
+            return AppError.SCOPE_NOT_FOUND
 
     @classmethod
+    @Excp.pack
     def create(cls, name, desc, detail):
-        ret = cls._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
         try:
-            o_scope = cls(
+            scope = cls(
                 name=name,
                 desc=desc,
                 detail=detail,
                 always=None,
             )
-            o_scope.save()
-        except Exception as err:
-            deprint('create-scope', str(err))
-            return Ret(Error.ERROR_CREATE_SCOPE)
-        return Ret(o_scope)
+            scope.save()
+        except Exception:
+            return AppError.CREATE_SCOPE
+        return scope
 
-    def to_dict(self):
-        return dict(
-            name=self.name,
-            desc=self.desc,
-            always=self.always,
-            detail=self.detail,
-        )
+    def d(self):
+        return self.dictor(['name', 'desc', 'always', 'detail'])
 
     @classmethod
     def list_to_scope_list(cls, scopes):
@@ -205,44 +177,29 @@ class Scope(models.Model):
         if not isinstance(scopes, list):
             return []
         for scope_name in scopes:
-            ret = cls.get_scope_by_name(scope_name)
-            if ret.error is Error.OK and ret.body.always != False:  # 直接忽略false
-                scope_list.append(ret.body)
+            try:
+                scope = cls.get_by_name(scope_name)
+                if scope.always != False:  # 此处不能将 != False 删除 因为要考虑None的情况
+                    scope_list.append(scope)
+            except Exception:
+                pass
 
         # 仍然存在always是True的但没有被添加的情况 于是double_check
         return cls.double_check(scope_list)
 
     @classmethod
-    def get_scope_list(cls):
-        scopes = cls.objects.all()
-        return [o_scope.to_dict() for o_scope in scopes]
-
-    @classmethod
     def double_check(cls, scope_list):
-        total_scope_list = cls.objects.all()
         final_list = []
-        for o_scope in total_scope_list:
-            if o_scope.always:
-                final_list.append(o_scope)
-        for o_scope in scope_list:
-            if o_scope.always is None:  # false被忽略，true已经添加
-                final_list.append(o_scope)
+        for scope in cls.objects.all():
+            if scope.always:
+                final_list.append(scope)
+        for scope in scope_list:
+            if scope.always is None:  # false被忽略，true已经添加
+                final_list.append(scope)
         return final_list
 
 
 class App(models.Model):
-    L = {
-        'name': 32,
-        'id': 32,
-        'secret': 32,
-        'redirect_uri': 512,
-        'desc': 32,
-        'logo': 1024,
-    }
-    MIN_L = {
-        'name': 2,
-    }
-
     R_USER = 'user'
     R_OWNER = 'owner'
     R_NONE = 'none'
@@ -250,21 +207,22 @@ class App(models.Model):
 
     name = models.CharField(
         verbose_name='应用名称',
-        max_length=L['name'],
+        max_length=32,
+        min_length=2,
         unique=True,
     )
     id = models.CharField(
         verbose_name='应用唯一ID',
-        max_length=L['id'],
+        max_length=32,
         primary_key=True,
     )
     secret = models.CharField(
         verbose_name='应用密钥',
-        max_length=L['secret'],
+        max_length=32,
     )
     redirect_uri = models.URLField(
         verbose_name='应用跳转URI',
-        max_length=L['redirect_uri'],
+        max_length=512,
     )
     scopes = models.ManyToManyField(
         'Scope',
@@ -285,14 +243,14 @@ class App(models.Model):
         default=0,
     )
     desc = models.CharField(
-        max_length=L['desc'],
+        max_length=32,
         default=None,
     )
     logo = models.CharField(
         default=None,
         null=True,
         blank=True,
-        max_length=L['logo'],
+        max_length=1024,
     )
     mark = models.SlugField(
         default='0-0-0-0-0',
@@ -311,164 +269,142 @@ class App(models.Model):
         default=None,
     )
 
-    FIELD_LIST = ['name', 'id', 'secret', 'redirect_uri', 'scopes', 'premises',
-                  'desc', 'logo', 'mark', 'info']
-
     @classmethod
-    def _validate(cls, d):
-        return field_validator(d, cls)
-
-    @classmethod
-    def get_app_by_name(cls, name):
+    @Excp.pack
+    def get_by_name(cls, name):
         try:
-            o_app = cls.objects.get(name=name)
-        except cls.DoesNotExist as err:
-            deprint('App-get_app_by_name', str(err))
-            return Ret(Error.NOT_FOUND_APP)
-        return Ret(o_app)
+            return cls.objects.get(name=name)
+        except cls.DoesNotExist:
+            return AppError.APP_NOT_FOUND
 
     @classmethod
-    def get_app_by_id(cls, app_id):
+    @Excp.pack
+    def get_by_id(cls, app_id):
         try:
-            o_app = cls.objects.get(pk=app_id)
-        except cls.DoesNotExist as err:
-            deprint('App-get_app_by_id', str(err))
-            return Ret(Error.NOT_FOUND_APP)
-        return Ret(o_app)
+            return cls.objects.get(pk=app_id)
+        except cls.DoesNotExist:
+            return AppError.APP_NOT_FOUND
 
     @classmethod
     def get_unique_app_id(cls):
         while True:
-            app_id = get_random_string(length=cls.L['id'])
-            ret = cls.get_app_by_id(app_id)
-            if ret.error == Error.NOT_FOUND_APP:
-                return app_id
-            deprint('generate app_id: %s, conflict.' % app_id)
+            app_id = get_random_string(length=8)
+            try:
+                cls.get_by_id(app_id)
+            except Excp as ret:
+                if ret.eis(AppError.APP_NOT_FOUND):
+                    return app_id
 
     @classmethod
-    def get_apps_by_owner(cls, owner):
-        return cls.objects.filter(owner=owner)
-
-    @classmethod
+    @Excp.pack
     def create(cls, name, desc, redirect_uri, scopes, premises, owner):
-        ret = cls._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
-        ret = cls.get_app_by_name(name)
-        if ret.error is Error.OK:
-            return Ret(Error.EXIST_APP_NAME)
+        try:
+            cls.get_by_name(name)
+            return AppError.EXIST_APP_NAME
+        except Excp:
+            pass
 
         try:
             crt_time = datetime.datetime.now()
-            o_app = cls(
+            app = cls(
                 name=name,
                 desc=desc,
                 id=cls.get_unique_app_id(),
-                secret=get_random_string(length=cls.L['secret']),
+                secret=get_random_string(length=32),
                 redirect_uri=redirect_uri,
                 owner=owner,
                 field_change_time=datetime.datetime.now().timestamp(),
                 info=None,
                 create_time=crt_time,
             )
-            o_app.save()
-            o_app.scopes.add(*scopes)
-            o_app.premises.add(*premises)
-            o_app.save()
-        except Exception as err:
-            deprint('App-create', str(err))
-            return Ret(Error.ERROR_CREATE_APP, append_msg=str(err))
-        return Ret(o_app)
+            app.save()
+            app.scopes.add(*scopes)
+            app.premises.add(*premises)
+            app.save()
+        except Exception:
+            return AppError.CREATE_APP
+        return app
 
+    @Excp.pack
     def modify(self, name, desc, info, redirect_uri, scopes, premises):
         """修改应用信息"""
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
         self.name = name
         self.desc = desc
         self.info = info
         self.redirect_uri = redirect_uri
-        for o_scope in self.scopes.all():
-            self.scopes.remove(o_scope)
+        for scope in self.scopes.all():
+            self.scopes.remove(scope)
         self.scopes.add(*scopes)
-        for o_premise in self.premises.all():
-            self.premises.remove(o_premise)
+        for premise in self.premises.all():
+            self.premises.remove(premise)
         self.premises.add(*premises)
         self.field_change_time = datetime.datetime.now().timestamp()
         try:
             self.save()
-        except Exception as err:
-            deprint(str(err))
-            return Ret(Error.ERROR_MODIFY_APP, append_msg=str(err))
-        return Ret()
+        except Exception:
+            return AppError.MODIFY_APP
 
-    def to_dict(self, base=False, o_user=None):
-        if base:
-            return dict(
-                app_name=self.name,
-                app_id=self.id,
-                logo=self.get_logo_url(),
-                app_desc=self.desc,
-                user_num=self.user_num,
-                create_time=self.create_time.timestamp(),
-            )
-        scopes = self.scopes.all()
-        scope_list = [o_scope.to_dict() for o_scope in scopes]
+    def _readable_app_name(self):
+        return self.name
 
-        premises = self.premises.all()
-        premise_list = [o_premise.to_dict() for o_premise in premises]
-        if o_user:
-            ret = self.check_premise(o_user)
-            if ret.error is Error.OK:
-                premise_list = ret.body
+    def _readable_app_id(self):
+        return self.id
 
-        return dict(
-            user_num=self.user_num,
-            app_name=self.name,
-            app_id=self.id,
-            app_info=self.info,
-            scopes=scope_list,
-            premises=premise_list,
-            redirect_uri=self.redirect_uri,
-            logo=self.get_logo_url(),
-            app_desc=self.desc,
-            owner=self.owner.to_dict(base=True),
-            mark=list(map(int, self.mark.split('-'))),
-            create_time=self.create_time.timestamp(),
-        )
+    def _readable_app_desc(self):
+        return self.desc
 
-    def get_logo_url(self, small=True):
-        """获取应用logo地址"""
+    def _readable_logo(self, small=True):
         if self.logo is None:
             return None
-        from Base.qn import QN_PUBLIC_MANAGER
+        from Base.qn import qn_public_manager
         key = "%s-small" % self.logo if small else self.logo
-        return QN_PUBLIC_MANAGER.get_resource_url(key)
+        return qn_public_manager.get_resource_url(key)
 
-    @classmethod
-    def get_app_list(cls, count=-1, last_create_time=0):
-        last_time = datetime.datetime.fromtimestamp(last_create_time)
-        apps = cls.objects.filter(create_time__gt=last_time).order_by('create_time')
-        if count < 0:
-            count = 20
-        count = min(count, 20)
-        return apps[:count]
+    def _readable_create_time(self):
+        return self.create_time.timestamp()
 
+    def _readable_app_info(self):
+        return self.info
+
+    def _readable_owner(self):
+        return self.owner.d_base()
+
+    def _readable_mark(self):
+        return list(map(int, self.mark.split('-')))
+
+    def mark_as_list(self):
+        return self._readable_mark()
+
+    def _readable_scopes(self):
+        scopes = self.scopes.all()
+        return list(map(lambda s: s.d(), scopes))
+
+    def _readable_premises(self):
+        premises = self.premises.all()
+        return list(map(lambda p: p.d(), premises))
+
+    def d(self):
+        return self.dictor(
+            ['app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
+             'redirect_uri', 'create_time', 'owner', 'mask', 'scopes', 'premises'])
+
+    def d_user(self, user):
+        dict_ = self.d()
+        dict_.update(dict(premises=self.check_premise(user)))
+        return dict_
+
+    def d_base(self):
+        return self.dictor(['app_name', 'app_id', 'logo', 'app_desc', 'user_num', 'create_time'])
+
+    @Excp.pack
     def modify_logo(self, logo):
         """修改应用logo"""
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-        from Base.qn import QN_PUBLIC_MANAGER
+        self.validator(locals())
+        from Base.qn import qn_public_manager
         if self.logo:
-            ret = QN_PUBLIC_MANAGER.delete_res(self.logo)
-            if ret.error is not Error.OK:
-                return ret
+            qn_public_manager.delete_res(self.logo)
         self.logo = logo
         self.save()
-        return Ret()
 
     def belong(self, o_user):
         return self.owner == o_user
@@ -476,33 +412,34 @@ class App(models.Model):
     def authentication(self, app_secret):
         return self.secret == app_secret
 
-    def check_premise(self, o_user):
-        from User.models import User
-        if not isinstance(o_user, User):
-            return Ret(Error.STRANGE, append_msg='，检查要求错误')
-        premise_list = []
-        from Base.premise_checker import PremiseChecker
-        for o_premise in self.premises.all():
-            checker = getattr(PremiseChecker, o_premise.get_checker(), None)
-            p_dict = o_premise.to_dict()
+    def check_premise(self, user):
+        premises = []
+        for premise in self.premises.all():
+            checker = Premise.get_checker(premise.name)
             if checker and callable(checker):
-                ret = checker(o_user)
-                p_dict['check'] = REVERSED_ERROR_DICT[ret.error.eid]
+                error = Excp(checker(user)).error
             else:
-                p_dict['check'] = REVERSED_ERROR_DICT[Error.NOT_FOUND_CHECKER.eid]
-            premise_list.append(p_dict)
-        return Ret(premise_list)
+                error = PremiseCheckerError.CHECKER_NOT_FOUND()
+            if error.append_msg:
+                if error.e.ph == E.PH_NONE:
+                    msg = error.e.msg + '，%s' % error.append_msg
+                elif error.e.ph == E.PH_FORMAT:
+                    msg = error.e.msg.format(*error.append_msg)
+                else:
+                    msg = error.e.msg % error.append_msg
+            else:
+                msg = error.e.msg
+            p_dict = premise.d()
+            p_dict['check'] = dict(
+                identifier=ErrorCenter.r_get(error.e.eid),
+                msg=msg,
+            )
+            premises.append(p_dict)
+        return premises
 
 
 class UserApp(models.Model):
     """用户应用类"""
-    L = {
-        'user_app_id': 16,
-        'auth_code': 32,
-        'last_auth_code_time': 20,
-        'last_score_changed_time': 20,
-    }
-
     user = models.ForeignKey(
         'User.User',
         on_delete=models.CASCADE,
@@ -512,7 +449,7 @@ class UserApp(models.Model):
         on_delete=models.CASCADE,
     )
     user_app_id = models.CharField(
-        max_length=L['user_app_id'],
+        max_length=16,
         verbose_name='用户在这个app下的唯一ID',
         unique=True,
     )
@@ -523,7 +460,7 @@ class UserApp(models.Model):
     last_auth_code_time = models.CharField(
         default=None,
         verbose_name='上一次申请auth_code的时间，防止被多次使用',
-        max_length=L['last_auth_code_time'],
+        max_length=20,
     )
     frequent_score = models.FloatField(
         verbose_name='频繁访问分数，按分值排序为常用应用',
@@ -532,144 +469,126 @@ class UserApp(models.Model):
     last_score_changed_time = models.CharField(
         default=None,
         verbose_name='上一次分数变化的时间',
-        max_length=L['last_score_changed_time'],
+        max_length=20,
     )
     mark = models.PositiveSmallIntegerField(
         verbose_name='此用户的打分，0表示没打分',
         default=0,
     )
 
-    def to_dict(self):
-        return dict(
-            bind=self.bind,
-            mark=self.mark,
-            rebind=float(self.last_auth_code_time) < self.app.field_change_time,
-            user_app_id=self.user_app_id,
-        )
+    def _readable_rebind(self):
+        return float(self.last_auth_code_time) < self.app.field_change_time
+
+    def d(self):
+        return self.dictor(['bind', 'mark', 'rebind', 'user_app_id'])
 
     @classmethod
-    def get_user_app_list_by_o_user(cls, o_user, frequent, count):
-        app_list = cls.objects.filter(user=o_user, bind=True)
-        if frequent:
-            if count < 0:
-                count = 3
-            app_list = app_list.order_by('-frequent_score')[:count]
-        return app_list
-
-    @classmethod
-    def get_user_app_by_o_user_o_app(cls, o_user, o_app):
+    @Excp.pack
+    def get_by_user_app(cls, o_user, o_app):
         try:
-            o_user_app = cls.objects.get(user=o_user, app=o_app)
-        except Exception as err:
-            deprint('UserApp-get_user_app_by_o_user_o_app', str(err))
-            return Ret(Error.NOT_FOUND_USER_APP)
-        return Ret(o_user_app)
+            return cls.objects.get(user=o_user, app=o_app)
+        except Exception:
+            return AppError.USER_APP_NOT_FOUND
 
     @classmethod
-    def get_user_app_by_user_app_id(cls, user_app_id, check_bind=False):
+    @Excp.pack
+    def get_by_id(cls, user_app_id, check_bind=False):
         try:
-            o_user_app = cls.objects.get(user_app_id=user_app_id)
-        except Exception as err:
-            deprint('UserApp-get_user_app_by_user_app_id', str(err))
-            return Ret(Error.NOT_FOUND_USER_APP)
-        if check_bind and not o_user_app.bind:
-            return Ret(Error.APP_UNBINDED)
-        return Ret(o_user_app)
+            user_app = cls.objects.get(user_app_id=user_app_id)
+        except Exception:
+            return AppError.USER_APP_NOT_FOUND
+        if check_bind and not user_app.bind:
+            return AppError.APP_UNBINDED
+        return user_app
 
     @classmethod
-    def get_unique_user_app_id(cls):
+    def get_unique_id(cls):
         while True:
-            user_app_id = get_random_string(length=cls.L['user_app_id'])
-            ret = cls.get_user_app_by_user_app_id(user_app_id)
-            if ret.error == Error.NOT_FOUND_USER_APP:
-                return user_app_id
-            deprint('generate user_app_id: %s, conflict.' % user_app_id)
+            user_app_id = get_random_string(length=8)
+            try:
+                cls.get_by_id(user_app_id)
+            except Excp as ret:
+                if ret.eis(AppError.USER_APP_NOT_FOUND):
+                    return user_app_id
 
     @classmethod
-    def do_bind(cls, o_user, o_app):
-        ret = o_app.check_premise(o_user)
-        if ret.error is not Error.OK:
-            return ret
-        premise_list = ret.body
+    @Excp.pack
+    def do_bind(cls, user, app):
+        premise_list = app.check_premise(user)
         for premise in premise_list:
-            error = getattr(Error, premise['check']['identifier'], None)
-            if not error:
-                return Ret(Error.ERROR_NOT_FOUND)
-            if error != Error.OK:
-                return Ret(error)
+            error = getattr(PremiseCheckerError, premise['check']['identifier'], None)
+            if error.eid != BaseError.OK.eid:
+                return error
 
         crt_timestamp = datetime.datetime.now().timestamp()
 
-        ret = cls.get_user_app_by_o_user_o_app(o_user, o_app)
-        if ret.error is Error.OK:
-            o_user_app = ret.body
-            if not isinstance(o_user_app, cls):
-                return Ret(Error.STRANGE)
-            o_user_app.bind = True
-            o_user_app.last_auth_code_time = crt_timestamp
-            o_user_app.frequent_score += 1
-            o_user_app.last_score_changed_time = crt_timestamp
-            o_user_app.save()
-        else:
-            try:
-                o_user_app = cls(
-                    user=o_user,
-                    app=o_app,
-                    user_app_id=cls.get_unique_user_app_id(),
-                    bind=True,
-                    last_auth_code_time=crt_timestamp,
-                    frequent_score=1,
-                    last_score_changed_time=crt_timestamp,
-                )
-                o_user_app.save()
-                o_user_app.app.user_num += 1
-                o_user_app.app.save()
-            except Exception as err:
-                deprint(str(err))
-                return Ret(Error.ERROR_BIND_USER_APP)
-        return jwt_e(dict(
-            user_app_id=o_user_app.user_app_id,
+        try:
+            user_app = cls.get_by_user_app(user, app)
+            user_app.bind = True
+            user_app.last_auth_code_time = crt_timestamp
+            user_app.frequent_score += 1
+            user_app.last_score_changed_time = crt_timestamp
+            user_app.save()
+        except Excp as ret:
+            if ret.eis(AppError.USER_APP_NOT_FOUND):
+                try:
+                    user_app = cls(
+                        user=user,
+                        app=app,
+                        user_app_id=cls.get_unique_id(),
+                        bind=True,
+                        last_auth_code_time=crt_timestamp,
+                        frequent_score=1,
+                        last_score_changed_time=crt_timestamp,
+                    )
+                    user_app.save()
+                    user_app.app.user_num += 1
+                    user_app.app.save()
+                except Exception:
+                    return AppError.BIND_USER_APP
+            else:
+                return ret
+        return JWT.encrypt(dict(
+            user_app_id=user_app.user_app_id,
             type=JWType.AUTH_CODE,
             ctime=crt_timestamp
         ), replace=False, expire_second=5 * 60)
 
     @classmethod
-    def check_bind(cls, o_user, o_app):
-        ret = cls.get_user_app_by_o_user_o_app(o_user, o_app)
-        if ret.error is not Error.OK:
+    def check_bind(cls, user, app):
+        try:
+            user_app = cls.get_by_user_app(user, app)
+            return user_app.bind
+        except Excp:
             return False
-        o_user_app = ret.body
-        if not isinstance(o_user_app, UserApp):
-            deprint('UserApp-check_bind_strange')
-            return False
-        return o_user_app.bind
 
     @classmethod
+    @Excp.pack
     def refresh_frequent_score(cls):
         from Config.models import Config
         crt_date = datetime.datetime.now().date()
         crt_time = datetime.datetime.now().timestamp()
-        last_date = Config.get_value_by_key('last-refresh-frequent-score-date').body
+        last_date = Config.get_value_by_key(CI.LAST_RE_FREQ_SCORE_DATE)
         last_date = datetime.datetime.strptime(last_date, '%Y-%m-%d').date()
 
         if last_date >= crt_date:
-            return Ret(Error.SCORE_REFRESHED)
+            return AppError.SCORE_REFRESHED
 
         from OAuth.api_views import OAUTH_TOKEN_EXPIRE_TIME
 
-        Config.update_value('last-refresh-frequent-score-date', crt_date.strftime('%Y-%m-%d'))
-        for o_user_app in cls.objects.all():
-            if crt_time - float(o_user_app.last_auth_code_time) > OAUTH_TOKEN_EXPIRE_TIME + 24 * 60 * 60:
-                if crt_time - float(o_user_app.last_score_changed_time) > OAUTH_TOKEN_EXPIRE_TIME:
-                    o_user_app.frequent_score /= 2
-                    o_user_app.last_score_changed_time = crt_time
-                    o_user_app.save()
+        Config.update_value(CI.LAST_RE_FREQ_SCORE_DATE, crt_date.strftime('%Y-%m-%d'))
+        for user_app in cls.objects.all():
+            if crt_time - float(
+                    user_app.last_auth_code_time) > OAUTH_TOKEN_EXPIRE_TIME + 24 * 60 * 60:
+                if crt_time - float(user_app.last_score_changed_time) > OAUTH_TOKEN_EXPIRE_TIME:
+                    user_app.frequent_score /= 2
+                    user_app.last_score_changed_time = crt_time
+                    user_app.save()
 
-        return Ret()
-
+    @Excp.pack
     def do_mark(self, mark):
         if mark < 1 or mark > 5:
-            return Ret(Error.ERROR_MARK)
+            return AppError.MARK
         original_mark = self.mark
         self.mark = mark
         self.save()
@@ -681,4 +600,13 @@ class UserApp(models.Model):
         self.app.mark = '-'.join(map(str, mark_list))
         self.app.save()
 
-        return Ret()
+
+class AppP:
+    name, info, desc, redirect_uri, secret = App.P(
+        'name', 'info', 'desc', 'redirect_uri', 'secret')
+    scopes = P('scopes', '应用权限列表').process(Scope.list_to_scope_list)
+    premises = P('premises', '应用要求列表').process(Premise.list_to_premise_list)
+
+    app = P('app_id', '应用ID').process(P.Processor(App.get_by_id, yield_name='app'))
+    user_app = P('user_app_id', '用户绑定应用ID').process(
+        P.Processor(UserApp.get_by_id, yield_name='user_app'))

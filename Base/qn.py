@@ -4,35 +4,68 @@
 """
 import qiniu
 import requests
+from SmartDjango import Excp, ErrorCenter, E
 from django.http import HttpRequest
 from qiniu import urlsafe_base64_encode
 
-from Base.common import deprint
-from Base.error import Error
-from Base.response import Ret
-from Config.models import Config
-from account.settings import HOST
+from Base.common import HOST
+from Config.models import Config, CI
 
-ACCESS_KEY = Config.get_value_by_key('qiniu-access-key', 'YOUR-ACCESS-KEY').body
-SECRET_KEY = Config.get_value_by_key('qiniu-secret-key', 'YOUR-SECRET-KEY').body
-RES_BUCKET = Config.get_value_by_key('qiniu-res-bucket', 'YOUR-RES-BUCKET').body
-PUBLIC_BUCKET = Config.get_value_by_key('qiniu-public-bucket', 'YOUR-PUBLIC-BUCKET').body
+ACCESS_KEY = Config.get_value_by_key(CI.QINIU_ACCESS_KEY)
+SECRET_KEY = Config.get_value_by_key(CI.QINIU_SECRET_KEY)
+RES_BUCKET = Config.get_value_by_key(CI.RES_BUCKET)
+PUBLIC_BUCKET = Config.get_value_by_key(CI.PUBLIC_BUCKET)
+RES_CDN_HOST = Config.get_value_by_key(CI.RES_CDN_HOST)
+PUBLIC_CDN_HOST = Config.get_value_by_key(CI.PUBLIC_CDN_HOST)
 
 _AUTH = qiniu.Auth(access_key=ACCESS_KEY, secret_key=SECRET_KEY)
 _HOST = HOST
 _KEY_PREFIX = 'account/'
 
 QINIU_MANAGE_HOST = "https://rs.qiniu.com"
-RES_CDN_HOST = 'https://res.6-79.cn'
-PUBLIC_CDN_HOST = 'https://image.6-79.cn'
 
 
-class QN:
+class QNError(ErrorCenter):
+    REQUEST_QINIU = E("七牛请求错误")
+    QINIU_UNAUTHORIZED = E("七牛端身份验证错误")
+    FAIL_QINIU = E("未知原因导致的七牛端操作错误")
+    UNAUTH_CALLBACK = E("未经授权的回调函数")
+
+
+QNError.register()
+
+
+class QnManager:
     def __init__(self, auth, bucket, cdn_host, public):
         self.auth = auth
         self.bucket = bucket
         self.cdn_host = cdn_host
         self.public = public
+
+    @staticmethod
+    def encode_key(key):
+        key = key.replace('@', '@@')
+        key = key.replace('$', '@S')
+        return key
+
+    @staticmethod
+    def decode_key(key: str):
+        new_key = ''
+        while True:
+            p_at = key.find('@')
+            if p_at == -1:
+                new_key += key
+                break
+            new_key += key[:p_at]
+            if key[p_at + 1] == '@':
+                new_key += '@'
+            elif key[p_at + 1] == 'S':
+                new_key += '$'
+            else:
+                pass
+            key = key[p_at+2:]
+
+        return new_key
 
     def get_upload_token(self, key, policy):
         """
@@ -43,29 +76,31 @@ class QN:
         key = _KEY_PREFIX + key
         return self.auth.upload_token(bucket=self.bucket, key=key, expires=3600, policy=policy), key
 
-    def qiniu_auth_callback(self, request):
+    @Excp.pack
+    def auth_callback(self, request: HttpRequest):
         """七牛callback认证校验"""
-        if not isinstance(request, HttpRequest):
-            return Ret(Error.STRANGE)
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         if auth_header is None:
-            return Ret(Error.UNAUTH_CALLBACK)
+            return QNError.UNAUTH_CALLBACK
         url = request.get_full_path()
         body = request.body
-        verified = self.auth.verify_callback(auth_header, url, body, content_type='application/json')
+        verified = self.auth.verify_callback(auth_header, url, body,
+                                             content_type='application/json')
         if not verified:
-            return Ret(Error.UNAUTH_CALLBACK)
-        return Ret()
+            return QNError.UNAUTH_CALLBACK
 
-    def get_resource_url(self, key, expires=3600):
+    def get_resource_url(self, key, expires=3600, small=False):
         """获取资源链接"""
         url = '%s/%s' % (self.cdn_host, key)
+        if small:
+            return '%s-small' % url
         if self.public:
-            return '%s/%s' % (self.cdn_host, key)
+            return url
         else:
             return self.auth.private_download_url(url, expires=expires)
 
     @staticmethod
+    @Excp.pack
     def deal_manage_res(target, access_token):
         url = '%s%s' % (QINIU_MANAGE_HOST, target)
         headers = {
@@ -76,16 +111,15 @@ class QN:
         try:
             r = requests.post(url, headers=headers)
         except requests.exceptions.RequestException:
-            return Ret(Error.ERROR_REQUEST_QINIU)
+            return QNError.REQUEST_QINIU
         status = r.status_code
         r.close()
         if status == 200:
-            return Ret()
+            return
         elif status == 401:
-            return Ret(Error.QINIU_UNAUTHORIZED)
+            return QNError.QINIU_UNAUTHORIZED
         else:
-            deprint(status)
-            return Ret(Error.FAIL_QINIU)
+            return QNError.FAIL_QINIU('状态错误%s' % status)
 
     def delete_res(self, key):
         entry = '%s:%s' % (self.bucket, key)
@@ -104,5 +138,5 @@ class QN:
         return self.deal_manage_res(target, access_token)
 
 
-QN_RES_MANAGER = QN(_AUTH, RES_BUCKET, RES_CDN_HOST, public=False)
-QN_PUBLIC_MANAGER = QN(_AUTH, PUBLIC_BUCKET, PUBLIC_CDN_HOST, public=True)
+qn_res_manager = QnManager(_AUTH, RES_BUCKET, RES_CDN_HOST, public=False)
+qn_public_manager = QnManager(_AUTH, PUBLIC_BUCKET, PUBLIC_CDN_HOST, public=True)

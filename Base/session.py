@@ -5,9 +5,16 @@
 
 import datetime
 
-from Base.common import deprint
-from Base.error import Error
-from Base.response import Ret
+from SmartDjango import Excp, ErrorCenter, E
+
+
+class SessionError(ErrorCenter):
+    CAPTCHA = E("验证失败")
+    CAPTCHA_EXPIRED = E("验证码过期，请重试")
+    SESSION = E("会话错误，请刷新重试")
+
+
+SessionError.register()
 
 
 class Session:
@@ -37,10 +44,12 @@ class Session:
     @staticmethod
     def save_captcha(request, captcha_type, code, last=300):
         request.session["saved_" + captcha_type + "_code"] = str(code)
-        request.session["saved_" + captcha_type + "_time"] = int(datetime.datetime.now().timestamp())
+        request.session["saved_" + captcha_type + "_time"] = \
+            int(datetime.datetime.now().timestamp())
         request.session["saved_" + captcha_type + "_last"] = last
 
     @staticmethod
+    @Excp.pack
     def check_captcha(request, captcha_type, code):
         correct_code = request.session.get("saved_" + captcha_type + "_code")
         correct_time = request.session.get("saved_" + captcha_type + "_time")
@@ -50,12 +59,11 @@ class Session:
             del request.session["saved_" + captcha_type + "_code"]
             del request.session["saved_" + captcha_type + "_time"]
             del request.session["saved_" + captcha_type + "_last"]
-        except KeyError as err:
-            deprint(str(err))
+        except KeyError:
+            pass
         if None in [correct_code, correct_time, correct_last]:
-            return Ret(Error.ERROR_CAPTCHA)
+            return SessionError.CAPTCHA
         if current_time - correct_time > correct_last:
-            return Ret(Error.CAPTCHA_EXPIRED)
+            return SessionError.CAPTCHA_EXPIRED
         if correct_code.upper() != str(code).upper():
-            return Ret(Error.ERROR_CAPTCHA)
-        return Ret()
+            return SessionError.CAPTCHA

@@ -1,119 +1,76 @@
+from SmartDjango import Analyse, P
 from django.views import View
 
-from App.api_views import VP_APP_ID, VP_APP_SECRET
-from App.models import App, UserApp
-from Base.common import deprint
-from Base.valid_param import ValidParam
-from Base.validator import require_param, require_login
-from Base.error import Error
-from Base.jtoken import jwt_d, JWType, jwt_e
-from Base.response import error_response, response
+from App.models import UserApp, AppError, AppP
+from Base.auth import Auth, AuthError
+from Base.jtoken import JWType, JWT
 
 OAUTH_TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60
 
 
 class OAuthView(View):
     @staticmethod
-    @require_param(q=[VP_APP_ID])
-    @require_login(deny_auth_token=True)
-    def get(request):
+    @Analyse.r(q=[AppP.app])
+    @Auth.require_login(deny_auth_token=True)
+    def get(r):
         """GET /api/oauth/?app_id=:app_id"""
         # 可在新版本之后删除
-        o_user = request.user
-        app_id = request.d.app_id
+        user = r.user
+        app = r.d.app
+        
+        user_app = UserApp.get_by_user_app(user, app)
+        if float(user_app.last_auth_code_time) < app.field_change_time:
+            return AuthError.APP_FIELD_CHANGE
 
-        ret = App.get_app_by_id(app_id)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_app = ret.body
-        if not isinstance(o_app, App):
-            return error_response(Error.STRANGE)
-
-        ret = UserApp.get_user_app_by_o_user_o_app(o_user, o_app)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user_app = ret.body
-        if not isinstance(o_user_app, UserApp):
-            return error_response(Error.STRANGE)
-
-        # print(o_user_app.last_auth_code_time)
-        # print(o_app.field_change_time)
-        if float(o_user_app.last_auth_code_time) < o_app.field_change_time:
-            return error_response(Error.APP_FIELD_CHANGE)
-
-        if o_user_app.bind:
-            ret = UserApp.do_bind(o_user, o_app)
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            return response(body=dict(auth_code=ret.body[0], redirect_uri=o_app.redirect_uri))
+        if user_app.bind:
+            encode_str, dict_ = UserApp.do_bind(user, app)
+            return dict(auth_code=encode_str, redirect_uri=app.redirect_uri)
         else:
-            return error_response(Error.APP_UNBINDED)
+            return AppError.APP_UNBINDED
 
     @staticmethod
-    @require_param([VP_APP_ID])
-    @require_login(deny_auth_token=True)
-    def post(request):
+    @Analyse.r([AppP.app])
+    @Auth.require_login(deny_auth_token=True)
+    def post(r):
         """POST /api/oauth/
 
         授权应用
         """
-        o_user = request.user
-        app_id = request.d.app_id
+        user = r.user
+        app = r.d.app
 
-        ret = App.get_app_by_id(app_id)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_app = ret.body
-        if not isinstance(o_app, App):
-            return error_response(Error.STRANGE)
-
-        ret = UserApp.do_bind(o_user, o_app)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        return response(body=dict(auth_code=ret.body[0], redirect_uri=o_app.redirect_uri))
+        encode_str, dict_ = UserApp.do_bind(user, app)
+        return dict(auth_code=encode_str, redirect_uri=app.redirect_uri)
 
 
 class OAuthTokenView(View):
     @staticmethod
-    @require_param([ValidParam('code', '授权码'), VP_APP_SECRET])
-    def post(request):
+    @Analyse.r([P('code', '授权码'), AppP.secret.clone().rename('app_secret')])
+    def post(r):
         """POST /api/oauth/token"""
-        code = request.d.code
-        ret = jwt_d(code)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        dict_ = ret.body
+        code = r.d.code
+        dict_ = JWT.decrypt(code)
         if dict_['type'] != JWType.AUTH_CODE:
-            return error_response(Error.REQUIRE_AUTH_CODE)
+            return AuthError.REQUIRE_AUTH_CODE
 
         user_app_id = dict_['user_app_id']
-        ret = UserApp.get_user_app_by_user_app_id(user_app_id, check_bind=True)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user_app = ret.body
-        if not isinstance(o_user_app, UserApp):
-            deprint('OAuth-api_views-OAuthTokenView-post-UserApp.get_user_app_by_user_app_id',
-                    user_app_id)
-            return error_response(Error.STRANGE)
+        user_app = UserApp.get_by_id(user_app_id, check_bind=True)
 
         ctime = dict_['ctime']
-        if o_user_app.app.field_change_time > ctime:
-            return error_response(Error.APP_FIELD_CHANGE)
+        if user_app.app.field_change_time > ctime:
+            return AuthError.APP_FIELD_CHANGE
 
-        if o_user_app.last_auth_code_time != str(ctime):
-            return error_response(Error.NEW_AUTH_CODE_CREATED)
+        if user_app.last_auth_code_time != str(ctime):
+            return AuthError.NEW_AUTH_CODE_CREATED
 
-        ret = jwt_e(
+        token, dict_ = JWT.encrypt(
             dict(
-                user_app_id=o_user_app.user_app_id,
+                user_app_id=user_app.user_app_id,
                 type=JWType.AUTH_TOKEN,
             ),
             expire_second=OAUTH_TOKEN_EXPIRE_TIME,
         )
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        token, dict_ = ret.body
         dict_['token'] = token
-        dict_['avatar'] = o_user_app.user.get_avatar_url()
+        dict_['avatar'] = user_app.user.get_avatar_url()
 
-        return response(body=dict_)
+        return dict_

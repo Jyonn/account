@@ -4,394 +4,283 @@
 """
 import datetime
 
+from SmartDjango import P, Analyse, BaseError
 from django.views import View
 
-from Base.common import deprint
-from Base.idcard import IDCard
+from Base.auth import Auth
+from Base.idcard import IDCard, IDCardError
 from Base.mail import Email
-from Base.scope import ScopeInstance
-from Base.valid_param import ValidParam
-from Base.validator import require_json, require_param, require_login
-from Base.error import Error
-from Base.jtoken import jwt_e, JWType, jwt_d
+from Base.premise_checker import PremiseCheckerError
+from Base.scope import SI
+from Base.jtoken import JWType, JWT
 from Base.policy import Policy
-from Base.qn import QN_PUBLIC_MANAGER, QN_RES_MANAGER
-from Base.response import response, error_response
+from Base.qn import qn_public_manager, qn_res_manager
 from Base.send_mobile import SendMobile
-from Base.session import Session
+from Base.session import Session, SessionError
 
-from User.models import User
-
-
-VP_BACK = ValidParam('back', '侧别').p(int)
+from User.models import User, UserP
 
 
 class UserView(View):
     @staticmethod
-    def get_token_info(o_user):
-        ret = jwt_e(dict(user_id=o_user.user_str_id, type=JWType.LOGIN_TOKEN))
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        token, dict_ = ret.body
-        dict_['token'] = token
-        dict_['user'] = o_user.to_dict()
-        return dict_
-
-    @staticmethod
-    @require_login([ScopeInstance.read_base_info])
-    def get(request):
+    @Auth.require_login([SI.read_base_info])
+    def get(r):
         """ GET /api/user/
 
         获取我的信息
         """
-        o_user = request.user
-        if not isinstance(o_user, User):
-            deprint('User-api_views-UserView-get-o_user-User')
-            return error_response(Error.STRANGE)
-        return response(body=o_user.to_dict(oauth=request.type_ == JWType.AUTH_TOKEN))
+        user = r.user
+        return user.d_oauth() if r.type_ == JWType.AUTH_TOKEN else user.d()
 
     @staticmethod
-    @require_json
-    @require_param([
-        ValidParam('password', '密码'),
-        ValidParam('code', '验证码')
-    ])
-    def post(request):
+    @Analyse.r([UserP.password, P('code', '验证码')])
+    def post(r):
         """ POST /api/user/
 
         创建用户
         """
-        code = request.d.code
-        password = request.d.password
+        code = r.d.code
+        password = r.d.password
 
-        ret = SendMobile.check_captcha(request, code)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        phone = ret.body
+        phone = SendMobile.check_captcha(r, code)
 
-        ret = User.create(phone, password)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-
-        return response(body=UserView.get_token_info(o_user))
+        user = User.create(phone, password)
+        return Auth.get_login_token(user)
 
     @staticmethod
-    @require_json
-    @require_param(
+    @Analyse.r(
         [
-            ValidParam('nickname').df().r('昵称'),
-            ValidParam('description').df().r('个性签名'),
-            ValidParam('qitian').df().r('齐天号'),
-            ValidParam('birthday').df().r('生日'),
+            UserP.nickname.clone().set_null(),
+            UserP.description.clone().set_null(),
+            UserP.qitian.clone().set_null(),
+            UserP.birthday.clone().set_null(),
         ]
     )
-    @require_login(deny_auth_token=True)
-    def put(request):
+    @Auth.require_login(deny_auth_token=True)
+    def put(r):
         """ PUT /api/user/
 
         修改用户信息
         """
-        o_user = request.user
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
+        user = r.user
 
-        nickname = request.d.nickname
-        qitian = request.d.qitian
-        description = request.d.description
-        birthday = request.d.birthday
-        try:
-            birthday = datetime.datetime.strptime(birthday, '%Y-%m-%d')
-        except Exception as err:
-            deprint(str(err))
-            return error_response(Error.ERROR_BIRTHDAY_FORMAT)
-        if birthday.timestamp() > datetime.datetime.now().timestamp():
-            return error_response(Error.ERROR_BIRTHDAY_FORMAT)
-        ret = o_user.modify_info(nickname, description, qitian, birthday.date())
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        return response(body=o_user.to_dict())
+        user.modify_info(**r.d.dict())
+        return user.d()
 
 
 class TokenView(View):
     @staticmethod
-    @require_json
-    @require_param([ValidParam('password', '密码')])
-    def post(request):
+    @Analyse.r([UserP.password])
+    def post(r):
         """ POST /api/user/token
 
         登录获取token
         """
-        password = request.d.password
-        login_type = Session.load(request, SendMobile.LOGIN_TYPE, once_delete=False)
+        password = r.d.password
+        login_type = Session.load(r, SendMobile.LOGIN_TYPE, once_delete=False)
         if not login_type:
-            return error_response(Error.ERROR_SESSION)
-        login_value = Session.load(request, login_type, once_delete=False)
+            return SessionError.SESSION
+        login_value = Session.load(r, login_type, once_delete=False)
         if not login_value:
-            return error_response(Error.ERROR_SESSION)
+            return SessionError.SESSION
         if login_type == SendMobile.PHONE_NUMBER:
-            ret = User.authenticate(None, login_value, password)
+            user = User.authenticate(None, login_value, password)
         else:
-            ret = User.authenticate(login_value, None, password)
-        if ret.error != Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-
-        return response(body=UserView.get_token_info(o_user))
+            user = User.authenticate(login_value, None, password)
+        return Auth.get_login_token(user)
 
 
 class AvatarView(View):
     @staticmethod
-    @require_param(q=[ValidParam('filename', '文件名')])
-    @require_login(deny_auth_token=True)
-    def get(request):
+    @Analyse.r(q=[P('filename', '文件名')])
+    @Auth.require_login(deny_auth_token=True)
+    def get(r):
         """ GET /api/user/avatar
 
         获取七牛上传token
         """
-        o_user = request.user
-        filename = request.d.filename
-
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
+        user = r.user
+        filename = r.d.filename
 
         import datetime
         crt_time = datetime.datetime.now().timestamp()
-        key = 'user/%s/avatar/%s/%s' % (o_user.user_str_id, crt_time, filename)
-        qn_token, key = QN_PUBLIC_MANAGER.get_upload_token(key, Policy.avatar(o_user.user_str_id))
-        return response(body=dict(upload_token=qn_token, key=key))
+        key = 'user/%s/avatar/%s/%s' % (user.user_str_id, crt_time, filename)
+        qn_token, key = qn_public_manager.get_upload_token(key, Policy.avatar(user.user_str_id))
+        return dict(upload_token=qn_token, key=key)
 
     @staticmethod
-    @require_json
-    @require_param([
-        ValidParam('key', '七牛存储键'),
-        ValidParam('user_id', '用户ID')
-    ])
-    def post(request):
+    @Analyse.r([P('key', '七牛存储键'), UserP.user])
+    def post(r):
         """ POST /api/user/avatar
 
         七牛上传用户头像回调函数
         """
-        ret = QN_PUBLIC_MANAGER.qiniu_auth_callback(request)
-        if ret.error is not Error.OK:
-            return error_response(ret)
+        qn_public_manager.qiniu_auth_callback(r)
 
-        key = request.d.key
-        user_id = request.d.user_id
-        ret = User.get_user_by_str_id(user_id)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-        ret = o_user.modify_avatar(key)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        return response(body=o_user.to_dict())
+        key = r.d.key
+        user = r.d.user
+        user.modify_avatar(key)
+        return user.d()
 
 
 class IDCardView(View):
     @staticmethod
-    @require_param(q=[ValidParam('filename', '文件名'), VP_BACK])
-    @require_login(deny_auth_token=True)
-    def get(request):
+    @Analyse.r(q=[P('filename', '文件名'), UserP.back])
+    @Auth.require_login(deny_auth_token=True)
+    def get(r):
         """ GET /api/user/idcard?back=[0, 1]
 
         获取七牛上传token
         """
-        o_user = request.user
-        filename = request.d.filename
-        back = int(bool(request.d.back))
+        user = r.user
+        filename = r.d.filename
+        back = int(bool(r.d.back))
 
-        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return error_response(Error.VERIFYING, append_msg='，无法重新上传')
+        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
+                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return IDCardError.VERIFYING('无法重新上传')
             else:
-                return error_response(Error.REAL_VERIFIED, append_msg='，无法重新上传')
-
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
+                return IDCardError.REAL_VERIFIED('无法重新上传')
 
         import datetime
         crt_time = datetime.datetime.now().timestamp()
-        key = 'user/%s/card/%s/%s/%s' % (o_user.user_str_id, ['front', 'back'][back], crt_time, filename)
+        key = 'user/%s/card/%s/%s/%s' % (user.user_str_id,
+                                         ['front', 'back'][back], crt_time, filename)
         policy = Policy.verify_back if back else Policy.verify_front
-        qn_token, key = QN_RES_MANAGER.get_upload_token(key, policy(o_user.user_str_id))
-        return response(body=dict(upload_token=qn_token, key=key))
+        qn_token, key = qn_res_manager.get_upload_token(key, policy(user.user_str_id))
+        return dict(upload_token=qn_token, key=key)
 
     @staticmethod
-    @require_json
-    @require_param(b=[
-        ValidParam('key', '七牛存储键'),
-        ValidParam('user_id', '用户ID'),
-    ], q=[VP_BACK])
-    def post(request):
+    @Analyse.r(b=[P('key', '七牛存储键'), UserP.user], q=[UserP.back])
+    def post(r):
         """ POST /api/user/idcard?back=[0, 1]
 
         七牛上传用户实名认证回调函数
         """
-        ret = QN_PUBLIC_MANAGER.qiniu_auth_callback(request)
-        if ret.error is not Error.OK:
-            return error_response(ret)
+        qn_public_manager.qiniu_auth_callback(r)
 
-        key = request.d.key
-        user_id = request.d.user_id
-        back = request.d.back
+        key = r.d.key
+        back = r.d.back
+        user = r.d.user
 
-        ret = User.get_user_by_str_id(user_id)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-
-        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
-                    o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return error_response(Error.VERIFYING, append_msg='，无法重新上传')
+        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
+                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return IDCardError.VERIFYING('无法重新上传')
             else:
-                return error_response(Error.REAL_VERIFIED, append_msg='，无法重新上传')
+                return IDCardError.REAL_VERIFIED('无法重新上传')
 
         if back:
-            ret = o_user.upload_verify_back(key)
+            return user.upload_verify_back(key)
         else:
-            ret = o_user.upload_verify_front(key)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        return response(body=ret.body)
+            return user.upload_verify_front(key)
 
 
 class VerifyView(View):
     @staticmethod
-    @require_login(deny_auth_token=True)
-    def get(request):
+    @Auth.require_login(deny_auth_token=True)
+    def get(r):
         """ GET /api/user/verify
 
         自动识别身份信息
         """
-        o_user = request.user
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
+        user = r.user
 
-        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
-                    o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return error_response(Error.VERIFYING, append_msg='，无法继续识别')
+        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
+                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return IDCardError.VERIFYING('无法继续识别')
             else:
-                return error_response(Error.REAL_VERIFIED, append_msg='，无法继续识别')
+                return IDCardError.REAL_VERIFIED('无法继续识别')
 
-        urls = o_user.get_card_urls()
+        urls = user.get_card_urls()
         if not urls['front'] or not urls['back']:
-            return error_response(Error.CARD_NOT_COMPLETE)
+            return IDCardError.CARD_NOT_COMPLETE
 
-        ret = IDCard.detect_front(urls['front'])
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        front_info = ret.body
-        ret = IDCard.detect_back(urls['back'])
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        back_info = ret.body
+        front_info = IDCard.detect_front(urls['front'])
+        back_info = IDCard.detect_back(urls['back'])
 
         back_info.update(front_info)
         back_info['type'] = 'idcard-verify'
-        back_info['user_id'] = o_user.user_str_id
-        ret = jwt_e(back_info, expire_second=60 * 5)
-        if ret.error is not Error.OK:
-            return ret
-        token, verify_info = ret.body
+        back_info['user_id'] = user.user_str_id
+        token, verify_info = JWT.encrypt(back_info, expire_second=60 * 5)
         verify_info['token'] = token
-        o_user.update_verify_type(User.VERIFY_CHINA)
-        return response(body=verify_info)
+        user.update_verify_type(User.VERIFY_CHINA)
+        return verify_info
 
     @staticmethod
-    @require_param([
-        ValidParam('name', '真实姓名').df(),
-        ValidParam('birthday', '生日').df(),
-        ValidParam('idcard', '身份证号').df(),
-        ValidParam('male', '性别').df().p(bool),
-        ValidParam('token', '认证口令').df(),
-        ValidParam('auto', '自动认证').df(True).p(bool),
+    @Analyse.r([
+        UserP.real_name.clone().rename('name'),
+        UserP.birthday.clone().set_null(),
+        UserP.idcard.clone().set_null(),
+        UserP.male.clone().set_null(),
+        P('token', '认证口令').set_null(),
+        P('auto', '自动认证').set_default(True).process(bool),
     ])
-    @require_login(deny_auth_token=True)
-    def post(request):
+    @Auth.require_login(deny_auth_token=True)
+    def post(r):
         """ POST /api/user/verify
 
         确认认证信息
         """
-        o_user = request.user
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
+        user = r.user
 
-        if o_user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if o_user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
-                    o_user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return error_response(Error.VERIFYING, append_msg='，无法继续确认')
+        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
+            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
+                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
+                return IDCardError.VERIFYING('无法继续确认')
             else:
-                return error_response(Error.REAL_VERIFIED, append_msg='，无法继续确认')
+                return IDCardError.REAL_VERIFIED('无法继续确认')
 
-        if request.d.auto:
+        if r.d.auto:
             # 自动验证
-            token = request.d.token
-            ret = jwt_d(token)
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            if 'user_id' not in ret.body:
-                return error_response(Error.AUTO_VERIFY_FAILED)
-            if o_user.user_str_id != ret.body['user_id']:
-                return error_response(Error.AUTO_VERIFY_FAILED)
+            token = r.d.token
+            dict_ = JWT.decrypt(token)
+            if 'user_id' not in dict_:
+                return IDCardError.AUTO_VERIFY_FAILED
+            if user.user_str_id != dict_['user_id']:
+                return IDCardError.AUTO_VERIFY_FAILED
 
             crt_time = datetime.datetime.now().timestamp()
-            valid_start = datetime.datetime.strptime(ret.body['valid_start'], '%Y-%m-%d').timestamp()
-            valid_end = datetime.datetime.strptime(ret.body['valid_end'], '%Y-%m-%d').timestamp()
+            valid_start = datetime.datetime.strptime(dict_['valid_start'], '%Y-%m-%d').timestamp()
+            valid_end = datetime.datetime.strptime(dict_['valid_end'], '%Y-%m-%d').timestamp()
             if valid_start > crt_time or crt_time > valid_end:
-                return error_response(Error.CARD_VALID_EXPIRED)
+                return IDCardError.CARD_VALID_EXPIRED
 
-            ret = o_user.update_card_info(
-                ret.body['name'],
-                ret.body['male'],
-                ret.body['idcard'],
-                datetime.datetime.strptime(ret.body['birthday'], '%Y-%m-%d').date(),
+            user.update_card_info(
+                dict_['name'],
+                dict_['male'],
+                dict_['idcard'],
+                datetime.datetime.strptime(dict_['birthday'], '%Y-%m-%d').date(),
             )
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            o_user.update_verify_status(User.VERIFY_STATUS_DONE)
+            user.update_verify_status(User.VERIFY_STATUS_DONE)
         else:
             # 人工验证
-            name = request.d.name
-            birthday = request.d.birthday
-            idcard = request.d.idcard
-            male = request.d.male
+            name = r.d.name
+            birthday = r.d.birthday
+            idcard = r.d.idcard
+            male = r.d.male
             if not (name and birthday and idcard and male):
-                return error_response(Error.REQUIRE_PARAM, append_msg='，人工验证信息不全')
-            ret = o_user.update_card_info(
-                name, male, idcard, datetime.datetime.strptime(birthday, '%Y-%m-%d').date(),
-            )
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            o_user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
-            Email.real_verify(o_user, '')
-        return response(body=o_user.to_dict())
+                return BaseError.MISS_PARAM(('人工验证信息不全', 'name, birthday, idcard, male'))
+            user.update_card_info(name, male, idcard, birthday)
+            user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
+            Email.real_verify(user, '')
+        return user.d()
 
 
 class DevView(View):
     @staticmethod
-    @require_login(deny_auth_token=True)
-    def post(request):
-        o_user = request.user
-        if o_user.verify_status != User.VERIFY_STATUS_DONE:
-            return error_response(Error.REQUIRE_REAL_VERIFY)
-        o_user.developer()
-        return response(body=o_user.to_dict())
+    @Auth.require_login(deny_auth_token=True)
+    def post(r):
+        user = r.user
+        if user.verify_status != User.VERIFY_STATUS_DONE:
+            return PremiseCheckerError.REQUIRE_REAL_VERIFY
+        user.developer()
+        return user.d()
 
 
-def set_unique_user_str_id(request):
-    for o_user in User.objects.all():
-        # if not o_user.user_str_id:
-        o_user.user_str_id = User.get_unique_user_str_id()
-        o_user.save()
-    return response()
+def set_unique_user_str_id(_):
+    for user in User.objects.all():
+        user.user_str_id = User.get_unique_id()
+        user.save()

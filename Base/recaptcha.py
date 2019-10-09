@@ -1,9 +1,8 @@
 import requests
 
-from Config.models import Config
-from Base.common import deprint
+from Config.models import Config, CI
 
-G_RECAPTCHA_SECRET = Config.get_value_by_key('g-recaptcha-secret', 'YOUR-G_RECAPTCHA-SECRET').body
+G_RECAPTCHA_SECRET = Config.get_value_by_key(CI.G_RECAPTCHA_SECRET)
 
 
 class Recaptcha:
@@ -17,7 +16,6 @@ class Recaptcha:
                 'response': response,
             })
             success = resp.json()['success']
-        except Exception as err:
-            deprint(str(err))
+        except Exception:
             return False
         return success

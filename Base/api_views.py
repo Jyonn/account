@@ -1,36 +1,35 @@
+from SmartDjango import Analyse, P, Excp, BaseError, ErrorCenter
 from django.views import View
 
 from Base import country
+from Base.auth import Auth
 from Base.recaptcha import Recaptcha
-from Base.captcha import Captcha
-from Base.valid_param import ValidParam
-from Base.validator import require_json, require_param
-from Base.error import Error, ERROR_DICT
-from Base.response import response, error_response, Ret
 from Base.send_mobile import SendMobile
 from Base.session import Session
+from User.api_views import UserView
+from User.models import UserError, User
 
-VP_PHONE = ValidParam('phone', '手机号')
-VP_PWD = ValidParam('pwd', '密码')
+PM_PHONE = P('phone', '手机号')
+PM_PWD = P('pwd', '密码')
 
 
 class ErrorView(View):
     @staticmethod
-    def get(request):
-        return response(body=ERROR_DICT)
+    def get(r):
+        return ErrorCenter.all()
+
+
+def process_lang(lang):
+    if lang not in ['cn', 'en']:
+        return 'cn'
+    return lang
 
 
 class RegionView(View):
     @staticmethod
-    def process_lang(lang):
-        if lang not in ['cn', 'en']:
-            return 'cn'
-        return lang
-
-    @staticmethod
-    @require_param(q=[ValidParam('lang', '语言').df('cn').p(process_lang)])
-    def get(request):
-        lang = request.d.lang
+    @Analyse.r(q=[P('lang', '语言').set_default('cn').process(process_lang)])
+    def get(r):
+        lang = r.d.lang
         lang_cn = lang == country.LANG_CN
         regions = [
             dict(
@@ -40,7 +39,13 @@ class RegionView(View):
                 detail=c.get('detail'),
             ) for c in country.countries
         ]
-        return response(body=regions)
+        return regions
+
+
+@Excp.pack
+def mode_validate(mode):
+    if mode not in ReCaptchaView.MODE_LIST:
+        return BaseError.FIELD_FORMAT
 
 
 class ReCaptchaView(View):
@@ -78,184 +83,121 @@ class ReCaptchaView(View):
     ]
 
     @staticmethod
-    def mode_validate(mode):
-        if mode not in ReCaptchaView.MODE_LIST:
-            return Ret(Error.ERROR_PARAM_FORMAT)
-        return Ret()
+    @Analyse.r([PM_PHONE])
+    def login_phone_code_handler(r):
+        phone = r.d.phone
 
-    @staticmethod
-    @require_json
-    @require_param([VP_PHONE])
-    def login_phone_code_handler(request):
-        phone = request.d.phone
-
-        from User.models import User
-        ret = User.get_user_by_phone(phone)
-        if ret.error is not Error.OK:  # 不存在
-            SendMobile.send_captcha(request, phone, SendMobile.REGISTER)
+        try:
+            User.get_by_phone(phone)
+            SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
+            next_mode = ReCaptchaView.MODE_LOGIN_CODE
+            toast_msg = ''
+        except Excp:
+            SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
             next_mode = ReCaptchaView.MODE_REGISTER_CODE
             toast_msg = '账号不存在，请注册'
-        else:
-            SendMobile.send_captcha(request, phone, SendMobile.LOGIN)
-            next_mode = ReCaptchaView.MODE_LOGIN_CODE
-            toast_msg = ''
-        return response(body=dict(
+
+        return dict(
             next_mode=next_mode,
             toast_msg=toast_msg,
-        ))
+        )
 
     @staticmethod
-    @require_json
-    @require_param([VP_PHONE])
-    def register_handler(request):
-        phone = request.d.phone
+    @Analyse.r([PM_PHONE])
+    def register_handler(r):
+        phone = r.d.phone
 
-        from User.models import User
-        ret = User.get_user_by_phone(phone)
-        if ret.error is not Error.OK:  # 不存在
-            SendMobile.send_captcha(request, phone, SendMobile.REGISTER)
-            next_mode = ReCaptchaView.MODE_REGISTER_CODE
-            toast_msg = ''
-        else:
-            SendMobile.send_captcha(request, phone, SendMobile.LOGIN)
+        try:
+            User.get_by_phone(phone)
+            SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
             next_mode = ReCaptchaView.MODE_LOGIN_CODE
             toast_msg = '账号已注册，请验证'
-        return response(body=dict(
+        except Excp:
+            SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
+            next_mode = ReCaptchaView.MODE_REGISTER_CODE
+            toast_msg = ''
+
+        return dict(
             next_mode=next_mode,
             toast_msg=toast_msg,
-        ))
+        )
 
     @staticmethod
-    @require_json
-    @require_param([VP_PHONE])
-    def find_pwd_handler(request):
-        phone = request.d.phone
-        from User.models import User
-        ret = User.get_user_by_phone(phone)
-        if ret.error is not Error.OK:  # 不存在
-            return error_response(Error.NOT_FOUND_USER)
-        SendMobile.send_captcha(request, phone, SendMobile.FIND_PWD)
-        return response(body=dict(
+    @Analyse.r([PM_PHONE])
+    def find_pwd_handler(r):
+        phone = r.d.phone
+        User.get_by_phone(phone)
+        SendMobile.send_captcha(r, phone, SendMobile.FIND_PWD)
+        return dict(
             next_mode=ReCaptchaView.MODE_FIND_PWD_CODE,
             toast_msg='',
-        ))
+        )
 
     @staticmethod
-    @require_json
-    @require_param([VP_PHONE, VP_PWD])
-    def login_phone_pwd_handler(request):
-        phone = request.d.phone
-        pwd = request.d.pwd
+    @Analyse.r([PM_PHONE, PM_PWD])
+    def login_phone_pwd_handler(r):
+        phone = r.d.phone
+        pwd = r.d.pwd
 
-        from User.models import User
-        ret = User.authenticate(None, phone, pwd)
-        if ret.error != Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-
-        from User.api_views import UserView
-        return response(body=UserView.get_token_info(o_user))
+        user = User.authenticate(None, phone, pwd)
+        return Auth.get_login_token(user)
 
     @staticmethod
-    @require_json
-    @require_param([ValidParam('qt', '齐天号'), VP_PWD])
-    def login_qt_pwd_handler(request):
-        qt = request.d.qt
-        pwd = request.d.pwd
+    @Analyse.r([P('qt', '齐天号'), PM_PWD])
+    def login_qt_pwd_handler(r):
+        qt = r.d.qt
+        pwd = r.d.pwd
 
-        from User.models import User
-        ret = User.authenticate(qt, None, pwd)
-        if ret.error != Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
+        user = User.authenticate(qt, None, pwd)
 
-        from User.api_views import UserView
-        return response(body=UserView.get_token_info(o_user))
+        return Auth.get_login_token(user)
 
     @staticmethod
-    @require_json
-    @require_param()
-    def login_code_handler(request):
-        phone = request.phone
+    @Analyse.r()
+    def login_code_handler(r):
+        phone = r.phone
+        user = User.get_by_phone(phone)
 
-        from User.models import User
-        ret = User.get_user_by_phone(phone)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-
-        from User.api_views import UserView
-        return response(body=UserView.get_token_info(o_user))
+        return Auth.get_login_token(user)
 
     @staticmethod
-    @require_json
-    @require_param([VP_PWD])
-    def register_code_handler(request):
-        phone = request.phone
-        pwd = request.d.pwd
+    @Analyse.r([PM_PWD])
+    def register_code_handler(r):
+        phone = r.phone
+        pwd = r.d.pwd
+        user = User.create(phone, pwd)
 
-        from User.models import User
-        ret = User.create(phone, pwd)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
-
-        from User.api_views import UserView
-        return response(body=UserView.get_token_info(o_user))
+        return Auth.get_login_token(user)
 
     @staticmethod
-    @require_json
-    @require_param([VP_PWD])
-    def find_pwd_code_handler(request):
-        phone = request.phone
-        pwd = request.d.pwd
+    @Analyse.r([PM_PWD])
+    def find_pwd_code_handler(r):
+        phone = r.phone
+        pwd = r.d.pwd
 
-        from User.models import User
-        ret = User.get_user_by_phone(phone)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-        o_user = ret.body
-        if not isinstance(o_user, User):
-            return error_response(Error.STRANGE)
+        user = User.get_by_phone(phone)
+        user.modify_password(pwd)
 
-        ret = o_user.modify_password(pwd)
-        if ret.error is not Error.OK:
-            return error_response(ret)
-
-        from User.api_views import UserView
-        return response(body=UserView.get_token_info(o_user))
+        return Auth.get_login_token(user)
 
     @staticmethod
-    @require_json
-    @require_param([
-        ValidParam('response', '人机验证码').df(),
-        ValidParam('code', '短信验证码').df(),
-        ValidParam('mode', '登录模式').fc(mode_validate),
+    @Analyse.r([
+        P('response', '人机验证码').set_null(),
+        P('code', '短信验证码').set_null(),
+        P('mode', '登录模式').validate(mode_validate),
     ])
-    def post(request):
-        mode = request.d.mode
+    def post(r):
+        mode = r.d.mode
 
         if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
-            resp = request.d.response
+            resp = r.d.response
             if not resp or not Recaptcha.verify(resp):
-                return error_response(Error.ERROR_PARAM_FORMAT, append_msg='，人机验证失败')
+                return BaseError.FIELD_FORMAT('人机验证失败')
         if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
-            code = request.d.code
+            code = r.d.code
             if not code:
-                return error_response(Error.ERROR_PARAM_FORMAT)
-            ret = SendMobile.check_captcha(request, code)
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            request.phone = ret.body
+                return BaseError.FIELD_FORMAT
+            r.phone = SendMobile.check_captcha(r, code)
 
         mode_handlers = [
             ReCaptchaView.login_phone_code_handler,
@@ -268,53 +210,4 @@ class ReCaptchaView(View):
             ReCaptchaView.find_pwd_code_handler,
         ]
 
-        return mode_handlers[mode](request)
-
-
-class CaptchaView(View):
-    # @staticmethod
-    # @require_get()
-    # def get(request):
-    #     return response(body=Captcha.get(request))
-
-    @staticmethod
-    @require_json
-    @require_param([
-        ValidParam('challenge', '极验参数'),
-        ValidParam('validate', '极验参数'),
-        ValidParam('seccode', '极验参数'),
-        ValidParam('account', '齐天号或手机号'),
-        ValidParam('type', '验证模式').p(int)
-    ])
-    def post(request):
-        challenge = request.d.challenge
-        validate = request.d.validate
-        seccode = request.d.seccode
-        account = request.d.account
-        type_ = request.d.type
-        # deprint(Session.load(request, GT.GT_STATUS_SESSION_KEY), challenge, validate, seccode)
-        if not Captcha.verify(request, challenge, validate, seccode):
-            return error_response(Error.ERROR_INTERACTION)
-
-        from User.models import User
-        if type_ == -1:
-            # 手机号登录
-            ret = User.get_user_by_phone(account)
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            Session.save(request, SendMobile.PHONE_NUMBER, account, visit_time=5)
-            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.PHONE_NUMBER, visit_time=5)
-        elif type_ == -2:
-            # 齐天号登录
-            ret = User.get_user_by_qitian(account)
-            if ret.error is not Error.OK:
-                return error_response(ret)
-            Session.save(request, SendMobile.QITIAN_ID, account, visit_time=5)
-            Session.save(request, SendMobile.LOGIN_TYPE, SendMobile.QITIAN_ID, visit_time=5)
-        else:
-            # 手机号注册
-            ret = User.get_user_by_phone(account)
-            if ret.error is Error.OK:
-                return error_response(Error.PHONE_EXIST)
-            SendMobile.send_captcha(request, account, type_)
-        return response()
+        return mode_handlers[mode](r)

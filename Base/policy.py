@@ -2,7 +2,8 @@
 
 七牛上传政策
 """
-from account.settings import MAX_IMAGE_SIZE, HOST
+from Base.common import HOST
+from account.settings import MAX_IMAGE_SIZE
 
 
 AVATAR_CALLBACK = '%s/api/user/avatar' % HOST

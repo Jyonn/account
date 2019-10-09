@@ -1,14 +1,5 @@
 """ 171203 Adel Liu """
-
-DEBUG = True
-
-
-def deprint(*args):
-    """
-    系统处于调试状态时输出数据
-    """
-    if DEBUG:
-        print(*args)
+from Config.models import Config, CI
 
 
 def md5(s):
@@ -26,8 +17,6 @@ def sha1(s):
     return sha1_.hexdigest()
 
 
-def get_client_ip(request):
-    if 'HTTP_X_FORWARDED_FOR' in request.META:
-        return request.META['HTTP_X_FORWARDED_FOR']
-    else:
-        return request.META['REMOTE_ADDR']
+SECRET_KEY = Config.get_value_by_key(CI.PROJECT_SECRET_KEY)
+JWT_ENCODE_ALGO = Config.get_value_by_key(CI.JWT_ENCODE_ALGO)
+HOST = Config.get_value_by_key(CI.HOST)

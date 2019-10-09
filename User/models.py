@@ -2,15 +2,30 @@
 
 用户类
 """
+import datetime
 import re
 
-from django.db import models
+from SmartDjango import models, Excp, ErrorCenter, E, P
 from django.utils.crypto import get_random_string
 
-from Base.common import deprint
-from Base.validator import field_validator
-from Base.error import Error
-from Base.response import Ret
+from Base.idcard import IDCardError
+
+
+class UserError(ErrorCenter):
+    CREATE_USER = E("存储用户错误")
+    PASSWORD = E("密码错误")
+    USER_NOT_FOUND = E("不存在的用户")
+    INVALID_QITIAN = E("齐天号只能包含字母数字以及下划线")
+    INVALID_PASSWORD = E("密码存在特殊字符")
+    INVALID_USERNAME_FIRST = E("用户名首字符只能是字母")
+    INVALID_USERNAME = E("用户名只能包含字母数字和下划线")
+    ERROR_DATE_FORMAT = E("日期格式错误")
+    BIRTHDAY_FORMAT = E("错误的生日时间")
+    PHONE_EXIST = E("手机号已注册")
+    QITIAN_EXIST = E("已存在此齐天号")
+
+
+UserError.register()
 
 
 class User(models.Model):
@@ -19,24 +34,6 @@ class User(models.Model):
     根超级用户id=1
     """
     ROOT_ID = 1
-    L = {
-        'password': 32,
-        'salt': 10,
-        'nickname': 10,
-        'avatar': 1024,
-        'phone': 20,
-        'qitian': 20,
-        'description': 20,
-        'user_str_id': 32,
-        'real_name': 32,
-        'idcard': 18,
-        'card_image_front': 1024,
-        'card_image_back': 1024,
-    }
-    MIN_L = {
-        'password': 6,
-        'qitian': 4,
-    }
 
     VERIFY_STATUS_UNVERIFIED = 0
     VERIFY_STATUS_UNDER_AUTO = 1
@@ -57,28 +54,30 @@ class User(models.Model):
     )
 
     user_str_id = models.CharField(
-        verbose_name='唯一随机用户ID，弃用user_id',
+        verbose_name='唯一随机用户ID',
         default=None,
         null=True,
         blank=True,
-        max_length=L['user_str_id'],
+        max_length=32,
         unique=True,
     )
     qitian = models.CharField(
         default=None,
         unique=True,
-        max_length=L['qitian'],
+        max_length=20,
+        min_length=4,
     )
     phone = models.CharField(
         default=None,
         unique=True,
-        max_length=L['phone'],
+        max_length=20,
     )
     password = models.CharField(
-        max_length=L['password'],
+        max_length=32,
+        min_length=6,
     )
     salt = models.CharField(
-        max_length=L['salt'],
+        max_length=10,
         default=None,
     )
     pwd_change_time = models.FloatField(
@@ -90,14 +89,14 @@ class User(models.Model):
         default=None,
         null=True,
         blank=True,
-        max_length=L['avatar'],
+        max_length=1024,
     )
     nickname = models.CharField(
-        max_length=L['nickname'],
+        max_length=10,
         default=None,
     )
     description = models.CharField(
-        max_length=L['description'],
+        max_length=20,
         default=None,
         blank=True,
         null=True,
@@ -131,7 +130,7 @@ class User(models.Model):
     real_name = models.CharField(
         verbose_name='真实姓名',
         default=None,
-        max_length=L['real_name'],
+        max_length=32,
         null=True,
     )
     male = models.NullBooleanField(
@@ -142,19 +141,19 @@ class User(models.Model):
     idcard = models.CharField(
         verbose_name='身份证号',
         default=None,
-        max_length=L['idcard'],
+        max_length=18,
         choices=VERIFY_TUPLE,
         null=True,
     )
     card_image_front = models.CharField(
         verbose_name='身份证正面照',
-        max_length=L['card_image_front'],
+        max_length=1024,
         default=None,
         null=True,
     )
     card_image_back = models.CharField(
         verbose_name='身份证背面照',
-        max_length=L['card_image_back'],
+        max_length=1024,
         default=None,
         null=True,
     )
@@ -163,58 +162,51 @@ class User(models.Model):
         default=False,
     )
 
-    FIELD_LIST = [
-        'qitian', 'password', 'avatar', 'nickname', 'phone',
-        'description', 'birthday', 'email', 'is_dev']
-
     @classmethod
-    def get_unique_user_str_id(cls):
+    @Excp.pack
+    def get_unique_id(cls):
         while True:
-            user_str_id = get_random_string(length=cls.L['user_str_id'])
-            ret = cls.get_user_by_str_id(user_str_id)
-            if ret.error == Error.NOT_FOUND_USER:
-                return user_str_id
-            deprint('generate user_str_id: %s, conflict.' % user_str_id)
+            user_str_id = get_random_string(length=6)
+            try:
+                cls.get_by_str_id(user_str_id)
+            except Excp as ret:
+                if ret.eis(UserError.USER_NOT_FOUND):
+                    return user_str_id
 
     @classmethod
-    def get_unique_qitian_id(cls):
+    @Excp.pack
+    def get_unique_qitian(cls):
         while True:
             qitian_id = get_random_string(length=8)
-            ret = cls.get_user_by_qitian(qitian_id)
-            if ret.error == Error.NOT_FOUND_USER:
-                return qitian_id
-            deprint('generate res_str_id: %s, conflict.' % qitian_id)
+            try:
+                cls.get_by_qitian(qitian_id)
+            except Excp as ret:
+                if ret.eis(UserError.USER_NOT_FOUND):
+                    return qitian_id
 
     @staticmethod
+    @Excp.pack
     def _valid_qitian(qitian):
         """验证齐天号合法"""
         valid_chars = '^[A-Za-z0-9_]{4,20}$'
         if re.match(valid_chars, qitian) is None:
-            return Ret(Error.INVALID_QITIAN)
-        return Ret()
+            return UserError.INVALID_QITIAN
 
     @staticmethod
+    @Excp.pack
     def _valid_password(password):
         """验证密码合法"""
         valid_chars = '^[A-Za-z0-9!@#$%^&*()_+-=,.?;:]{6,16}$'
         if re.match(valid_chars, password) is None:
-            return Ret(Error.INVALID_PASSWORD)
-        return Ret()
+            return UserError.INVALID_PASSWORD
 
     @staticmethod
+    @Excp.pack
     def _valid_birthday(birthday):
         """验证生日是否合法"""
         import datetime
-        if not isinstance(birthday, datetime.date):
-            return Ret(Error.ERROR_DATE_FORMAT)
         if birthday > datetime.datetime.now().date():
-            return Ret(Error.ERROR_BIRTHDAY_FORMAT)
-        return Ret()
-
-    @classmethod
-    def _validate(cls, dict_):
-        """验证传入参数是否合法"""
-        return field_validator(dict_, cls)
+            return UserError.BIRTHDAY_FORMAT
 
     @staticmethod
     def hash_password(raw_password, salt=None):
@@ -224,64 +216,49 @@ class User(models.Model):
         return salt, hash_password
 
     @classmethod
+    @Excp.pack
     def create(cls, phone, password):
-        """ 创建用户
-
-        :param phone: 手机号
-        :param password: 密码
-        :return: Ret对象，错误返回错误代码，成功返回用户对象
-        """
-        ret = cls._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
         salt, hashed_password = User.hash_password(password)
-        ret = User.get_user_by_phone(phone)
-        if ret.error is Error.OK:
-            return Ret(Error.PHONE_EXIST)
         try:
-            o_user = cls(
-                qitian=cls.get_unique_qitian_id(),
-                phone=phone,
-                password=hashed_password,
-                salt=salt,
-                avatar=None,
-                nickname='',
-                description=None,
-                qitian_modify_time=0,
-                user_str_id=cls.get_unique_user_str_id(),
-                birthday=None,
-                verify_status=cls.VERIFY_STATUS_UNVERIFIED,
-                is_dev=False,
-            )
-            o_user.save()
-        except ValueError as err:
-            deprint(str(err))
-            return Ret(Error.ERROR_CREATE_USER)
-        return Ret(o_user)
+            User.get_by_phone(phone)
+            return UserError.PHONE_EXIST
+        except Excp:
+            try:
+                user = cls(
+                    qitian=cls.get_unique_qitian(),
+                    phone=phone,
+                    password=hashed_password,
+                    salt=salt,
+                    avatar=None,
+                    nickname='',
+                    description=None,
+                    qitian_modify_time=0,
+                    user_str_id=cls.get_unique_id(),
+                    birthday=None,
+                    verify_status=cls.VERIFY_STATUS_UNVERIFIED,
+                    is_dev=False,
+                )
+                user.save()
+            except Exception:
+                return UserError.CREATE_USER
+        return user
 
+    @Excp.pack
     def modify_password(self, password):
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
         self.salt, self.password = User.hash_password(password)
         import datetime
         self.pwd_change_time = datetime.datetime.now().timestamp()
         self.save()
-        return Ret()
 
+    @Excp.pack
     def change_password(self, password, old_password):
         """修改密码"""
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
         if self.password != User._hash(old_password+self.salt):
-            return Ret(Error.ERROR_PASSWORD)
+            return UserError.PASSWORD
         self.salt, self.password = User.hash_password(password)
         import datetime
         self.pwd_change_time = datetime.datetime.now().timestamp()
         self.save()
-        return Ret()
 
     @staticmethod
     def _hash(s):
@@ -289,155 +266,124 @@ class User(models.Model):
         return md5(s)
 
     @classmethod
-    def get_user_by_str_id(cls, user_str_id):
+    @Excp.pack
+    def get_by_str_id(cls, user_str_id):
         try:
-            o_user = cls.objects.get(user_str_id=user_str_id)
-        except cls.DoesNotExist as err:
-            deprint(str(err))
-            return Ret(Error.NOT_FOUND_USER)
-        return Ret(o_user)
+            return cls.objects.get(user_str_id=user_str_id)
+        except cls.DoesNotExist:
+            return UserError.USER_NOT_FOUND
 
     @classmethod
-    def get_user_by_phone(cls, phone):
+    @Excp.pack
+    def get_by_phone(cls, phone):
         """根据手机号获取用户对象"""
         try:
-            o_user = cls.objects.get(phone=phone)
-        except cls.DoesNotExist as err:
-            deprint(str(err))
-            return Ret(Error.NOT_FOUND_USER, append_msg='，手机号未注册')
-        return Ret(o_user)
+            return cls.objects.get(phone=phone)
+        except cls.DoesNotExist:
+            return UserError.USER_NOT_FOUND('手机号未注册')
 
     @classmethod
-    def get_user_by_qitian(cls, qitian_id):
+    @Excp.pack
+    def get_by_qitian(cls, qitian_id):
         try:
-            o_user = cls.objects.get(qitian=qitian_id)
-        except cls.DoesNotExist as err:
-            deprint(str(err))
-            return Ret(Error.NOT_FOUND_USER, append_msg='，不存在的齐天号')
-        return Ret(o_user)
+            return cls.objects.get(qitian=qitian_id)
+        except cls.DoesNotExist:
+            return UserError.USER_NOT_FOUND('不存在的齐天号')
 
     @classmethod
-    def get_user_by_id(cls, user_id):
+    def get_by_id(cls, user_id):
         """根据用户ID获取用户对象"""
         try:
-            o_user = cls.objects.get(pk=user_id)
-        except cls.DoesNotExist as err:
-            deprint(str(err))
-            return Ret(Error.NOT_FOUND_USER)
-        return Ret(o_user)
+            return cls.objects.get(pk=user_id)
+        except cls.DoesNotExist:
+            return UserError.USER_NOT_FOUND
 
     def allow_qitian_modify(self):
         return self.qitian_modify_time == 0
 
-    def to_dict(self, oauth=False, base=False):
-        """把用户对象转换为字典"""
-        if oauth:
-            return dict(
-                avatar=self.get_avatar_url(),
-                nickname=self.nickname,
-                description=self.description,
-            )
-        elif base:
-            return dict(
-                user_str_id=self.user_str_id,
-                avatar=self.get_avatar_url(),
-                nickname=self.nickname,
-                description=self.description,
-            )
-        else:
-            return dict(
-                birthday=self.birthday.strftime('%Y-%m-%d') if self.birthday else None,
-                user_str_id=self.user_str_id,
-                qitian=self.qitian,
-                avatar=self.get_avatar_url(),
-                nickname=self.nickname,
-                description=self.description,
-                allow_qitian_modify=int(self.allow_qitian_modify()),
-                verify_status=self.verify_status,
-                verify_type=self.real_verify_type,
-                is_dev=self.is_dev,
-            )
+    def _readable_avatar(self):
+        return self.get_avatar_url()
+
+    def _readable_birthday(self):
+        return self.birthday.strftime('%Y-%m-%d') if self.birthday else None
+
+    def _readable_allow_qitian_modify(self):
+        return int(self.allow_qitian_modify())
+
+    def d_oauth(self):
+        return self.dictor(['avatar', 'nickname', 'description'])
+
+    def d_base(self):
+        return self.dictor(['user_str_id', 'avatar', 'nickname', 'description'])
+
+    def d(self):
+        return self.dictor(['birthday', 'user_str_id', 'qitian', 'avatar', 'nickname',
+                            'description', 'allow_qitian_modify', 'verify_status',
+                            'verify_type', 'is_dev'])
 
     @classmethod
+    @Excp.pack
     def authenticate(cls, qitian, phone, password):
         """验证手机号和密码是否匹配"""
         if qitian:
-            ret = cls.get_user_by_qitian(qitian)
+            user = cls.get_by_qitian(qitian)
         else:
-            ret = cls.get_user_by_phone(phone)
-        if ret.error is not Error.OK:
-            return ret
-        o_user = ret.body
+            user = cls.get_by_phone(phone)
 
-        salt, hashed_password = User.hash_password(password, o_user.salt)
-        if hashed_password == o_user.password:
-            return Ret(o_user)
-        return Ret(Error.ERROR_PASSWORD)
+        salt, hashed_password = User.hash_password(password, user.salt)
+        if hashed_password == user.password:
+            return user
+        return UserError.PASSWORD
 
     def get_avatar_url(self, small=True):
         """获取用户头像地址"""
         if self.avatar is None:
             return None
-        from Base.qn import QN_PUBLIC_MANAGER
+        from Base.qn import qn_public_manager
         key = "%s-small" % self.avatar if small else self.avatar
-        return QN_PUBLIC_MANAGER.get_resource_url(key)
+        return qn_public_manager.get_resource_url(key)
 
     def get_card_urls(self):
-        from Base.qn import QN_RES_MANAGER
-        front_url = QN_RES_MANAGER.get_resource_url(self.card_image_front) \
+        from Base.qn import qn_res_manager
+        front_url = qn_res_manager.get_resource_url(self.card_image_front) \
             if self.card_image_front else None
-        back_url = QN_RES_MANAGER.get_resource_url(self.card_image_back) \
+        back_url = qn_res_manager.get_resource_url(self.card_image_back) \
             if self.card_image_back else None
         return dict(
             front=front_url,
             back=back_url,
         )
 
+    @Excp.pack
     def modify_avatar(self, avatar):
         """修改用户头像"""
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
         if self.avatar:
-            from Base.qn import QN_PUBLIC_MANAGER
-            ret = QN_PUBLIC_MANAGER.delete_res(self.avatar)
-            if ret.error is not Error.OK:
-                return ret
+            from Base.qn import qn_public_manager
+            qn_public_manager.delete_res(self.avatar)
         self.avatar = avatar
         self.save()
-        return Ret()
 
+    @Excp.pack
     def upload_verify_front(self, card_image_front):
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
-        from Base.qn import QN_RES_MANAGER
+        from Base.qn import qn_res_manager
         if self.card_image_front:
-            ret = QN_RES_MANAGER.delete_res(self.card_image_front)
-            if ret.error is not Error.OK:
-                return ret
+            qn_res_manager.delete_res(self.card_image_front)
 
         self.card_image_front = card_image_front
         self.save()
-        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_front + '-small'))
+        qn_res_manager.get_resource_url(self.card_image_front + '-small')
 
+    @Excp.pack
     def upload_verify_back(self, card_image_back):
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
-        from Base.qn import QN_RES_MANAGER
+        from Base.qn import qn_res_manager
         if self.card_image_back:
-            ret = QN_RES_MANAGER.delete_res(self.card_image_back)
-            if ret.error is not Error.OK:
-                return ret
+            qn_res_manager.delete_res(self.card_image_back)
 
         self.card_image_back = card_image_back
         self.save()
-        return Ret(QN_RES_MANAGER.get_resource_url(self.card_image_back + '-small'))
+        qn_res_manager.get_resource_url(self.card_image_back + '-small')
 
+    @Excp.pack
     def modify_info(self, nickname, description, qitian, birthday):
         """修改用户信息"""
         if nickname is None:
@@ -448,40 +394,33 @@ class User(models.Model):
             qitian = self.qitian
         if birthday is None or (self.verify_status and self.real_verify_type == User.VERIFY_CHINA):
             birthday = self.birthday
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
 
         if self.allow_qitian_modify():
             if self.qitian != qitian:
-                ret = self.get_user_by_qitian(qitian)
-                if ret.error == Error.NOT_FOUND_USER:
-                    self.qitian = qitian
-                    self.qitian_modify_time += 1
-                else:
-                    return Ret(Error.QITIAN_EXIST)
+                try:
+                    self.get_by_qitian(qitian)
+                except Excp as ret:
+                    if ret.eis(UserError.USER_NOT_FOUND):
+                        self.qitian = qitian
+                        self.qitian_modify_time += 1
+                    else:
+                        return UserError.QITIAN_EXIST
         self.nickname = nickname
         self.description = description
         self.birthday = birthday
         self.save()
-        return Ret()
 
+    @Excp.pack
     def update_card_info(self, real_name, male, idcard, birthday):
-        ret = self._validate(locals())
-        if ret.error is not Error.OK:
-            return ret
-
+        self.validator(locals())
         self.real_name = real_name
         self.male = male
         self.idcard = idcard
         self.birthday = birthday
         try:
             self.save()
-        except Exception as err:
-            deprint(str(err))
-            return Ret(Error.AUTO_VERIFY_FAILED)
-
-        return Ret()
+        except Exception:
+            return IDCardError.AUTO_VERIFY_FAILED
 
     def update_verify_status(self, status):
         self.verify_status = status
@@ -494,3 +433,14 @@ class User(models.Model):
     def developer(self):
         self.is_dev = True
         self.save()
+
+
+class UserP:
+    birthday, password, nickname, description, qitian, idcard, male, real_name = User.P(
+        'birthday', 'password', 'nickname', 'description', 'qitian', 'idcard', 'male',
+        'real_name')
+
+    user = P('user_id', '用户唯一ID').process(P.Processor(User.get_by_str_id, yield_name='user'))
+    back = P('back', '侧别').process(int)
+
+    birthday.process(lambda s: datetime.datetime.strptime(s, '%Y-%m-%d').date(), begin=True)

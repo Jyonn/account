@@ -2,14 +2,13 @@ import json
 from urllib.parse import urlencode
 
 import requests
+from SmartDjango import Excp
 from django.utils.crypto import get_random_string
 
-from Base.error import Error
-from Base.response import Ret
 from Base.session import Session
-from Config.models import Config
+from Config.models import Config, CI
 
-yunpian_appkey = Config.get_value_by_key('yunpian-appkey').body
+yunpian_appkey = Config.get_value_by_key(CI.YUNPIAN_APPKEY)
 
 
 class SendMobile:
@@ -48,17 +47,15 @@ class SendMobile:
         text = text.replace("#code#", code)
 
         SendMobile._send_sms(yunpian_appkey, text, mobile)
-        print(code)
         Session.save_captcha(request, SendMobile.PHONE, code)
         Session.save(request, SendMobile.PHONE_NUMBER, mobile)
 
     @staticmethod
+    @Excp.pack
     def check_captcha(request, code):
-        ret = Session.check_captcha(request, SendMobile.PHONE, code)
-        if ret.error is not Error.OK:
-            return ret
+        Session.check_captcha(request, SendMobile.PHONE, code)
         phone = Session.load(request, SendMobile.PHONE_NUMBER)
-        return Ret(phone)
+        return phone
 
     @staticmethod
     def _send_sms(apikey, text, mobile):
@@ -72,7 +69,10 @@ class SendMobile:
         # 服务地址
         url = "https://sms.yunpian.com/v2/sms/single_send.json"
         params = urlencode({'apikey': apikey, 'text': text, 'mobile': mobile})
-        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "application/json"}
+        headers = {
+            "Content-type": "application/x-www-form-urlencoded",
+            "Accept": "application/json"
+        }
         response = requests.post(url, params, headers=headers)
         response_str = response.text
         response.close()
