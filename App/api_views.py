@@ -250,5 +250,11 @@ def shorten_app_id(r):
         app.id = app.id[:8]
         app.name = 'suffix-' + app.name
         app.save()
+
+    for app in App.objects.all():
+        if not app.name.startswith('suffix-'):
+            app.delete()
+
+    for app in App.objects.all():
         app.name = app.name[7:]
         app.save()
