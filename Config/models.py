@@ -2,15 +2,13 @@
 
 系统配置类
 """
-from SmartDjango import ErrorCenter, models, E, Excp
+from SmartDjango import models, E, Excp
 
 
-class ConfigError(ErrorCenter):
+@E.register
+class ConfigError:
     CREATE_CONFIG = E("更新配置错误")
     CONFIG_NOT_FOUND = E("不存在的配置")
-
-
-ConfigError.register()
 
 
 class Config(models.Model):

@@ -5,16 +5,14 @@
 
 import datetime
 
-from SmartDjango import Excp, ErrorCenter, E
+from SmartDjango import Excp, E
 
 
-class SessionError(ErrorCenter):
+@E.register
+class SessionError:
     CAPTCHA = E("验证失败")
     CAPTCHA_EXPIRED = E("验证码过期，请重试")
     SESSION = E("会话错误，请刷新重试")
-
-
-SessionError.register()
 
 
 class Session:

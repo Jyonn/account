@@ -1,17 +1,15 @@
 import datetime
 
-from SmartDjango import Excp, ErrorCenter, E
+from SmartDjango import Excp, E
 
 from User.models import User
 
 
-class PremiseCheckerError(ErrorCenter):
+@E.register
+class PremiseCheckerError:
     REQUIRE_REAL_VERIFY = E("需要实名认证")
     CHECKER_NOT_FOUND = E("不存在的要求检测")
     DISALLOW_CHILD = E("需年满18周岁")
-
-
-PremiseCheckerError.register()
 
 
 class PremiseChecker:

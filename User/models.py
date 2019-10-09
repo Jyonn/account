@@ -5,13 +5,14 @@
 import datetime
 import re
 
-from SmartDjango import models, Excp, ErrorCenter, E, P
+from SmartDjango import models, Excp, E, P
 from django.utils.crypto import get_random_string
 
 from Base.idcard import IDCardError
 
 
-class UserError(ErrorCenter):
+@E.register
+class UserError:
     CREATE_USER = E("存储用户错误")
     PASSWORD = E("密码错误")
     USER_NOT_FOUND = E("不存在的用户")
@@ -23,9 +24,6 @@ class UserError(ErrorCenter):
     BIRTHDAY_FORMAT = E("错误的生日时间")
     PHONE_EXIST = E("手机号已注册")
     QITIAN_EXIST = E("已存在此齐天号")
-
-
-UserError.register()
 
 
 class User(models.Model):
@@ -311,15 +309,15 @@ class User(models.Model):
         return int(self.allow_qitian_modify())
 
     def d_oauth(self):
-        return self.dictor(['avatar', 'nickname', 'description'])
+        return self.dictor('avatar', 'nickname', 'description')
 
     def d_base(self):
-        return self.dictor(['user_str_id', 'avatar', 'nickname', 'description'])
+        return self.dictor('user_str_id', 'avatar', 'nickname', 'description')
 
     def d(self):
-        return self.dictor(['birthday', 'user_str_id', 'qitian', 'avatar', 'nickname',
-                            'description', 'allow_qitian_modify', 'verify_status',
-                            'verify_type', 'is_dev'])
+        return self.dictor('birthday', 'user_str_id', 'qitian', 'avatar', 'nickname',
+                           'description', 'allow_qitian_modify', 'verify_status',
+                           'verify_type', 'is_dev')
 
     @classmethod
     @Excp.pack
@@ -440,7 +438,7 @@ class UserP:
         'birthday', 'password', 'nickname', 'description', 'qitian', 'idcard', 'male',
         'real_name')
 
-    user = P('user_id', '用户唯一ID').process(P.Processor(User.get_by_str_id, yield_name='user'))
+    user = P('user_id', '用户唯一ID', 'user').process(User.get_by_str_id)
     back = P('back', '侧别').process(int)
 
     birthday.process(lambda s: datetime.datetime.strptime(s, '%Y-%m-%d').date(), begin=True)

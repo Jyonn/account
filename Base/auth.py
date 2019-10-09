@@ -1,12 +1,13 @@
 from functools import wraps
 
-from SmartDjango import ErrorCenter, Excp, E
+from SmartDjango import Excp, E
 
 from Base.jtoken import JWT, JWType
 from User.models import User
 
 
-class AuthError(ErrorCenter):
+@E.register
+class AuthError:
     REQUIRE_LOGIN = E("需要登录")
     TOKEN_MISS_PARAM = E("认证口令缺少参数{0}", E.PH_FORMAT)
     APP_FIELD_CHANGE = E("应用信息发生变化")
@@ -17,9 +18,6 @@ class AuthError(ErrorCenter):
     SCOPE_NOT_SATISFIED = E("没有获取权限：")
     REQUIRE_AUTH_CODE = E("需要身份认证code")
     NEW_AUTH_CODE_CREATED = E("授权失效")
-
-
-AuthError.register()
 
 
 class Auth:
@@ -97,7 +95,6 @@ class Auth:
                 try:
                     cls._extract_user(r)
                 except Exception as err:
-                    print(err)
                     if allow_no_login and not require_root:
                         return func(r, *args, **kwargs)
                     else:

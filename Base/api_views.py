@@ -1,4 +1,4 @@
-from SmartDjango import Analyse, P, Excp, BaseError, ErrorCenter
+from SmartDjango import Analyse, P, Excp, BaseError, ErrorJar
 from django.views import View
 
 from Base import country
@@ -16,7 +16,7 @@ PM_PWD = P('pwd', '密码')
 class ErrorView(View):
     @staticmethod
     def get(r):
-        return ErrorCenter.all()
+        return ErrorJar.all()
 
 
 def process_lang(lang):

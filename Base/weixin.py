@@ -1,7 +1,7 @@
 import datetime
 
 import requests
-from SmartDjango import Excp, ErrorCenter, E
+from SmartDjango import Excp, E
 from django.utils.crypto import get_random_string
 
 from Base.common import sha1
@@ -11,13 +11,11 @@ APP_ID = Config.get_value_by_key(CI.WEIXIN_APP_ID)
 APP_SECRET = Config.get_value_by_key(CI.WEIXIN_APP_SECRET)
 
 
-class WeixinError(ErrorCenter):
+@E.register
+class WeixinError:
     UPDATE_WEIXIN_ACCESS_TOKEN_ERROR = E("更新微信Access Token错误")
     UPDATE_WEIXIN_JSAPI_TICKET_ERROR = E("更新微信JsApi Ticket错误")
     UPDATE_WEIXIN_TIME_NOT_EXPIRED = E("更新间隔太短")
-
-
-WeixinError.register()
 
 
 class Weixin:

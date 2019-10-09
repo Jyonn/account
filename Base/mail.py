@@ -3,7 +3,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 import html
 
-from SmartDjango import Excp, ErrorCenter, E
+from SmartDjango import Excp, E
 
 from Config.models import Config, CI
 from User.models import User
@@ -41,12 +41,10 @@ class Element:
         return self
 
 
-class EmailError(ErrorCenter):
+@E.register
+class EmailError:
     SEND_EMAIL_ERROR = E("邮件发送错误")
     EMAIL_NOT_EXIST = E("不存在邮箱")
-
-
-EmailError.register()
 
 
 class Email:

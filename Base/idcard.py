@@ -1,6 +1,6 @@
 import datetime
 
-from SmartDjango import Excp, ErrorCenter, E
+from SmartDjango import Excp, E
 from qcloud_image import Client
 from qcloud_image import CIUrls
 
@@ -16,16 +16,14 @@ client.use_http()
 client.set_timeout(30)
 
 
-class IDCardError(ErrorCenter):
+@E.register
+class IDCardError:
     IDCARD_DETECT_ERROR = E("身份证自动验证错误")
     REAL_VERIFIED = E("已实名认证")
     CARD_NOT_COMPLETE = E("身份证正反面照片没有完善")
     CARD_VALID_EXPIRED = E("身份证认证过期")
     AUTO_VERIFY_FAILED = E("自动实名认证失败，请尝试人工认证")
     VERIFYING = E("您已提交认证")
-
-
-IDCardError.register()
 
 
 class IDCard:

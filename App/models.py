@@ -1,6 +1,6 @@
 import datetime
 
-from SmartDjango import models, ErrorCenter, E, Excp, BaseError, P
+from SmartDjango import models, E, Excp, BaseError, P, ErrorJar
 from django.utils.crypto import get_random_string
 
 from Base.jtoken import JWType, JWT
@@ -8,7 +8,8 @@ from Base.premise_checker import PremiseCheckerError
 from Config.models import CI
 
 
-class AppError(ErrorCenter):
+@E.register
+class AppError:
     PREMISE_NOT_FOUND = E("不存在的要求")
     CREATE_PREMISE = E("创建要求错误")
 
@@ -31,9 +32,6 @@ class AppError(ErrorCenter):
     APP_SECRET = E("错误的应用密钥")
 
     ILLEGAL_ACCESS_RIGHT = E("非法访问权限")
-
-
-AppError.register()
 
 
 class Premise(models.Model):
@@ -84,7 +82,7 @@ class Premise(models.Model):
         return premise
 
     def d(self):
-        return self.dictor(['name', 'desc', 'detail'])
+        return self.dictor('name', 'desc', 'detail')
 
     @classmethod
     def list_to_premise_list(cls, premises):
@@ -169,7 +167,7 @@ class Scope(models.Model):
         return scope
 
     def d(self):
-        return self.dictor(['name', 'desc', 'always', 'detail'])
+        return self.dictor('name', 'desc', 'always', 'detail')
 
     @classmethod
     def list_to_scope_list(cls, scopes):
@@ -385,8 +383,8 @@ class App(models.Model):
 
     def d(self):
         return self.dictor(
-            ['app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
-             'redirect_uri', 'create_time', 'owner', 'mask', 'scopes', 'premises'])
+            'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
+            'redirect_uri', 'create_time', 'owner', 'mask', 'scopes', 'premises')
 
     def d_user(self, user):
         dict_ = self.d()
@@ -394,7 +392,7 @@ class App(models.Model):
         return dict_
 
     def d_base(self):
-        return self.dictor(['app_name', 'app_id', 'logo', 'app_desc', 'user_num', 'create_time'])
+        return self.dictor('app_name', 'app_id', 'logo', 'app_desc', 'user_num', 'create_time')
 
     @Excp.pack
     def modify_logo(self, logo):
@@ -420,19 +418,10 @@ class App(models.Model):
                 error = Excp(checker(user)).error
             else:
                 error = PremiseCheckerError.CHECKER_NOT_FOUND()
-            if error.append_msg:
-                if error.e.ph == E.PH_NONE:
-                    msg = error.e.msg + '，%s' % error.append_msg
-                elif error.e.ph == E.PH_FORMAT:
-                    msg = error.e.msg.format(*error.append_msg)
-                else:
-                    msg = error.e.msg % error.append_msg
-            else:
-                msg = error.e.msg
             p_dict = premise.d()
             p_dict['check'] = dict(
-                identifier=ErrorCenter.r_get(error.e.eid),
-                msg=msg,
+                identifier=ErrorJar.get_i(error),
+                msg=error.get_msg(),
             )
             premises.append(p_dict)
         return premises
@@ -480,7 +469,7 @@ class UserApp(models.Model):
         return float(self.last_auth_code_time) < self.app.field_change_time
 
     def d(self):
-        return self.dictor(['bind', 'mark', 'rebind', 'user_app_id'])
+        return self.dictor('bind', 'mark', 'rebind', 'user_app_id')
 
     @classmethod
     @Excp.pack
@@ -607,6 +596,5 @@ class AppP:
     scopes = P('scopes', '应用权限列表').process(Scope.list_to_scope_list)
     premises = P('premises', '应用要求列表').process(Premise.list_to_premise_list)
 
-    app = P('app_id', '应用ID').process(P.Processor(App.get_by_id, yield_name='app'))
-    user_app = P('user_app_id', '用户绑定应用ID').process(
-        P.Processor(UserApp.get_by_id, yield_name='user_app'))
+    app = P('app_id', '应用ID', 'app').process(App.get_by_id)
+    user_app = P('user_app_id', '用户绑定应用ID', 'user_app').process(UserApp.get_by_id)
