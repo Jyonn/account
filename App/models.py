@@ -339,7 +339,8 @@ class App(models.Model):
         self.field_change_time = datetime.datetime.now().timestamp()
         try:
             self.save()
-        except Exception:
+        except Exception as err:
+            print(err)
             return AppError.MODIFY_APP
 
     def _readable_app_name(self):
