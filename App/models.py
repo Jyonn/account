@@ -395,7 +395,7 @@ class App(models.Model):
     def d(self):
         return self.dictor(
             'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
-            'redirect_uri', 'create_time', 'owner', 'mask', 'scopes', 'premises',
+            'redirect_uri', 'create_time', 'owner', 'mark', 'scopes', 'premises',
             'test_redirect_uri')
 
     def d_user(self, user):
