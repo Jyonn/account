@@ -53,7 +53,8 @@ class AppView(View):
             return list(map(lambda o: o.app.d_base(), objects))
 
     @staticmethod
-    @Analyse.r([AppP.name, AppP.desc, AppP.redirect_uri, AppP.scopes, AppP.premises])
+    @Analyse.r([AppP.name, AppP.desc, AppP.redirect_uri, AppP.test_redirect_uri,
+                AppP.scopes, AppP.premises])
     @Auth.require_login(deny_auth_token=True)
     def post(r):
         """ POST /api/app/
@@ -113,6 +114,7 @@ class AppIDView(View):
             AppP.redirect_uri.clone().set_null(),
             AppP.scopes.clone().set_null(),
             AppP.premises.clone().set_null(),
+            AppP.test_redirect_uri.clone().set_null(),
         ],
         a=[AppP.app],
     )
@@ -129,6 +131,7 @@ class AppIDView(View):
             return AppError.APP_NOT_BELONG
 
         app.modify(**r.d.dict('name', 'desc', 'info', 'redirect_uri', 'scopes', 'premises'))
+        app.modify_test_redirect_uri(r.d.test_redirect_uri)
         return app.d_user(user)
 
     @staticmethod

@@ -222,6 +222,11 @@ class App(models.Model):
         verbose_name='应用跳转URI',
         max_length=512,
     )
+    test_redirect_uri = models.URLField(
+        verbose_name='测试环境下的应用跳转URI',
+        max_length=512,
+        default=None,
+    )
     scopes = models.ManyToManyField(
         'Scope',
         default=None,
@@ -295,7 +300,7 @@ class App(models.Model):
 
     @classmethod
     @Excp.pack
-    def create(cls, name, desc, redirect_uri, scopes, premises, owner):
+    def create(cls, name, desc, redirect_uri, test_redirect_uri, scopes, premises, owner):
         try:
             cls.get_by_name(name)
             return AppError.EXIST_APP_NAME
@@ -310,6 +315,7 @@ class App(models.Model):
                 id=cls.get_unique_app_id(),
                 secret=get_random_string(length=32),
                 redirect_uri=redirect_uri,
+                test_redirect_uri=test_redirect_uri,
                 owner=owner,
                 field_change_time=datetime.datetime.now().timestamp(),
                 info=None,
@@ -322,6 +328,10 @@ class App(models.Model):
         except Exception:
             return AppError.CREATE_APP
         return app
+
+    def modify_test_redirect_uri(self, test_redirect_uri):
+        self.test_redirect_uri = test_redirect_uri
+        self.save()
 
     @Excp.pack
     def modify(self, name, desc, info, redirect_uri, scopes, premises):
@@ -385,7 +395,8 @@ class App(models.Model):
     def d(self):
         return self.dictor(
             'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
-            'redirect_uri', 'create_time', 'owner', 'mask', 'scopes', 'premises')
+            'redirect_uri', 'create_time', 'owner', 'mask', 'scopes', 'premises',
+            'test_redirect_uri')
 
     def d_user(self, user):
         dict_ = self.d()
@@ -592,8 +603,8 @@ class UserApp(models.Model):
 
 
 class AppP:
-    name, info, desc, redirect_uri, secret = App.P(
-        'name', 'info', 'desc', 'redirect_uri', 'secret')
+    name, info, desc, redirect_uri, test_redirect_uri, secret = App.P(
+        'name', 'info', 'desc', 'redirect_uri', 'test_redirect_uri', 'secret')
     scopes = P('scopes', '应用权限列表').process(Scope.list_to_scope_list)
     premises = P('premises', '应用要求列表').process(Premise.list_to_premise_list)
 
