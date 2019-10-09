@@ -242,19 +242,3 @@ def refresh_frequent_score(r):
     更新用户应用的使用频率度，判断是否为常用应用
     """
     UserApp.refresh_frequent_score()
-
-
-@Analyse.r(method='GET')
-def shorten_app_id(r):
-    for app in App.objects.all():
-        app.id = app.id[:8]
-        app.name = 'suffix-' + app.name
-        app.save()
-
-    for app in App.objects.all():
-        if not app.name.startswith('suffix-'):
-            app.delete()
-
-    for app in App.objects.all():
-        app.name = app.name[7:]
-        app.save()
