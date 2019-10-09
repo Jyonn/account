@@ -248,4 +248,7 @@ def refresh_frequent_score(r):
 def shorten_app_id(r):
     for app in App.objects.all():
         app.id = app.id[:8]
+        app.name = 'suffix-' + app.name
+        app.save()
+        app.name = app.name[7:]
         app.save()
