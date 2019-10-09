@@ -248,5 +248,5 @@ def refresh_frequent_score(r):
 def shorten_app_id(r):
     users = User.objects.all()
     for user in users:
-        user.user_str_id = user.user_str_id[:8]
+        user.user_str_id = user.user_str_id[:6]
         user.save()
