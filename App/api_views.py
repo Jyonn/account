@@ -255,5 +255,6 @@ def refresh_app_mark(r):
     user_apps = UserApp.objects.all()
     for user_app in user_apps:
         user_app.app.user_num += 1
-        user_app.do_mark(user_app.mark)
+        if user_app.mark:
+            user_app.do_mark(user_app.mark)
         user_app.save()
