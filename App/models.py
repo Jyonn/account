@@ -518,6 +518,7 @@ class UserApp(models.Model):
         premise_list = app.check_premise(user)
         for premise in premise_list:
             error = getattr(PremiseCheckerError, premise['check']['identifier'], None)
+            print(premise['check']['identifier'], error, BaseError.OK)
             if error.eid != BaseError.OK.eid:
                 return error
 
