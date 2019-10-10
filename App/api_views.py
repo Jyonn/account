@@ -242,3 +242,18 @@ def refresh_frequent_score(r):
     更新用户应用的使用频率度，判断是否为常用应用
     """
     UserApp.refresh_frequent_score()
+
+
+@Analyse.r(method='GET')
+def refresh_app_mark(r):
+    apps = App.objects.all()
+    for app in apps:
+        app.user_num = 0
+        app.mark = '0-0-0-0-0'
+        app.save()
+
+    user_apps = UserApp.objects.all()
+    for user_app in user_apps:
+        user_app.app.user_num += 1
+        user_app.do_mark(user_app.mark)
+        user_app.save()
