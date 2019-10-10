@@ -14,3 +14,4 @@ urlpatterns = [
     path('<str:app_id>', AppIDView.as_view()),
     path('<str:app_id>/secret', AppIDSecretView.as_view()),
 ]
+
