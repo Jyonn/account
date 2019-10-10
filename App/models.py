@@ -517,9 +517,8 @@ class UserApp(models.Model):
     def do_bind(cls, user, app):
         premise_list = app.check_premise(user)
         for premise in premise_list:
-            error = getattr(PremiseCheckerError, premise['check']['identifier'], None)
-            print(premise['check']['identifier'], error, BaseError.OK)
-            if error.eid != BaseError.OK.eid:
+            error = ErrorJar.get(premise['check']['identifier'])
+            if error != BaseError.OK:
                 return error
 
         crt_timestamp = datetime.datetime.now().timestamp()
