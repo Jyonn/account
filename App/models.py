@@ -416,8 +416,8 @@ class App(models.Model):
         self.logo = logo
         self.save()
 
-    def belong(self, o_user):
-        return self.owner == o_user
+    def belong(self, user):
+        return self.owner == user
 
     def authentication(self, app_secret):
         return self.secret == app_secret
@@ -485,9 +485,9 @@ class UserApp(models.Model):
 
     @classmethod
     @Excp.pack
-    def get_by_user_app(cls, o_user, o_app):
+    def get_by_user_app(cls, user, app):
         try:
-            return cls.objects.get(user=o_user, app=o_app)
+            return cls.objects.get(user=user, app=app)
         except Exception:
             return AppError.USER_APP_NOT_FOUND
 

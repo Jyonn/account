@@ -92,7 +92,10 @@ class AppIDView(View):
         user = r.user
         app = r.d.app
 
-        dict_ = app.d_user(user)
+        if user:
+            dict_ = app.d_user(user)
+        else:
+            dict_ = app.d()
 
         try:
             user_app = UserApp.get_by_user_app(user, app)
