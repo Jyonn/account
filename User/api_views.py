@@ -4,8 +4,9 @@
 """
 import datetime
 
-from SmartDjango import P, Analyse, BaseError
+from SmartDjango import P, Analyse
 from django.views import View
+from smartify import PError
 
 from Base.auth import Auth
 from Base.idcard import IDCard, IDCardError
@@ -50,10 +51,10 @@ class UserView(View):
     @staticmethod
     @Analyse.r(
         [
-            UserP.nickname.clone().set_null(),
-            UserP.description.clone().set_null(),
-            UserP.qitian.clone().set_null(),
-            UserP.birthday.clone().set_null(),
+            UserP.nickname.clone().null(),
+            UserP.description.clone().null(),
+            UserP.qitian.clone().null(),
+            UserP.birthday.clone().null(),
         ]
     )
     @Auth.require_login(deny_auth_token=True)
@@ -79,10 +80,10 @@ class TokenView(View):
         password = r.d.password
         login_type = Session.load(r, SendMobile.LOGIN_TYPE, once_delete=False)
         if not login_type:
-            return SessionError.SESSION
+            raise SessionError.SESSION
         login_value = Session.load(r, login_type, once_delete=False)
         if not login_value:
-            return SessionError.SESSION
+            raise SessionError.SESSION
         if login_type == SendMobile.PHONE_NUMBER:
             user = User.authenticate(None, login_value, password)
         else:
@@ -139,9 +140,9 @@ class IDCardView(View):
         if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
             if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
                     user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return IDCardError.VERIFYING('无法重新上传')
+                raise IDCardError.VERIFYING('无法重新上传')
             else:
-                return IDCardError.REAL_VERIFIED('无法重新上传')
+                raise IDCardError.REAL_VERIFIED('无法重新上传')
 
         import datetime
         crt_time = datetime.datetime.now().timestamp()
@@ -167,9 +168,9 @@ class IDCardView(View):
         if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
             if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
                     user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return IDCardError.VERIFYING('无法重新上传')
+                raise IDCardError.VERIFYING('无法重新上传')
             else:
-                return IDCardError.REAL_VERIFIED('无法重新上传')
+                raise IDCardError.REAL_VERIFIED('无法重新上传')
 
         if back:
             return user.upload_verify_back(key)
@@ -190,13 +191,13 @@ class VerifyView(View):
         if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
             if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
                     user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return IDCardError.VERIFYING('无法继续识别')
+                raise IDCardError.VERIFYING('无法继续识别')
             else:
-                return IDCardError.REAL_VERIFIED('无法继续识别')
+                raise IDCardError.REAL_VERIFIED('无法继续识别')
 
         urls = user.get_card_urls()
         if not urls['front'] or not urls['back']:
-            return IDCardError.CARD_NOT_COMPLETE
+            raise IDCardError.CARD_NOT_COMPLETE
 
         front_info = IDCard.detect_front(urls['front'])
         back_info = IDCard.detect_back(urls['back'])
@@ -209,14 +210,18 @@ class VerifyView(View):
         user.update_verify_type(User.VERIFY_CHINA)
         return verify_info
 
+    VERIFY_PARAMS = [
+        UserP.real_name.clone().rename('name'),
+        UserP.birthday.clone().null(),
+        UserP.idcard.clone().null(),
+        UserP.male.clone().null(),
+    ]
+
     @staticmethod
     @Analyse.r([
-        UserP.real_name.clone().rename('name'),
-        UserP.birthday.clone().set_null(),
-        UserP.idcard.clone().set_null(),
-        UserP.male.clone().set_null(),
-        P('token', '认证口令').set_null(),
-        P('auto', '自动认证').set_default(True).process(bool),
+        *VERIFY_PARAMS,
+        P('token', '认证口令').null(),
+        P('auto', '自动认证').default(True).process(bool),
     ])
     @Auth.require_login(deny_auth_token=True)
     def post(r):
@@ -229,24 +234,24 @@ class VerifyView(View):
         if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
             if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
                     user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                return IDCardError.VERIFYING('无法继续确认')
+                raise IDCardError.VERIFYING('无法继续确认')
             else:
-                return IDCardError.REAL_VERIFIED('无法继续确认')
+                raise IDCardError.REAL_VERIFIED('无法继续确认')
 
         if r.d.auto:
             # 自动验证
             token = r.d.token
             dict_ = JWT.decrypt(token)
             if 'user_id' not in dict_:
-                return IDCardError.AUTO_VERIFY_FAILED
+                raise IDCardError.AUTO_VERIFY_FAILED
             if user.user_str_id != dict_['user_id']:
-                return IDCardError.AUTO_VERIFY_FAILED
+                raise IDCardError.AUTO_VERIFY_FAILED
 
             crt_time = datetime.datetime.now().timestamp()
             valid_start = datetime.datetime.strptime(dict_['valid_start'], '%Y-%m-%d').timestamp()
             valid_end = datetime.datetime.strptime(dict_['valid_end'], '%Y-%m-%d').timestamp()
             if valid_start > crt_time or crt_time > valid_end:
-                return IDCardError.CARD_VALID_EXPIRED
+                raise IDCardError.CARD_VALID_EXPIRED
 
             user.update_card_info(
                 dict_['name'],
@@ -257,13 +262,11 @@ class VerifyView(View):
             user.update_verify_status(User.VERIFY_STATUS_DONE)
         else:
             # 人工验证
-            name = r.d.name
-            birthday = r.d.birthday
-            idcard = r.d.idcard
-            male = r.d.male
-            if not (name and birthday and idcard and male):
-                return BaseError.MISS_PARAM(('人工验证信息不全', 'name, birthday, idcard, male'))
-            user.update_card_info(name, male, idcard, birthday)
+            for param in VerifyView.VERIFY_PARAMS:
+                if not getattr(r.d, param.name):
+                    return PError.NULL_NOT_ALLOW(param.name, param.read_name)
+
+            user.update_card_info(**r.d.dict('name', 'birthday', 'idcard', 'male'))
             user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
             Email.real_verify(user, '')
         return user.d()

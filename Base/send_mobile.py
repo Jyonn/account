@@ -2,7 +2,6 @@ import json
 from urllib.parse import urlencode
 
 import requests
-from SmartDjango import Excp
 from django.utils.crypto import get_random_string
 
 from Base.session import Session
@@ -51,7 +50,6 @@ class SendMobile:
         Session.save(request, SendMobile.PHONE_NUMBER, mobile)
 
     @staticmethod
-    @Excp.pack
     def check_captcha(request, code):
         Session.check_captcha(request, SendMobile.PHONE, code)
         phone = Session.load(request, SendMobile.PHONE_NUMBER)

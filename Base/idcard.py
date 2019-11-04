@@ -16,7 +16,7 @@ client.use_http()
 client.set_timeout(30)
 
 
-@E.register
+@E.register()
 class IDCardError:
     IDCARD_DETECT_ERROR = E("身份证自动验证错误")
     REAL_VERIFIED = E("已实名认证")
@@ -32,16 +32,16 @@ class IDCard:
     def detect_front(link):
         resp = client.idcard_detect(CIUrls([link]), 0)
         if resp['httpcode'] != 200:
-            return IDCardError.IDCARD_DETECT_ERROR(resp['result_list'][0]['message'])
+            raise IDCardError.IDCARD_DETECT_ERROR(resp['result_list'][0]['message'])
         resp = resp['result_list'][0]
         if resp['code'] != 0:
-            return IDCardError.IDCARD_DETECT_ERROR('验证错误' + str(resp['msg']))
+            raise IDCardError.IDCARD_DETECT_ERROR('验证错误' + str(resp['msg']))
         resp = resp['data']
 
         try:
             birth = datetime.datetime.strptime(resp['birth'], '%Y/%m/%d').strftime('%Y-%m-%d')
-        except Exception:
-            return IDCardError.IDCARD_DETECT_ERROR('生日验证错误')
+        except Exception as err:
+            raise IDCardError.IDCARD_DETECT_ERROR('生日验证错误', debug_message=err)
 
         return dict(
             male=resp['sex'] == '男',
@@ -54,16 +54,18 @@ class IDCard:
     def detect_back(link):
         resp = client.idcard_detect(CIUrls([link]), 1)
         if resp['httpcode'] != 200:
-            return IDCardError.IDCARD_DETECT_ERROR(resp['result_list'][0]['message'])
+            raise IDCardError.IDCARD_DETECT_ERROR(resp['result_list'][0]['message'])
         resp = resp['result_list'][0]
         if resp['code'] != 0:
-            return IDCardError.IDCARD_DETECT_ERROR('验证错误' + str(resp['msg']))
+            raise IDCardError.IDCARD_DETECT_ERROR('验证错误' + str(resp['msg']))
         resp = resp['data']
         try:
-            valid_start = datetime.datetime.strptime(resp['valid_date'][:10], '%Y.%m.%d').strftime('%Y-%m-%d')
-            valid_end = datetime.datetime.strptime(resp['valid_date'][-10:], '%Y.%m.%d').strftime('%Y-%m-%d')
-        except Exception:
-            return IDCardError.IDCARD_DETECT_ERROR('生日验证错误')
+            valid_start = datetime.datetime.strptime(
+                resp['valid_date'][:10], '%Y.%m.%d').strftime('%Y-%m-%d')
+            valid_end = datetime.datetime.strptime(
+                resp['valid_date'][-10:], '%Y.%m.%d').strftime('%Y-%m-%d')
+        except Exception as err:
+            raise IDCardError.IDCARD_DETECT_ERROR('生日验证错误', debug_message=err)
 
         return dict(
             valid_start=valid_start,

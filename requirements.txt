@@ -1,3 +1,4 @@
+smartify
 qcloud_image
 django>=2.0
 requests

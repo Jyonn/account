@@ -5,10 +5,10 @@
 
 import datetime
 
-from SmartDjango import Excp, E
+from SmartDjango import E
 
 
-@E.register
+@E.register()
 class SessionError:
     CAPTCHA = E("验证失败")
     CAPTCHA_EXPIRED = E("验证码过期，请重试")
@@ -47,7 +47,6 @@ class Session:
         request.session["saved_" + captcha_type + "_last"] = last
 
     @staticmethod
-    @Excp.pack
     def check_captcha(request, captcha_type, code):
         correct_code = request.session.get("saved_" + captcha_type + "_code")
         correct_time = request.session.get("saved_" + captcha_type + "_time")
@@ -60,8 +59,8 @@ class Session:
         except KeyError:
             pass
         if None in [correct_code, correct_time, correct_last]:
-            return SessionError.CAPTCHA
+            raise SessionError.CAPTCHA
         if current_time - correct_time > correct_last:
-            return SessionError.CAPTCHA_EXPIRED
+            raise SessionError.CAPTCHA_EXPIRED
         if correct_code.upper() != str(code).upper():
-            return SessionError.CAPTCHA
+            raise SessionError.CAPTCHA

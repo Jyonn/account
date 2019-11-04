@@ -1,4 +1,5 @@
-from SmartDjango import Analyse, P, Excp, BaseError, ErrorJar
+from SmartDjango import Analyse, P, BaseError, E
+from SmartDjango.models.base import ModelError
 from django.views import View
 
 from Base import country
@@ -16,10 +17,11 @@ PM_PWD = P('pwd', '密码')
 class ErrorView(View):
     @staticmethod
     def get(r):
-        return ErrorJar.all()
+        return E.all()
 
 
 def process_lang(lang):
+    """format language"""
     if lang not in ['cn', 'en']:
         return 'cn'
     return lang
@@ -27,7 +29,7 @@ def process_lang(lang):
 
 class RegionView(View):
     @staticmethod
-    @Analyse.r(q=[P('lang', '语言').set_default('cn').process(process_lang)])
+    @Analyse.r(q=[P('lang', '语言').default('cn').process(process_lang)])
     def get(r):
         lang = r.d.lang
         lang_cn = lang == country.LANG_CN
@@ -42,10 +44,9 @@ class RegionView(View):
         return regions
 
 
-@Excp.pack
 def mode_validate(mode):
     if mode not in ReCaptchaView.MODE_LIST:
-        return BaseError.FIELD_FORMAT
+        raise ModelError.FIELD_FORMAT
 
 
 class ReCaptchaView(View):
@@ -92,7 +93,7 @@ class ReCaptchaView(View):
             SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
             next_mode = ReCaptchaView.MODE_LOGIN_CODE
             toast_msg = ''
-        except Excp:
+        except E:
             SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
             next_mode = ReCaptchaView.MODE_REGISTER_CODE
             toast_msg = '账号不存在，请注册'
@@ -112,7 +113,7 @@ class ReCaptchaView(View):
             SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
             next_mode = ReCaptchaView.MODE_LOGIN_CODE
             toast_msg = '账号已注册，请验证'
-        except Excp:
+        except E:
             SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
             next_mode = ReCaptchaView.MODE_REGISTER_CODE
             toast_msg = ''
@@ -182,8 +183,8 @@ class ReCaptchaView(View):
 
     @staticmethod
     @Analyse.r([
-        P('response', '人机验证码').set_null(),
-        P('code', '短信验证码').set_null(),
+        P('response', '人机验证码').null(),
+        P('code', '短信验证码').null(),
         P('mode', '登录模式').validate(mode_validate),
     ])
     def post(r):

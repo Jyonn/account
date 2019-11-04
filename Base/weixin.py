@@ -11,7 +11,7 @@ APP_ID = Config.get_value_by_key(CI.WEIXIN_APP_ID)
 APP_SECRET = Config.get_value_by_key(CI.WEIXIN_APP_SECRET)
 
 
-@E.register
+@E.register()
 class WeixinError:
     UPDATE_WEIXIN_ACCESS_TOKEN_ERROR = E("更新微信Access Token错误")
     UPDATE_WEIXIN_JSAPI_TICKET_ERROR = E("更新微信JsApi Ticket错误")
@@ -25,14 +25,14 @@ class Weixin:
         crt_time = int(datetime.datetime.now().timestamp())
         last_update = int(Config.get_value_by_key(CI.WEIXIN_LAST_UPDATE, '0'))
         if crt_time - last_update < 60 * 80:  # 80 mins
-            return WeixinError.UPDATE_WEIXIN_TIME_NOT_EXPIRED
+            raise WeixinError.UPDATE_WEIXIN_TIME_NOT_EXPIRED
 
         resp = requests.get('https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s' % (APP_ID, APP_SECRET))
         data = resp.json()
         resp.close()
 
         if ('errcode' in data and data['errcode'] != 0) or 'access_token' not in data:
-            return WeixinError.UPDATE_WEIXIN_ACCESS_TOKEN_ERROR
+            raise WeixinError.UPDATE_WEIXIN_ACCESS_TOKEN_ERROR
         Config.update_value(CI.WEIXIN_ACCESS_TOKEN, data['access_token'])
 
         resp = requests.get('https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=%s&type=jsapi' % data['access_token'])
@@ -40,7 +40,7 @@ class Weixin:
         resp.close()
 
         if ('errcode' in data and data['errcode'] != 0) or 'ticket' not in data:
-            return WeixinError.UPDATE_WEIXIN_JSAPI_TICKET_ERROR
+            raise WeixinError.UPDATE_WEIXIN_JSAPI_TICKET_ERROR
         Config.update_value(CI.WEIXIN_JSAPI_TICKET, data['ticket'])
         Config.update_value(CI.WEIXIN_LAST_UPDATE, str(crt_time))
 

@@ -41,7 +41,7 @@ class Element:
         return self
 
 
-@E.register
+@E.register()
 class EmailError:
     SEND_EMAIL_ERROR = E("邮件发送错误")
     EMAIL_NOT_EXIST = E("不存在邮箱")
@@ -94,7 +94,7 @@ class Email:
             server.sendmail(SENDER_EMAIL, [email.user.email], msg.as_string())
             server.quit()
         except Exception:
-            return EmailError.SEND_EMAIL_ERROR
+            raise EmailError.SEND_EMAIL_ERROR
 
     def send(self):
         return Email._send(self)
@@ -103,7 +103,7 @@ class Email:
     @Excp.pack
     def developer_apply(user, link):
         if not ROOT_USER.email:
-            return EmailError.EMAIL_NOT_EXIST
+            raise EmailError.EMAIL_NOT_EXIST
         return Email(
             subject='开发者申请',
             dear=Element('你好，管理员：'),
@@ -119,7 +119,7 @@ class Email:
     @Excp.pack
     def real_verify(user, link):
         if not ROOT_USER.email:
-            return EmailError.EMAIL_NOT_EXIST
+            raise EmailError.EMAIL_NOT_EXIST
         return Email(
             subject='实名认证',
             dear=Element('你好，管理员：'),
@@ -135,7 +135,7 @@ class Email:
     @Excp.pack
     def app_msg(user_app, message):
         if not user_app.user.email:
-            return EmailError.EMAIL_NOT_EXIST
+            raise EmailError.EMAIL_NOT_EXIST
         return Email(
             subject='应用推送消息',
             dear=Element('你好，')

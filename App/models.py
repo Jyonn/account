@@ -1,6 +1,6 @@
 import datetime
 
-from SmartDjango import models, E, Excp, BaseError, P, ErrorJar
+from SmartDjango import models, E, BaseError, P
 from django.utils.crypto import get_random_string
 
 from Base.jtoken import JWType, JWT
@@ -8,7 +8,7 @@ from Base.premise_checker import PremiseCheckerError
 from Config.models import CI
 
 
-@E.register
+@E.register()
 class AppError:
     PREMISE_NOT_FOUND = E("不存在的要求")
     CREATE_PREMISE = E("创建要求错误")
@@ -52,23 +52,20 @@ class Premise(models.Model):
     )
 
     @classmethod
-    @Excp.pack
     def get_by_id(cls, pid):
         try:
             return cls.objects.get(pk=pid)
         except cls.DoesNotExist:
-            return AppError.PREMISE_NOT_FOUND
+            raise AppError.PREMISE_NOT_FOUND
 
     @classmethod
-    @Excp.pack
     def get_by_name(cls, name):
         try:
             return cls.objects.get(name=name)
-        except Exception:
-            return AppError.PREMISE_NOT_FOUND
+        except Exception as err:
+            raise AppError.PREMISE_NOT_FOUND(debug_message=err)
 
     @classmethod
-    @Excp.pack
     def create(cls, name, desc, detail):
         try:
             premise = cls(
@@ -77,8 +74,8 @@ class Premise(models.Model):
                 detail=detail,
             )
             premise.save()
-        except Exception:
-            return AppError.CREATE_PREMISE
+        except Exception as err:
+            raise AppError.CREATE_PREMISE(debug_message=err)
         return premise
 
     def d(self):
@@ -136,23 +133,20 @@ class Scope(models.Model):
     )
 
     @classmethod
-    @Excp.pack
     def get_by_id(cls, sid):
         try:
             return cls.objects.get(pk=sid)
         except cls.DoesNotExist:
-            return AppError.SCOPE_NOT_FOUND
+            raise AppError.SCOPE_NOT_FOUND
 
     @classmethod
-    @Excp.pack
     def get_by_name(cls, name):
         try:
             return cls.objects.get(name=name)
         except Exception:
-            return AppError.SCOPE_NOT_FOUND
+            raise AppError.SCOPE_NOT_FOUND
 
     @classmethod
-    @Excp.pack
     def create(cls, name, desc, detail):
         try:
             scope = cls(
@@ -163,7 +157,7 @@ class Scope(models.Model):
             )
             scope.save()
         except Exception:
-            return AppError.CREATE_SCOPE
+            raise AppError.CREATE_SCOPE
         return scope
 
     def d(self):
@@ -273,20 +267,26 @@ class App(models.Model):
     )
 
     @classmethod
-    @Excp.pack
     def get_by_name(cls, name):
         try:
             return cls.objects.get(name=name)
         except cls.DoesNotExist:
-            return AppError.APP_NOT_FOUND
+            raise AppError.APP_NOT_FOUND
 
     @classmethod
-    @Excp.pack
+    def exist_with_name(cls, name):
+        try:
+            cls.objects.get(name=name)
+        except cls.DoesNotExist:
+            return
+        raise AppError.EXIST_APP_NAME
+
+    @classmethod
     def get_by_id(cls, app_id):
         try:
             return cls.objects.get(pk=app_id)
         except cls.DoesNotExist:
-            return AppError.APP_NOT_FOUND
+            raise AppError.APP_NOT_FOUND
 
     @classmethod
     def get_unique_app_id(cls):
@@ -294,18 +294,13 @@ class App(models.Model):
             app_id = get_random_string(length=8)
             try:
                 cls.get_by_id(app_id)
-            except Excp as ret:
-                if ret.eis(AppError.APP_NOT_FOUND):
+            except E as e:
+                if e.eis(AppError.APP_NOT_FOUND):
                     return app_id
 
     @classmethod
-    @Excp.pack
     def create(cls, name, desc, redirect_uri, test_redirect_uri, scopes, premises, owner):
-        try:
-            cls.get_by_name(name)
-            return AppError.EXIST_APP_NAME
-        except Excp:
-            pass
+        cls.exist_with_name(name)
 
         try:
             crt_time = datetime.datetime.now()
@@ -325,15 +320,14 @@ class App(models.Model):
             app.scopes.add(*scopes)
             app.premises.add(*premises)
             app.save()
-        except Exception:
-            return AppError.CREATE_APP
+        except Exception as err:
+            raise AppError.CREATE_APP(debug_message=err)
         return app
 
     def modify_test_redirect_uri(self, test_redirect_uri):
         self.test_redirect_uri = test_redirect_uri
         self.save()
 
-    @Excp.pack
     def modify(self, name, desc, info, redirect_uri, scopes, premises):
         """修改应用信息"""
         self.name = name
@@ -350,8 +344,7 @@ class App(models.Model):
         try:
             self.save()
         except Exception as err:
-            print(err)
-            return AppError.MODIFY_APP
+            raise AppError.MODIFY_APP(debug_message=err)
 
     def _readable_app_name(self):
         return self.name
@@ -406,7 +399,6 @@ class App(models.Model):
     def d_base(self):
         return self.dictor('app_name', 'app_id', 'logo', 'app_desc', 'user_num', 'create_time')
 
-    @Excp.pack
     def modify_logo(self, logo):
         """修改应用logo"""
         self.validator(locals())
@@ -427,13 +419,17 @@ class App(models.Model):
         for premise in self.premises.all():
             checker = Premise.get_checker(premise.name)
             if checker and callable(checker):
-                error = Excp(checker(user)).error
+                try:
+                    checker(user)
+                    raise BaseError.OK
+                except E as e:
+                    error = e
             else:
-                error = PremiseCheckerError.CHECKER_NOT_FOUND()
+                error = PremiseCheckerError.CHECKER_NOT_FOUND
             p_dict = premise.d()
             p_dict['check'] = dict(
-                identifier=ErrorJar.get_i(error),
-                msg=error.get_msg(),
+                identifier=error.identifier,
+                msg=error.message,
             )
             premises.append(p_dict)
         return premises
@@ -484,22 +480,20 @@ class UserApp(models.Model):
         return self.dictor('bind', 'mark', 'rebind', 'user_app_id')
 
     @classmethod
-    @Excp.pack
     def get_by_user_app(cls, user, app):
         try:
             return cls.objects.get(user=user, app=app)
         except Exception:
-            return AppError.USER_APP_NOT_FOUND
+            raise AppError.USER_APP_NOT_FOUND
 
     @classmethod
-    @Excp.pack
     def get_by_id(cls, user_app_id, check_bind=False):
         try:
             user_app = cls.objects.get(user_app_id=user_app_id)
         except Exception:
-            return AppError.USER_APP_NOT_FOUND
+            raise AppError.USER_APP_NOT_FOUND
         if check_bind and not user_app.bind:
-            return AppError.APP_UNBINDED
+            raise AppError.APP_UNBINDED
         return user_app
 
     @classmethod
@@ -508,18 +502,17 @@ class UserApp(models.Model):
             user_app_id = get_random_string(length=8)
             try:
                 cls.get_by_id(user_app_id)
-            except Excp as ret:
-                if ret.eis(AppError.USER_APP_NOT_FOUND):
+            except E as e:
+                if e.eis(AppError.USER_APP_NOT_FOUND):
                     return user_app_id
 
     @classmethod
-    @Excp.pack
     def do_bind(cls, user, app):
         premise_list = app.check_premise(user)
         for premise in premise_list:
-            error = ErrorJar.get(premise['check']['identifier'])
-            if error != BaseError.OK:
-                return error
+            error = E.sid2e[premise['check']['identifier']]
+            if not error.ok:
+                raise error
 
         crt_timestamp = datetime.datetime.now().timestamp()
 
@@ -530,8 +523,8 @@ class UserApp(models.Model):
             user_app.frequent_score += 1
             user_app.last_score_changed_time = crt_timestamp
             user_app.save()
-        except Excp as ret:
-            if ret.eis(AppError.USER_APP_NOT_FOUND):
+        except E as e:
+            if e.eis(AppError.USER_APP_NOT_FOUND):
                 try:
                     user_app = cls(
                         user=user,
@@ -545,10 +538,10 @@ class UserApp(models.Model):
                     user_app.save()
                     user_app.app.user_num += 1
                     user_app.app.save()
-                except Exception:
-                    return AppError.BIND_USER_APP
+                except Exception as err:
+                    raise AppError.BIND_USER_APP(debug_message=err)
             else:
-                return ret
+                raise e
         return JWT.encrypt(dict(
             user_app_id=user_app.user_app_id,
             type=JWType.AUTH_CODE,
@@ -560,11 +553,10 @@ class UserApp(models.Model):
         try:
             user_app = cls.get_by_user_app(user, app)
             return user_app.bind
-        except Excp:
+        except Exception:
             return False
 
     @classmethod
-    @Excp.pack
     def refresh_frequent_score(cls):
         from Config.models import Config
         crt_date = datetime.datetime.now().date()
@@ -573,7 +565,7 @@ class UserApp(models.Model):
         last_date = datetime.datetime.strptime(last_date, '%Y-%m-%d').date()
 
         if last_date >= crt_date:
-            return AppError.SCORE_REFRESHED
+            raise AppError.SCORE_REFRESHED
 
         from OAuth.api_views import OAUTH_TOKEN_EXPIRE_TIME
 
@@ -586,10 +578,9 @@ class UserApp(models.Model):
                     user_app.last_score_changed_time = crt_time
                     user_app.save()
 
-    @Excp.pack
     def do_mark(self, mark):
         if mark < 1 or mark > 5:
-            return AppError.MARK
+            raise AppError.MARK
         original_mark = self.mark
         self.mark = mark
         self.save()

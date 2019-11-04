@@ -20,13 +20,13 @@ class OAuthView(View):
         
         user_app = UserApp.get_by_user_app(user, app)
         if float(user_app.last_auth_code_time) < app.field_change_time:
-            return AuthError.APP_FIELD_CHANGE
+            raise AuthError.APP_FIELD_CHANGE
 
         if user_app.bind:
             encode_str, dict_ = UserApp.do_bind(user, app)
             return dict(auth_code=encode_str, redirect_uri=app.redirect_uri)
         else:
-            return AppError.APP_UNBINDED
+            raise AppError.APP_UNBINDED
 
     @staticmethod
     @Analyse.r([AppP.app])
@@ -51,17 +51,17 @@ class OAuthTokenView(View):
         code = r.d.code
         dict_ = JWT.decrypt(code)
         if dict_['type'] != JWType.AUTH_CODE:
-            return AuthError.REQUIRE_AUTH_CODE
+            raise AuthError.REQUIRE_AUTH_CODE
 
         user_app_id = dict_['user_app_id']
         user_app = UserApp.get_by_id(user_app_id, check_bind=True)
 
         ctime = dict_['ctime']
         if user_app.app.field_change_time > ctime:
-            return AuthError.APP_FIELD_CHANGE
+            raise AuthError.APP_FIELD_CHANGE
 
         if user_app.last_auth_code_time != str(ctime):
-            return AuthError.NEW_AUTH_CODE_CREATED
+            raise AuthError.NEW_AUTH_CODE_CREATED
 
         token, dict_ = JWT.encrypt(
             dict(

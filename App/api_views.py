@@ -21,10 +21,10 @@ def relation_process(relation):
 class AppView(View):
     @staticmethod
     @Analyse.r(q=[
-        P('relation').set_default(App.R_USER).process(relation_process),
-        P('frequent').set_null(),
-        P('count').set_default(3).process(int),
-        P('last_time').set_null().process(float).process(datetime.datetime.fromtimestamp)
+        P('relation').default(App.R_USER).process(relation_process),
+        P('frequent').null(),
+        P('count').default(3).process(int),
+        P('last_time').null().process(float).process(datetime.datetime.fromtimestamp)
     ])
     @Auth.require_login([SI.read_app_list])
     def get(r):
@@ -75,7 +75,7 @@ class AppIDSecretView(View):
         app = r.d.app
 
         if not app.belong(user):
-            return AppError.APP_NOT_BELONG
+            raise AppError.APP_NOT_BELONG
 
         return app.secret
 
@@ -111,13 +111,13 @@ class AppIDView(View):
     @staticmethod
     @Analyse.r(
         b=[
-            AppP.name.clone().set_null(),
-            AppP.info.clone().set_null(),
-            AppP.desc.clone().set_null(),
-            AppP.redirect_uri.clone().set_null(),
-            AppP.scopes.clone().set_null(),
-            AppP.premises.clone().set_null(),
-            AppP.test_redirect_uri.clone().set_null(),
+            AppP.name.clone().null(),
+            AppP.info.clone().null(),
+            AppP.desc.clone().null(),
+            AppP.redirect_uri.clone().null(),
+            AppP.scopes.clone().null(),
+            AppP.premises.clone().null(),
+            AppP.test_redirect_uri.clone().null(),
         ],
         a=[AppP.app],
     )
@@ -131,7 +131,7 @@ class AppIDView(View):
         app = r.d.app
 
         if not app.belong(user):
-            return AppError.APP_NOT_BELONG
+            raise AppError.APP_NOT_BELONG
 
         app.modify(**r.d.dict('name', 'desc', 'info', 'redirect_uri', 'scopes', 'premises'))
         app.modify_test_redirect_uri(r.d.test_redirect_uri)
@@ -149,7 +149,7 @@ class AppIDView(View):
         app = r.d.app
 
         if not app.belong(app):
-            return AppError.APP_NOT_BELONG
+            raise AppError.APP_NOT_BELONG
 
         app.delete()
 
@@ -181,7 +181,7 @@ class AppLogoView(View):
         app = r.d.app  # type: App
 
         if app.owner != user:
-            return AppError.APP_NOT_BELONG
+            raise AppError.APP_NOT_BELONG
 
         import datetime
         crt_time = datetime.datetime.now().timestamp()
@@ -217,7 +217,7 @@ class UserAppIdView(View):
         user_app = r.d.user_app
 
         if not user_app.app.authentication(app_secret):
-            return AppError.APP_SECRET
+            raise AppError.APP_SECRET
 
         return user_app.user.d()
 
@@ -232,7 +232,7 @@ class UserAppIdView(View):
         user_app = r.d.user_app
         mark = r.d.mark
         if user_app.user.user_str_id != r.user.user_str_id:
-            return AppError.ILLEGAL_ACCESS_RIGHT
+            raise AppError.ILLEGAL_ACCESS_RIGHT
 
         user_app.do_mark(mark)
         return user_app.app.mark_as_list()

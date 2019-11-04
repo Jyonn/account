@@ -4,7 +4,7 @@
 """
 import qiniu
 import requests
-from SmartDjango import Excp, E
+from SmartDjango import E
 from django.http import HttpRequest
 from qiniu import urlsafe_base64_encode
 
@@ -25,7 +25,7 @@ _KEY_PREFIX = 'account/'
 QINIU_MANAGE_HOST = "https://rs.qiniu.com"
 
 
-@E.register
+@E.register()
 class QNError:
     REQUEST_QINIU = E("七牛请求错误")
     QINIU_UNAUTHORIZED = E("七牛端身份验证错误")
@@ -74,18 +74,17 @@ class QnManager:
         key = _KEY_PREFIX + key
         return self.auth.upload_token(bucket=self.bucket, key=key, expires=3600, policy=policy), key
 
-    @Excp.pack
     def auth_callback(self, request: HttpRequest):
         """七牛callback认证校验"""
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         if auth_header is None:
-            return QNError.UNAUTH_CALLBACK
+            raise QNError.UNAUTH_CALLBACK
         url = request.get_full_path()
         body = request.body
         verified = self.auth.verify_callback(auth_header, url, body,
                                              content_type='application/json')
         if not verified:
-            return QNError.UNAUTH_CALLBACK
+            raise QNError.UNAUTH_CALLBACK
 
     def get_resource_url(self, key, expires=3600, small=False):
         """获取资源链接"""
@@ -98,7 +97,6 @@ class QnManager:
             return self.auth.private_download_url(url, expires=expires)
 
     @staticmethod
-    @Excp.pack
     def deal_manage_res(target, access_token):
         url = '%s%s' % (QINIU_MANAGE_HOST, target)
         headers = {
@@ -109,15 +107,15 @@ class QnManager:
         try:
             r = requests.post(url, headers=headers)
         except requests.exceptions.RequestException:
-            return QNError.REQUEST_QINIU
+            raise QNError.REQUEST_QINIU
         status = r.status_code
         r.close()
         if status == 200:
             return
         elif status == 401:
-            return QNError.QINIU_UNAUTHORIZED
+            raise QNError.QINIU_UNAUTHORIZED
         else:
-            return QNError.FAIL_QINIU('状态错误%s' % status)
+            raise QNError.FAIL_QINIU('状态错误%s' % status)
 
     def delete_res(self, key):
         entry = '%s:%s' % (self.bucket, key)
