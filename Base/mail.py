@@ -3,7 +3,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 import html
 
-from SmartDjango import Excp, E
+from SmartDjango import E
 
 from Config.models import Config, CI
 from User.models import User
@@ -81,7 +81,6 @@ class Email:
         )
 
     @staticmethod
-    @Excp.pack
     def _send(email):
         try:
             msg = MIMEText(email.output(), 'html', 'utf-8')
@@ -100,7 +99,6 @@ class Email:
         return Email._send(self)
 
     @staticmethod
-    @Excp.pack
     def developer_apply(user, link):
         if not ROOT_USER.email:
             raise EmailError.EMAIL_NOT_EXIST
@@ -116,7 +114,6 @@ class Email:
         ).send()
 
     @staticmethod
-    @Excp.pack
     def real_verify(user, link):
         if not ROOT_USER.email:
             raise EmailError.EMAIL_NOT_EXIST
@@ -132,7 +129,6 @@ class Email:
         ).send()
 
     @staticmethod
-    @Excp.pack
     def app_msg(user_app, message):
         if not user_app.user.email:
             raise EmailError.EMAIL_NOT_EXIST
@@ -149,7 +145,6 @@ class Email:
         ).send()
 
     @staticmethod
-    @Excp.pack
     def email_verify(user, code):
         return Email(
             subject='邮件验证',

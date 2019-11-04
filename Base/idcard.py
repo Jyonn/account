@@ -1,6 +1,6 @@
 import datetime
 
-from SmartDjango import Excp, E
+from SmartDjango import E
 from qcloud_image import Client
 from qcloud_image import CIUrls
 
@@ -28,7 +28,6 @@ class IDCardError:
 
 class IDCard:
     @staticmethod
-    @Excp.pack
     def detect_front(link):
         resp = client.idcard_detect(CIUrls([link]), 0)
         if resp['httpcode'] != 200:

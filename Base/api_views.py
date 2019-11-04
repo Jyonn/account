@@ -1,5 +1,4 @@
-from SmartDjango import Analyse, P, BaseError, E
-from SmartDjango.models.base import ModelError
+from SmartDjango import Analyse, P, E, ModelError
 from django.views import View
 
 from Base import country
@@ -193,11 +192,11 @@ class ReCaptchaView(View):
         if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
             resp = r.d.response
             if not resp or not Recaptcha.verify(resp):
-                return BaseError.FIELD_FORMAT('人机验证失败')
+                raise ModelError.FIELD_FORMAT(append_message='人机验证失败')
         if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
             code = r.d.code
             if not code:
-                return BaseError.FIELD_FORMAT
+                raise ModelError.FIELD_FORMAT
             r.phone = SendMobile.check_captcha(r, code)
 
         mode_handlers = [

@@ -1,7 +1,7 @@
 import datetime
 
 import requests
-from SmartDjango import Excp, E
+from SmartDjango import E
 from django.utils.crypto import get_random_string
 
 from Base.common import sha1
@@ -20,7 +20,6 @@ class WeixinError:
 
 class Weixin:
     @staticmethod
-    @Excp.pack
     def update_access_token():
         crt_time = int(datetime.datetime.now().timestamp())
         last_update = int(Config.get_value_by_key(CI.WEIXIN_LAST_UPDATE, '0'))
@@ -45,7 +44,6 @@ class Weixin:
         Config.update_value(CI.WEIXIN_LAST_UPDATE, str(crt_time))
 
     @staticmethod
-    @Excp.pack
     def get_config(url):
         jsapi_ticket = Config.get_config_by_key(CI.WEIXIN_JSAPI_TICKET)
         noncestr = get_random_string(length=16)

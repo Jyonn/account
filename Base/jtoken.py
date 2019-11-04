@@ -5,7 +5,7 @@
 import datetime
 
 import jwt
-from SmartDjango import Excp, E
+from SmartDjango import E
 
 from Base.common import SECRET_KEY, JWT_ENCODE_ALGO
 
@@ -40,7 +40,6 @@ class JWT:
         return encode_str, dict_
 
     @staticmethod
-    @Excp.pack
     def decrypt(str_: str):
         """
         jwt签名解密
