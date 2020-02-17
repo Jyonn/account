@@ -10,6 +10,7 @@ class PremiseCheckerError:
     REQUIRE_REAL_VERIFY = E("需要实名认证")
     CHECKER_NOT_FOUND = E("不存在的要求检测")
     DISALLOW_CHILD = E("需年满18周岁")
+    REQUIRE_CHINESE_PHONE = E("仅支持中国大陆手机号注册用户")
 
 
 class PremiseChecker:
@@ -34,3 +35,8 @@ class PremiseChecker:
             return
         elif crt_date.day < user.birthday.day:
             raise PremiseCheckerError.DISALLOW_CHILD
+
+    @staticmethod
+    def chinese_phone_checker(user):
+        if not user.phone.startswith('+86'):
+            raise PremiseCheckerError.REQUIRE_CHINESE_PHONE

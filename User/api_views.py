@@ -69,6 +69,17 @@ class UserView(View):
         return user.d()
 
 
+class UserPhoneView(View):
+    @staticmethod
+    @Auth.require_login([SI.read_phone])
+    def get(r):
+        """ GET /api/user/phone
+
+        获取用户手机号
+        """
+        return r.user.phone
+
+
 class TokenView(View):
     @staticmethod
     @Analyse.r([UserP.password])
