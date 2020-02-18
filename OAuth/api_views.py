@@ -5,7 +5,7 @@ from App.models import UserApp, AppError, AppP
 from Base.auth import Auth, AuthError
 from Base.jtoken import JWType, JWT
 
-OAUTH_TOKEN_EXPIRE_TIME = 7 * 24 * 60 * 60
+OAUTH_TOKEN_EXPIRE_TIME = 30 * 24 * 60 * 60
 
 
 class OAuthView(View):
