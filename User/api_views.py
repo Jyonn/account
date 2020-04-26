@@ -127,7 +127,7 @@ class AvatarView(View):
 
         七牛上传用户头像回调函数
         """
-        qn_public_manager.qiniu_auth_callback(r)
+        qn_public_manager.auth_callback(r)
 
         key = r.d.key
         user = r.d.user
@@ -170,7 +170,7 @@ class IDCardView(View):
 
         七牛上传用户实名认证回调函数
         """
-        qn_public_manager.qiniu_auth_callback(r)
+        qn_public_manager.auth_callback(r)
 
         key = r.d.key
         back = r.d.back
