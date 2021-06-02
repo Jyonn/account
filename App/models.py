@@ -434,6 +434,10 @@ class App(models.Model):
             premises.append(p_dict)
         return premises
 
+    @classmethod
+    def list(cls):
+        return cls.objects.all().dict(cls.d_base)
+
 
 class UserApp(models.Model):
     """用户应用类"""

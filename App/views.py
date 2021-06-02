@@ -64,6 +64,13 @@ class AppV(View):
         return app.d_base()
 
 
+class AppList(View):
+    @staticmethod
+    def get(_):
+        """GET /app/list"""
+        return App.list()
+
+
 class AppIDSecret(View):
     @staticmethod
     @Analyse.r(a=[AppP.app])

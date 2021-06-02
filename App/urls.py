@@ -4,6 +4,7 @@ from App import views
 
 urlpatterns = [
     path('', views.AppV.as_view()),
+    path('list', views.AppList.as_view()),
     path('scope', views.ScopeV.as_view()),
     path('premise', views.PremiseV.as_view()),
     path('logo', views.AppLogo.as_view()),
