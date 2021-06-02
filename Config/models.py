@@ -5,7 +5,7 @@
 from SmartDjango import models, E
 
 
-@E.register()
+@E.register(id_processor=E.idp_cls_prefix())
 class ConfigError:
     CREATE_CONFIG = E("更新配置错误")
     CONFIG_NOT_FOUND = E("不存在的配置")

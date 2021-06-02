@@ -8,7 +8,7 @@ from Base.jtoken import JWType, JWT
 OAUTH_TOKEN_EXPIRE_TIME = 30 * 24 * 60 * 60
 
 
-class OAuthView(View):
+class OAuth(View):
     @staticmethod
     @Analyse.r(q=[AppP.app])
     @Auth.require_login(deny_auth_token=True)
@@ -43,7 +43,7 @@ class OAuthView(View):
         return dict(auth_code=encode_str, redirect_uri=app.redirect_uri)
 
 
-class OAuthTokenView(View):
+class OAuthToken(View):
     @staticmethod
     @Analyse.r([P('code', '授权码'), AppP.secret.clone().rename('app_secret')])
     def post(r):

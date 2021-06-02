@@ -8,7 +8,7 @@ from Base.premise_checker import PremiseCheckerError
 from Config.models import CI
 
 
-@E.register()
+@E.register(id_processor=E.idp_cls_prefix())
 class AppError:
     PREMISE_NOT_FOUND = E("不存在的要求")
     CREATE_PREMISE = E("创建要求错误")
@@ -79,7 +79,7 @@ class Premise(models.Model):
         return premise
 
     def d(self):
-        return self.dictor('name', 'desc', 'detail')
+        return self.dictify('name', 'desc', 'detail')
 
     @classmethod
     def list_to_premise_list(cls, premises):
@@ -161,7 +161,7 @@ class Scope(models.Model):
         return scope
 
     def d(self):
-        return self.dictor('name', 'desc', 'always', 'detail')
+        return self.dictify('name', 'desc', 'always', 'detail')
 
     @classmethod
     def list_to_scope_list(cls, scopes):
@@ -386,7 +386,7 @@ class App(models.Model):
         return list(map(lambda p: p.d(), premises))
 
     def d(self):
-        return self.dictor(
+        return self.dictify(
             'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
             'redirect_uri', 'create_time', 'owner', 'mark', 'scopes', 'premises',
             'test_redirect_uri')
@@ -397,7 +397,7 @@ class App(models.Model):
         return dict_
 
     def d_base(self):
-        return self.dictor('app_name', 'app_id', 'logo', 'app_desc', 'user_num', 'create_time')
+        return self.dictify('app_name', 'app_id', 'logo', 'app_desc', 'user_num', 'create_time')
 
     def modify_logo(self, logo):
         """修改应用logo"""
@@ -477,7 +477,7 @@ class UserApp(models.Model):
         return float(self.last_auth_code_time) < self.app.field_change_time
 
     def d(self):
-        return self.dictor('bind', 'mark', 'rebind', 'user_app_id')
+        return self.dictify('bind', 'mark', 'rebind', 'user_app_id')
 
     @classmethod
     def get_by_user_app(cls, user, app):
@@ -567,7 +567,7 @@ class UserApp(models.Model):
         if last_date >= crt_date:
             raise AppError.SCORE_REFRESHED
 
-        from OAuth.api_views import OAUTH_TOKEN_EXPIRE_TIME
+        from OAuth.views import OAUTH_TOKEN_EXPIRE_TIME
 
         Config.update_value(CI.LAST_RE_FREQ_SCORE_DATE, crt_date.strftime('%Y-%m-%d'))
         for user_app in cls.objects.all():

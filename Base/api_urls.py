@@ -4,11 +4,11 @@ base子路由
 """
 from django.urls import path
 
-from Base.api_views import ErrorView, RegionView, ReCaptchaView
+from Base import views
 
 
 urlpatterns = [
-    path('errors', ErrorView.as_view()),
-    path('regions', RegionView.as_view()),
-    path('recaptcha', ReCaptchaView.as_view()),
+    path('errors', views.Error.as_view()),
+    path('regions', views.Region.as_view()),
+    path('recaptcha', views.ReCaptcha.as_view()),
 ]

@@ -11,7 +11,7 @@ from django.utils.crypto import get_random_string
 from Base.idcard import IDCardError
 
 
-@E.register()
+@E.register(id_processor=E.idp_cls_prefix())
 class UserError:
     CREATE_USER = E("存储用户错误")
     PASSWORD = E("密码错误")
@@ -313,13 +313,13 @@ class User(models.Model):
         return int(self.allow_qitian_modify())
 
     def d_oauth(self):
-        return self.dictor('avatar', 'nickname', 'description')
+        return self.dictify('avatar', 'nickname', 'description')
 
     def d_base(self):
-        return self.dictor('user_str_id', 'avatar', 'nickname', 'description')
+        return self.dictify('user_str_id', 'avatar', 'nickname', 'description')
 
     def d(self):
-        return self.dictor('birthday', 'user_str_id', 'qitian', 'avatar', 'nickname',
+        return self.dictify('birthday', 'user_str_id', 'qitian', 'avatar', 'nickname',
                            'description', 'allow_qitian_modify', 'verify_status',
                            'verify_type', 'is_dev')
 

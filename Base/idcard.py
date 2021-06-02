@@ -16,7 +16,7 @@ client.use_http()
 client.set_timeout(30)
 
 
-@E.register()
+@E.register(id_processor=E.idp_cls_prefix())
 class IDCardError:
     IDCARD_DETECT_ERROR = E("身份证自动验证错误")
     REAL_VERIFIED = E("已实名认证")

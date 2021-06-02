@@ -5,17 +5,15 @@ from Base import country
 from Base.auth import Auth
 from Base.recaptcha import Recaptcha
 from Base.send_mobile import SendMobile
-from Base.session import Session
-from User.api_views import UserView
-from User.models import UserError, User
+from User.models import User
 
 PM_PHONE = P('phone', '手机号')
 PM_PWD = P('pwd', '密码')
 
 
-class ErrorView(View):
+class Error(View):
     @staticmethod
-    def get(r):
+    def get(_):
         return E.all()
 
 
@@ -26,7 +24,7 @@ def process_lang(lang):
     return lang
 
 
-class RegionView(View):
+class Region(View):
     @staticmethod
     @Analyse.r(q=[P('lang', '语言').default('cn').process(process_lang)])
     def get(r):
@@ -44,11 +42,11 @@ class RegionView(View):
 
 
 def mode_validate(mode):
-    if mode not in ReCaptchaView.MODE_LIST:
+    if mode not in ReCaptcha.MODE_LIST:
         raise ModelError.FIELD_FORMAT
 
 
-class ReCaptchaView(View):
+class ReCaptcha(View):
     RECAPTCHA = 'recaptcha'
 
     MODE_LOGIN_PHONE_CODE = 0
@@ -90,11 +88,11 @@ class ReCaptchaView(View):
         try:
             User.get_by_phone(phone)
             SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
-            next_mode = ReCaptchaView.MODE_LOGIN_CODE
+            next_mode = ReCaptcha.MODE_LOGIN_CODE
             toast_msg = ''
         except E:
             SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
-            next_mode = ReCaptchaView.MODE_REGISTER_CODE
+            next_mode = ReCaptcha.MODE_REGISTER_CODE
             toast_msg = '账号不存在，请注册'
 
         return dict(
@@ -110,11 +108,11 @@ class ReCaptchaView(View):
         try:
             User.get_by_phone(phone)
             SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
-            next_mode = ReCaptchaView.MODE_LOGIN_CODE
+            next_mode = ReCaptcha.MODE_LOGIN_CODE
             toast_msg = '账号已注册，请验证'
         except E:
             SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
-            next_mode = ReCaptchaView.MODE_REGISTER_CODE
+            next_mode = ReCaptcha.MODE_REGISTER_CODE
             toast_msg = ''
 
         return dict(
@@ -129,7 +127,7 @@ class ReCaptchaView(View):
         User.get_by_phone(phone)
         SendMobile.send_captcha(r, phone, SendMobile.FIND_PWD)
         return dict(
-            next_mode=ReCaptchaView.MODE_FIND_PWD_CODE,
+            next_mode=ReCaptcha.MODE_FIND_PWD_CODE,
             toast_msg='',
         )
 
@@ -189,25 +187,25 @@ class ReCaptchaView(View):
     def post(r):
         mode = r.d.mode
 
-        if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
+        if mode in ReCaptcha.MODE_REQUIRE_CAPTCHA_LIST:
             resp = r.d.response
             if not resp or not Recaptcha.verify(resp):
                 raise ModelError.FIELD_FORMAT(append_message='人机验证失败')
-        if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
+        if mode in ReCaptcha.MODE_CHECK_CODE_LIST:
             code = r.d.code
             if not code:
                 raise ModelError.FIELD_FORMAT
             r.phone = SendMobile.check_captcha(r, code)
 
         mode_handlers = [
-            ReCaptchaView.login_phone_code_handler,
-            ReCaptchaView.login_phone_pwd_handler,
-            ReCaptchaView.login_qt_pwd_handler,
-            ReCaptchaView.register_handler,
-            ReCaptchaView.find_pwd_handler,
-            ReCaptchaView.login_code_handler,
-            ReCaptchaView.register_code_handler,
-            ReCaptchaView.find_pwd_code_handler,
+            ReCaptcha.login_phone_code_handler,
+            ReCaptcha.login_phone_pwd_handler,
+            ReCaptcha.login_qt_pwd_handler,
+            ReCaptcha.register_handler,
+            ReCaptcha.find_pwd_handler,
+            ReCaptcha.login_code_handler,
+            ReCaptcha.register_code_handler,
+            ReCaptcha.find_pwd_code_handler,
         ]
 
         return mode_handlers[mode](r)

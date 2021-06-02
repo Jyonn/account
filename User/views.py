@@ -22,7 +22,7 @@ from Base.session import Session, SessionError
 from User.models import User, UserP
 
 
-class UserView(View):
+class UserV(View):
     @staticmethod
     @Auth.require_login([SI.read_base_info])
     def get(r):
@@ -69,7 +69,7 @@ class UserView(View):
         return user.d()
 
 
-class UserPhoneView(View):
+class UserPhone(View):
     @staticmethod
     @Auth.require_login([SI.read_phone])
     def get(r):
@@ -80,7 +80,7 @@ class UserPhoneView(View):
         return r.user.phone
 
 
-class TokenView(View):
+class Token(View):
     @staticmethod
     @Analyse.r([UserP.password])
     def post(r):
@@ -102,7 +102,7 @@ class TokenView(View):
         return Auth.get_login_token(user)
 
 
-class AvatarView(View):
+class Avatar(View):
     @staticmethod
     @Analyse.r(q=[P('filename', '文件名')])
     @Auth.require_login(deny_auth_token=True)
@@ -135,7 +135,7 @@ class AvatarView(View):
         return user.d()
 
 
-class IDCardView(View):
+class IDCardV(View):
     @staticmethod
     @Analyse.r(q=[P('filename', '文件名'), UserP.back])
     @Auth.require_login(deny_auth_token=True)
@@ -189,7 +189,7 @@ class IDCardView(View):
             return user.upload_verify_front(key)
 
 
-class VerifyView(View):
+class Verify(View):
     @staticmethod
     @Auth.require_login(deny_auth_token=True)
     def get(r):
@@ -273,7 +273,7 @@ class VerifyView(View):
             user.update_verify_status(User.VERIFY_STATUS_DONE)
         else:
             # 人工验证
-            for param in VerifyView.VERIFY_PARAMS:
+            for param in Verify.VERIFY_PARAMS:
                 if not getattr(r.d, param.name):
                     return PError.NULL_NOT_ALLOW(param.name, param.read_name)
 
@@ -283,7 +283,7 @@ class VerifyView(View):
         return user.d()
 
 
-class DevView(View):
+class Dev(View):
     @staticmethod
     @Auth.require_login(deny_auth_token=True)
     def post(r):

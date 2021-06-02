@@ -9,7 +9,6 @@ from Base.auth import Auth
 from Base.policy import Policy
 from Base.qn import qn_public_manager
 from Base.scope import SI
-from User.models import User
 
 
 def relation_process(relation):
@@ -18,7 +17,7 @@ def relation_process(relation):
     return relation
 
 
-class AppView(View):
+class AppV(View):
     @staticmethod
     @Analyse.r(q=[
         P('relation').default(App.R_USER).process(relation_process),
@@ -65,7 +64,7 @@ class AppView(View):
         return app.d_base()
 
 
-class AppIDSecretView(View):
+class AppIDSecret(View):
     @staticmethod
     @Analyse.r(a=[AppP.app])
     @Auth.require_login(deny_auth_token=True)
@@ -80,7 +79,7 @@ class AppIDSecretView(View):
         return app.secret
 
 
-class AppIDView(View):
+class AppID(View):
     @staticmethod
     @Analyse.r(a=[AppP.app])
     @Auth.require_login(deny_auth_token=True, allow_no_login=True)
@@ -154,19 +153,19 @@ class AppIDView(View):
         app.delete()
 
 
-class ScopeView(View):
+class ScopeV(View):
     @staticmethod
     def get(r):
         return Scope.objects.dict(Scope.d)
 
 
-class PremiseView(View):
+class PremiseV(View):
     @staticmethod
     def get(r):
         return Premise.objects.dict(Premise.d)
 
 
-class AppLogoView(View):
+class AppLogo(View):
     @staticmethod
     @Analyse.r(q=[P('filename', '文件名'), AppP.app])
     @Auth.require_login(deny_auth_token=True)
@@ -204,7 +203,7 @@ class AppLogoView(View):
         return app.d()
 
 
-class UserAppIdView(View):
+class UserAppId(View):
     @staticmethod
     @Analyse.r(b=[AppP.secret.clone().rename('app_secret')], a=[AppP.user_app])
     def post(r):
