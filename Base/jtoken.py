@@ -36,7 +36,9 @@ class JWT:
             dict_['ctime'] = datetime.datetime.now().timestamp()
         if replace or 'expire' not in dict_.keys():
             dict_['expire'] = expire_second
-        encode_str = jwt.encode(dict_, SECRET_KEY, algorithm=JWT_ENCODE_ALGO).decode()
+        encode_str = jwt.encode(dict_, SECRET_KEY, algorithm=JWT_ENCODE_ALGO)
+        if isinstance(encode_str, bytes):
+            encode_str = encode_str.decode()
         return encode_str, dict_
 
     @staticmethod
