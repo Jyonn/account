@@ -6,10 +6,10 @@ from Base.common import HOST
 from account.settings import MAX_IMAGE_SIZE
 
 
-AVATAR_CALLBACK = '%s/api/user/avatar' % HOST
-LOGO_CALLBACK = '%s/api/app/logo' % HOST
-VERIFY_FRONT_CALLBACK = '%s/api/user/idcard?back=0' % HOST
-VERIFY_BACK_CALLBACK = '%s/api/user/idcard?back=1' % HOST
+AVATAR_CALLBACK = '%s/user/avatar' % HOST
+LOGO_CALLBACK = '%s/app/logo' % HOST
+VERIFY_FRONT_CALLBACK = '%s/user/idcard?back=0' % HOST
+VERIFY_BACK_CALLBACK = '%s/user/idcard?back=1' % HOST
 
 BASE_IMAGE_POLICY = dict(
     insertOnly=1,
