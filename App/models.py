@@ -416,7 +416,7 @@ class App(models.Model):
     def is_user_full(self):
         if self.max_user_num == 0:
             return False
-        return self.max_user_num > self.user_num
+        return self.max_user_num >= self.user_num
 
     def belong(self, user):
         return self.owner == user
