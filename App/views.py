@@ -124,6 +124,7 @@ class AppID(View):
             AppP.scopes.clone().null(),
             AppP.premises.clone().null(),
             AppP.test_redirect_uri.clone().null(),
+            AppP.max_user_num,
         ],
         a=[AppP.app],
     )

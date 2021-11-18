@@ -611,8 +611,8 @@ class UserApp(models.Model):
 
 
 class AppP:
-    name, info, desc, redirect_uri, test_redirect_uri, secret = App.P(
-        'name', 'info', 'desc', 'redirect_uri', 'test_redirect_uri', 'secret')
+    name, info, desc, redirect_uri, test_redirect_uri, secret, max_user_num = App.P(
+        'name', 'info', 'desc', 'redirect_uri', 'test_redirect_uri', 'secret', 'max_user_num')
     scopes = P('scopes', '应用权限列表').process(Scope.list_to_scope_list)
     premises = P('premises', '应用要求列表').process(Premise.list_to_premise_list)
 
