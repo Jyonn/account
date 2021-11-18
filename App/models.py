@@ -333,12 +333,13 @@ class App(models.Model):
         self.test_redirect_uri = test_redirect_uri
         self.save()
 
-    def modify(self, name, desc, info, redirect_uri, scopes, premises):
+    def modify(self, name, desc, info, redirect_uri, scopes, premises, max_user_num):
         """修改应用信息"""
         self.name = name
         self.desc = desc
         self.info = info
         self.redirect_uri = redirect_uri
+        self.max_user_num = max_user_num
         for scope in self.scopes.all():
             self.scopes.remove(scope)
         self.scopes.add(*scopes)
@@ -394,7 +395,7 @@ class App(models.Model):
         return self.dictify(
             'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
             'redirect_uri', 'create_time', 'owner', 'mark', 'scopes', 'premises',
-            'test_redirect_uri')
+            'test_redirect_uri', 'max_user_num')
 
     def d_user(self, user):
         dict_ = self.d()
@@ -410,10 +411,6 @@ class App(models.Model):
         if self.logo:
             qn_public_manager.delete_res(self.logo)
         self.logo = logo
-        self.save()
-
-    def modify_max_user(self, max_user_num):
-        self.max_user_num = max_user_num
         self.save()
 
     def is_user_full(self):
