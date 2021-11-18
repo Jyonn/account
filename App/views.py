@@ -140,7 +140,7 @@ class AppID(View):
         if not app.belong(user):
             raise AppError.APP_NOT_BELONG
 
-        app.modify(**r.d.dict('name', 'desc', 'info', 'redirect_uri', 'scopes', 'premises'))
+        app.modify(**r.d.dict('name', 'desc', 'info', 'redirect_uri', 'scopes', 'premises', 'max_user_num'))
         app.modify_test_redirect_uri(r.d.test_redirect_uri)
         return app.d_user(user)
 
