@@ -21,6 +21,7 @@ class AppError:
     EXIST_APP_NAME = E("已存在此应用名")
     APP_NOT_BELONG = E("不是你的应用")
     MODIFY_APP = E("修改应用信息错误")
+    USER_FULL = E("用户注册数量达到上限")
 
     USER_APP_NOT_FOUND = E("请仔细阅读应用所需权限")
     BIND_USER_APP = E("无法绑定应用")
@@ -265,6 +266,10 @@ class App(models.Model):
     create_time = models.DateTimeField(
         default=None,
     )
+    max_user_num = models.IntegerField(
+        default=0,
+        verbose_name='最多注册用户'
+    )
 
     @classmethod
     def get_by_name(cls, name):
@@ -401,12 +406,20 @@ class App(models.Model):
 
     def modify_logo(self, logo):
         """修改应用logo"""
-        self.validator(locals())
         from Base.qn import qn_public_manager
         if self.logo:
             qn_public_manager.delete_res(self.logo)
         self.logo = logo
         self.save()
+
+    def modify_max_user(self, max_user_num):
+        self.max_user_num = max_user_num
+        self.save()
+
+    def is_user_full(self):
+        if self.max_user_num == 0:
+            return False
+        return self.max_user_num > self.user_num
 
     def belong(self, user):
         return self.owner == user
@@ -512,6 +525,9 @@ class UserApp(models.Model):
 
     @classmethod
     def do_bind(cls, user, app):
+        if app.is_user_full():
+            raise AppError.USER_FULL
+
         premise_list = app.check_premise(user)
         for premise in premise_list:
             error = E.sid2e[premise['check']['identifier']]
