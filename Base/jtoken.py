@@ -39,6 +39,8 @@ class JWT:
         encode_str = jwt.encode(dict_, SECRET_KEY, algorithm=JWT_ENCODE_ALGO)
         if isinstance(encode_str, bytes):
             encode_str = encode_str.decode()
+        print(dict_)
+        print(encode_str)
         return encode_str, dict_
 
     @staticmethod
