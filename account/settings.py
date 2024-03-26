@@ -10,10 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
-import platform
-if platform.system() == 'Darwin':
-    import pymysql
-    pymysql.install_as_MySQLdb()
+# import platform
+# if platform.system() == 'Darwin':
+import pymysql
+pymysql.install_as_MySQLdb()
 
 import os
 
