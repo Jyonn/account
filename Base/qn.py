@@ -10,6 +10,7 @@ from qiniu import urlsafe_base64_encode
 
 from Base.common import HOST
 from Config.models import Config, CI
+from account.settings import PROJ_INIT
 
 ACCESS_KEY = Config.get_value_by_key(CI.QINIU_ACCESS_KEY)
 SECRET_KEY = Config.get_value_by_key(CI.QINIU_SECRET_KEY)
@@ -18,7 +19,10 @@ PUBLIC_BUCKET = Config.get_value_by_key(CI.PUBLIC_BUCKET)
 RES_CDN_HOST = Config.get_value_by_key(CI.RES_CDN_HOST)
 PUBLIC_CDN_HOST = Config.get_value_by_key(CI.PUBLIC_CDN_HOST)
 
-_AUTH = qiniu.Auth(access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+if PROJ_INIT:
+    _AUTH = None
+else:
+    _AUTH = qiniu.Auth(access_key=ACCESS_KEY, secret_key=SECRET_KEY)
 _HOST = HOST
 _KEY_PREFIX = 'account/'
 

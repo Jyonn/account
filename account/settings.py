@@ -10,6 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
+import platform
+if platform.system() == 'Darwin':
+    import pymysql
+    pymysql.install_as_MySQLdb()
+
 import os
 
 # HOST = 'localhost:8000'
@@ -24,6 +29,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'YOUR-SECRET-KEY'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+PROJ_INIT = True
 DEBUG = True
 APPEND_SLASH = False
 

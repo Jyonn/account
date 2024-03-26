@@ -123,7 +123,9 @@ class Scope(models.Model):
         verbose_name='权限介绍',
         max_length=20,
     )
-    always = models.NullBooleanField(
+    always = models.BooleanField(
+        null=True,
+        blank=True,
         verbose_name="Null 可有可无 True 一直可选 False 一直不可选",
         default=None,
     )

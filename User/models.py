@@ -131,10 +131,11 @@ class User(models.Model):
         max_length=32,
         null=True,
     )
-    male = models.NullBooleanField(
+    male = models.BooleanField(
         verbose_name='是否为男性',
         default=None,
         null=True,
+        blank=True,
     )
     idcard = models.CharField(
         verbose_name='身份证号',

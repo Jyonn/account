@@ -7,12 +7,18 @@ from SmartDjango import E
 
 from Config.models import Config, CI
 from User.models import User
+from account.settings import PROJ_INIT
 
-
-SENDER_EMAIL = Config.get_value_by_key(CI.SENDER_EMAIL)
-SENDER_EMAIL_PWD = Config.get_value_by_key(CI.SENDER_EMAIL_PWD)
-SMTP_SERVER = Config.get_value_by_key(CI.SMTP_SERVER)
-SMTP_PORT = int(Config.get_value_by_key(CI.SMTP_PORT))
+if PROJ_INIT:
+    SENDER_EMAIL = CI.SENDER_EMAIL
+    SENDER_EMAIL_PWD = CI.SENDER_EMAIL_PWD
+    SMTP_SERVER = CI.SMTP_SERVER
+    SMTP_PORT = CI.SMTP_PORT
+else:
+    SENDER_EMAIL = Config.get_value_by_key(CI.SENDER_EMAIL)
+    SENDER_EMAIL_PWD = Config.get_value_by_key(CI.SENDER_EMAIL_PWD)
+    SMTP_SERVER = Config.get_value_by_key(CI.SMTP_SERVER)
+    SMTP_PORT = int(Config.get_value_by_key(CI.SMTP_PORT))
 
 
 try:
