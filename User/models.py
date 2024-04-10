@@ -206,7 +206,7 @@ class User(models.Model):
     def hash_password(raw_password, salt=None):
         if not salt:
             salt = get_random_string(length=6)
-        hash_password = User._hash(raw_password+salt)
+        hash_password = User._hash(raw_password + salt)
         return salt, hash_password
 
     @classmethod
@@ -243,7 +243,7 @@ class User(models.Model):
 
     def change_password(self, password, old_password):
         """修改密码"""
-        if self.password != User._hash(old_password+self.salt):
+        if self.password != User._hash(old_password + self.salt):
             raise UserError.PASSWORD
         self.salt, self.password = User.hash_password(password)
         import datetime
@@ -321,8 +321,8 @@ class User(models.Model):
 
     def d(self):
         return self.dictify('birthday', 'user_str_id', 'qitian', 'avatar', 'nickname',
-                           'description', 'allow_qitian_modify', 'verify_status',
-                           'verify_type', 'is_dev')
+                            'description', 'allow_qitian_modify', 'verify_status',
+                            'verify_type', 'is_dev')
 
     @classmethod
     def authenticate(cls, qitian, phone, password):
