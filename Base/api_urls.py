@@ -8,7 +8,7 @@ from Base import views
 
 
 urlpatterns = [
-    path('errors', views.Error.as_view()),
+    path('errors', views.ErrorView.as_view()),
     path('regions', views.Region.as_view()),
-    path('recaptcha', views.ReCaptcha.as_view()),
+    path('recaptcha', views.ReCaptchaView.as_view()),
 ]

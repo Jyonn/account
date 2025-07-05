@@ -5,14 +5,14 @@
 
 import datetime
 
-from SmartDjango import E
+from smartdjango import Error
 
 
-@E.register()
-class SessionError:
-    CAPTCHA = E("验证失败")
-    CAPTCHA_EXPIRED = E("验证码过期，请重试")
-    SESSION = E("会话错误，请刷新重试")
+@Error.register
+class SessionErrors:
+    CAPTCHA = Error("验证失败")
+    CAPTCHA_EXPIRED = Error("验证码过期，请重试")
+    SESSION = Error("会话错误，请刷新重试")
 
 
 class Session:
@@ -59,8 +59,8 @@ class Session:
         except KeyError:
             pass
         if None in [correct_code, correct_time, correct_last]:
-            raise SessionError.CAPTCHA
+            raise SessionErrors.CAPTCHA
         if current_time - correct_time > correct_last:
-            raise SessionError.CAPTCHA_EXPIRED
+            raise SessionErrors.CAPTCHA_EXPIRED
         if correct_code.upper() != str(code).upper():
-            raise SessionError.CAPTCHA
+            raise SessionErrors.CAPTCHA

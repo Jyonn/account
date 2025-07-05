@@ -3,7 +3,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 import html
 
-from SmartDjango import E
+from smartdjango import Error
 
 from Config.models import Config, CI
 from User.models import User
@@ -47,10 +47,10 @@ class Element:
         return self
 
 
-@E.register()
-class EmailError:
-    SEND_EMAIL_ERROR = E("邮件发送错误")
-    EMAIL_NOT_EXIST = E("不存在邮箱")
+@Error.register
+class EmailErrors:
+    SEND_EMAIL_ERROR = Error("邮件发送错误")
+    EMAIL_NOT_EXIST = Error("不存在邮箱")
 
 
 class Email:
@@ -99,7 +99,7 @@ class Email:
             server.sendmail(SENDER_EMAIL, [email.user.email], msg.as_string())
             server.quit()
         except Exception:
-            raise EmailError.SEND_EMAIL_ERROR
+            raise EmailErrors.SEND_EMAIL_ERROR
 
     def send(self):
         return Email._send(self)
@@ -107,7 +107,7 @@ class Email:
     @staticmethod
     def developer_apply(user, link):
         if not ROOT_USER.email:
-            raise EmailError.EMAIL_NOT_EXIST
+            raise EmailErrors.EMAIL_NOT_EXIST
         return Email(
             subject='开发者申请',
             dear=Element('你好，管理员：'),
@@ -122,7 +122,7 @@ class Email:
     @staticmethod
     def real_verify(user, link):
         if not ROOT_USER.email:
-            raise EmailError.EMAIL_NOT_EXIST
+            raise EmailErrors.EMAIL_NOT_EXIST
         return Email(
             subject='实名认证',
             dear=Element('你好，管理员：'),
@@ -137,7 +137,7 @@ class Email:
     @staticmethod
     def app_msg(user_app, message):
         if not user_app.user.email:
-            raise EmailError.EMAIL_NOT_EXIST
+            raise EmailErrors.EMAIL_NOT_EXIST
         return Email(
             subject='应用推送消息',
             dear=Element('你好，')

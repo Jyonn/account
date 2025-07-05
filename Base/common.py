@@ -1,6 +1,4 @@
 """ 171203 Adel Liu """
-from SmartDjango import NetPacker, Hc
-
 from Config.models import Config, CI
 
 
@@ -18,9 +16,6 @@ def sha1(s):
     sha1_.update(s.encode())
     return sha1_.hexdigest()
 
-
-NetPacker.customize(fixed_http_code=Hc.OK)
-NetPacker.set_mode(debug=False)
 
 SECRET_KEY = Config.get_value_by_key(CI.PROJECT_SECRET_KEY)
 JWT_ENCODE_ALGO = Config.get_value_by_key(CI.JWT_ENCODE_ALGO)

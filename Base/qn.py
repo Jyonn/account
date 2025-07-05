@@ -4,9 +4,9 @@
 """
 import qiniu
 import requests
-from SmartDjango import E
 from django.http import HttpRequest
 from qiniu import urlsafe_base64_encode
+from smartdjango import Error, Code
 
 from Base.common import HOST
 from Config.models import Config, CI
@@ -29,12 +29,12 @@ _KEY_PREFIX = 'account/'
 QINIU_MANAGE_HOST = "https://rs.qiniu.com"
 
 
-@E.register()
-class QNError:
-    REQUEST_QINIU = E("七牛请求错误")
-    QINIU_UNAUTHORIZED = E("七牛端身份验证错误")
-    FAIL_QINIU = E("未知原因导致的七牛端操作错误")
-    UNAUTH_CALLBACK = E("未经授权的回调函数")
+@Error.register
+class QNErrors:
+    REQUEST_QINIU = Error("七牛请求错误", code=Code.BadRequest)
+    QINIU_UNAUTHORIZED = Error("七牛端身份验证错误", code=Code.Unauthorized)
+    FAIL_QINIU = Error("未知原因导致的七牛端操作错误", code=Code.BadRequest)
+    UNAUTH_CALLBACK = Error("未经授权的回调函数", code=Code.Forbidden)
 
 
 class QnManager:
@@ -46,8 +46,8 @@ class QnManager:
 
     @staticmethod
     def encode_key(key):
-        key = key.replace('@', '@@')
-        key = key.replace('$', '@S')
+        key = key.replacError('@', '@@')
+        key = key.replacError('$', '@S')
         return key
 
     @staticmethod
@@ -82,13 +82,13 @@ class QnManager:
         """七牛callback认证校验"""
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         if auth_header is None:
-            raise QNError.UNAUTH_CALLBACK
+            raise QNErrors.UNAUTH_CALLBACK
         url = request.get_full_path()
         body = request.body
         verified = self.auth.verify_callback(auth_header, url, body,
                                              content_type='application/json')
         if not verified:
-            raise QNError.UNAUTH_CALLBACK
+            raise QNErrors.UNAUTH_CALLBACK
 
     def get_resource_url(self, key, expires=3600, small=False):
         """获取资源链接"""
@@ -111,15 +111,15 @@ class QnManager:
         try:
             r = requests.post(url, headers=headers)
         except requests.exceptions.RequestException:
-            raise QNError.REQUEST_QINIU
+            raise QNErrors.REQUEST_QINIU
         status = r.status_code
         r.close()
         if status == 200:
             return
         elif status == 401:
-            raise QNError.QINIU_UNAUTHORIZED
+            raise QNErrors.QINIU_UNAUTHORIZED
         else:
-            raise QNError.FAIL_QINIU('状态错误%s' % status)
+            raise QNErrors.FAIL_QINIU('状态错误%s' % status)
 
     def delete_res(self, key):
         entry = '%s:%s' % (self.bucket, key)

@@ -1,5 +1,5 @@
-from SmartDjango import Analyse, P, E, ModelError
 from django.views import View
+from smartdjango import Validator, analyse, Error
 
 from Base import country
 from Base.auth import Auth
@@ -7,14 +7,15 @@ from Base.recaptcha import Recaptcha
 from Base.send_mobile import SendMobile
 from User.models import User
 
-PM_PHONE = P('phone', '手机号')
-PM_PWD = P('pwd', '密码')
+PM_PHONE = Validator('phone', '手机号')
+PM_PWD = Validator('pwd', '密码')
 
 
-class Error(View):
+class ErrorView(View):
     @staticmethod
     def get(_):
-        return E.all()
+        errors = Error.all()
+        return [error.jsonl() for error in errors]
 
 
 def process_lang(lang):
@@ -25,10 +26,9 @@ def process_lang(lang):
 
 
 class Region(View):
-    @staticmethod
-    @Analyse.r(q=[P('lang', '语言').default('cn').process(process_lang)])
-    def get(r):
-        lang = r.d.lang
+    @analyse.query(Validator('lang', '语言').default('cn').to(process_lang))
+    def get(self, request):
+        lang = request.query.lang
         lang_cn = lang == country.LANG_CN
         regions = [
             dict(
@@ -41,12 +41,7 @@ class Region(View):
         return regions
 
 
-def mode_validate(mode):
-    if mode not in ReCaptcha.MODE_LIST:
-        raise ModelError.FIELD_FORMAT
-
-
-class ReCaptcha(View):
+class ReCaptchaView(View):
     RECAPTCHA = 'recaptcha'
 
     MODE_LOGIN_PHONE_CODE = 0
@@ -80,19 +75,18 @@ class ReCaptcha(View):
         MODE_FIND_PWD_CODE,
     ]
 
-    @staticmethod
-    @Analyse.r([PM_PHONE])
-    def login_phone_code_handler(r):
-        phone = r.d.phone
+    @analyse.body(PM_PHONE)
+    def login_phone_code_handler(self, request):
+        phone = request.body.phone
 
         try:
             User.get_by_phone(phone)
-            SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
-            next_mode = ReCaptcha.MODE_LOGIN_CODE
+            SendMobile.send_captcha(request, phone, SendMobile.LOGIN)
+            next_mode = ReCaptchaView.MODE_LOGIN_CODE
             toast_msg = ''
-        except E:
-            SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
-            next_mode = ReCaptcha.MODE_REGISTER_CODE
+        except Error:
+            SendMobile.send_captcha(request, phone, SendMobile.REGISTER)
+            next_mode = ReCaptchaView.MODE_REGISTER_CODE
             toast_msg = '账号不存在，请注册'
 
         return dict(
@@ -100,19 +94,18 @@ class ReCaptcha(View):
             toast_msg=toast_msg,
         )
 
-    @staticmethod
-    @Analyse.r([PM_PHONE])
-    def register_handler(r):
-        phone = r.d.phone
+    @analyse.body(PM_PHONE)
+    def register_handler(self, request):
+        phone = request.body.phone
 
         try:
             User.get_by_phone(phone)
-            SendMobile.send_captcha(r, phone, SendMobile.LOGIN)
-            next_mode = ReCaptcha.MODE_LOGIN_CODE
+            SendMobile.send_captcha(request, phone, SendMobile.LOGIN)
+            next_mode = ReCaptchaView.MODE_LOGIN_CODE
             toast_msg = '账号已注册，请验证'
-        except E:
-            SendMobile.send_captcha(r, phone, SendMobile.REGISTER)
-            next_mode = ReCaptcha.MODE_REGISTER_CODE
+        except Error:
+            SendMobile.send_captcha(request, phone, SendMobile.REGISTER)
+            next_mode = ReCaptchaView.MODE_REGISTER_CODE
             toast_msg = ''
 
         return dict(
@@ -120,92 +113,84 @@ class ReCaptcha(View):
             toast_msg=toast_msg,
         )
 
-    @staticmethod
-    @Analyse.r([PM_PHONE])
-    def find_pwd_handler(r):
-        phone = r.d.phone
+    @analyse.body(PM_PHONE)
+    def find_pwd_handler(self, request):
+        phone = request.body.phone
         User.get_by_phone(phone)
-        SendMobile.send_captcha(r, phone, SendMobile.FIND_PWD)
+        SendMobile.send_captcha(request, phone, SendMobile.FIND_PWD)
         return dict(
-            next_mode=ReCaptcha.MODE_FIND_PWD_CODE,
+            next_mode=ReCaptchaView.MODE_FIND_PWD_CODE,
             toast_msg='',
         )
 
-    @staticmethod
-    @Analyse.r([PM_PHONE, PM_PWD])
-    def login_phone_pwd_handler(r):
-        phone = r.d.phone
-        pwd = r.d.pwd
+    @analyse.body(PM_PHONE, PM_PWD)
+    def login_phone_pwd_handler(self, request):
+        phone = request.body.phone
+        pwd = request.body.pwd
 
         user = User.authenticate(None, phone, pwd)
         return Auth.get_login_token(user)
 
-    @staticmethod
-    @Analyse.r([P('qt', '齐天号'), PM_PWD])
-    def login_qt_pwd_handler(r):
-        qt = r.d.qt
-        pwd = r.d.pwd
+    @analyse.body(Validator('qt', '齐天号'), PM_PWD)
+    def login_qt_pwd_handler(self, request):
+        qt = request.body.qt
+        pwd = request.body.pwd
 
         user = User.authenticate(qt, None, pwd)
 
         return Auth.get_login_token(user)
 
-    @staticmethod
-    @Analyse.r()
-    def login_code_handler(r):
-        phone = r.phone
+    def login_code_handler(self, request):
+        phone = request.phone
         user = User.get_by_phone(phone)
 
         return Auth.get_login_token(user)
 
-    @staticmethod
-    @Analyse.r([PM_PWD])
-    def register_code_handler(r):
-        phone = r.phone
-        pwd = r.d.pwd
+    @analyse.body(PM_PWD)
+    def register_code_handler(self, request):
+        phone = request.phone
+        pwd = request.body.pwd
         user = User.create(phone, pwd)
 
         return Auth.get_login_token(user)
 
-    @staticmethod
-    @Analyse.r([PM_PWD])
-    def find_pwd_code_handler(r):
-        phone = r.phone
-        pwd = r.d.pwd
+    @analyse.body(PM_PWD)
+    def find_pwd_code_handler(self, request):
+        phone = request.phone
+        pwd = request.body.pwd
 
         user = User.get_by_phone(phone)
         user.modify_password(pwd)
 
         return Auth.get_login_token(user)
 
-    @staticmethod
-    @Analyse.r([
-        P('response', '人机验证码').null(),
-        P('code', '短信验证码').null(),
-        P('mode', '登录模式').validate(mode_validate),
-    ])
-    def post(r):
-        mode = r.d.mode
+    @analyse.body(
+        Validator('response', '人机验证码').null(),
+        Validator('code', '短信验证码').null(),
+        Validator('mode', '登录模式').bool(lambda x: x in ReCaptchaView.MODE_LIST),
+    )
+    def post(self, request):
+        mode = request.body.mode
 
-        if mode in ReCaptcha.MODE_REQUIRE_CAPTCHA_LIST:
-            resp = r.d.response
+        if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
+            resp = request.body.response
             if not resp or not Recaptcha.verify(resp):
                 raise ModelError.FIELD_FORMAT(append_message='人机验证失败')
-        if mode in ReCaptcha.MODE_CHECK_CODE_LIST:
-            code = r.d.code
+        if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
+            code = request.body.code
             if not code:
                 raise ModelError.FIELD_FORMAT
-            r.phone = SendMobile.check_captcha(r, code)
+            request.phone = SendMobile.check_captcha(request, code)
 
         mode_handlers = [
-            ReCaptcha.login_phone_code_handler,
-            ReCaptcha.login_phone_pwd_handler,
-            ReCaptcha.login_qt_pwd_handler,
-            ReCaptcha.register_handler,
-            ReCaptcha.find_pwd_handler,
-            ReCaptcha.login_code_handler,
-            ReCaptcha.register_code_handler,
-            ReCaptcha.find_pwd_code_handler,
+            ReCaptchaView.login_phone_code_handler,
+            ReCaptchaView.login_phone_pwd_handler,
+            ReCaptchaView.login_qt_pwd_handler,
+            ReCaptchaView.register_handler,
+            ReCaptchaView.find_pwd_handler,
+            ReCaptchaView.login_code_handler,
+            ReCaptchaView.register_code_handler,
+            ReCaptchaView.find_pwd_code_handler,
         ]
 
-        return mode_handlers[mode](r)
+        return mode_handlers[mode](self, request)

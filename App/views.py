@@ -1,10 +1,11 @@
 import datetime
 
-from SmartDjango import P, Analyse
-from SmartDjango.models import Pager, Page
 from django.views import View
+from smartdjango import analyse, Validator, OK
 
-from App.models import App, Scope, UserApp, Premise, AppError, AppP
+from App.models import App, Scope, UserApp, Premise
+from App.params import AppParams
+from App.validators import AppErrors
 from Base.auth import Auth
 from Base.policy import Policy
 from Base.qn import qn_public_manager
@@ -17,54 +18,59 @@ def relation_process(relation):
     return relation
 
 
-class AppV(View):
-    @staticmethod
-    @Analyse.r(q=[
-        P('relation').default(App.R_USER).process(relation_process),
-        P('frequent').null(),
-        P('count').default(3).process(int),
-        P('last_time').null().process(float).process(datetime.datetime.fromtimestamp)
-    ])
+class AppView(View):
+    @analyse.query(
+        Validator('relation').default(App.R_USER).to(relation_process),
+        Validator('frequent').null(),
+        Validator('count').default(3).to(int),
+        Validator('last_time').null().to(float).to(datetime.datetime.fromtimestamp)
+    )
     @Auth.require_login([SI.read_app_list])
-    def get(r):
+    def get(self, request):
         """ GET /api/app/
 
         获取与我相关的app列表
         """
-        user = r.user
-        relation = r.d.relation
+        user = request.user
+        relation = request.query.relation
 
         if relation == App.R_OWNER:
-            return App.objects.filter(owner=user).dict(App.d_base)
+            apps = App.objects.filter(owner=user)
+            return [app.d_base() for app in apps]
         elif relation == App.R_NONE:
-            count = r.d.count
-            last_time = r.d.last_time
-            pager = Pager(compare_field='create_time')
-            page = App.objects.page(pager, last_time, count)  # type: Page
-            return page.object_list.dict(App.d_base)
+            count = request.query.count
+            last_time = request.query.last_time
+            apps = App.objects.filter(create_time__gt=last_time).order_by('create_time')[:count]
+            return [app.d_base() for app in apps]
         else:
-            frequent = r.d.frequent
-            count = r.d.count
-            objects = UserApp.objects.filter(user=user, bind=True)
-            if frequent:
-                pager = Pager(mode=Pager.CHOOSE_AMONG, order_by=('-frequent_score', ))
-                objects = objects.page(pager, 0, count).object_list
-            return list(map(lambda o: o.app.d_base(), objects))
+            frequent = request.query.frequent
+            count = request.query.count
+            apps = UserApp.objects.filter(user=user, bind=True)
 
-    @staticmethod
-    @Analyse.r([AppP.name, AppP.desc, AppP.redirect_uri, AppP.test_redirect_uri,
-                AppP.scopes, AppP.premises])
+            if frequent:
+                apps = apps.order_by('-frequent_score')[:count]
+            # return list(map(lambda o: o.app.d_base(), apps))
+            return [app.app.d_base() for app in apps]
+
+    @analyse.body(
+        AppParams.name,
+        AppParams.desc,
+        AppParams.redirect_uri,
+        AppParams.test_redirect_uri,
+        AppParams.scopes,
+        AppParams.premises
+    )
     @Auth.require_login(deny_auth_token=True)
-    def post(r):
+    def post(self, request):
         """ POST /api/app/
 
         创建我的app
         """
-        app = App.create(owner=r.user, **r.d.dict())
+        app = App.create(owner=request.user, **request.body())
         return app.d_base()
 
 
-class AppList(View):
+class AppListView(View):
     @staticmethod
     def get(_):
         """GET /app/list"""
@@ -72,31 +78,29 @@ class AppList(View):
 
 
 class AppIDSecret(View):
-    @staticmethod
-    @Analyse.r(a=[AppP.app])
+    @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
-    def get(r):
+    def get(self, request):
         """ GET /api/app/:app_id/secret"""
-        user = r.user
-        app = r.d.app
+        user = request.user
+        app = request.argument.app
 
         if not app.belong(user):
-            raise AppError.APP_NOT_BELONG
+            raise AppErrors.APP_NOT_BELONG
 
         return app.secret
 
 
 class AppID(View):
-    @staticmethod
-    @Analyse.r(a=[AppP.app])
+    @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True, allow_no_login=True)
-    def get(r):
+    def get(self, request):
         """ GET /api/app/:app_id
 
         获取应用信息以及用户与应用的关系（属于、绑定、打分，仅限用户登录时）
         """
-        user = r.user
-        app = r.d.app
+        user = request.user
+        app = request.argument.app
 
         if user:
             dict_ = app.d_user(user)
@@ -114,150 +118,151 @@ class AppID(View):
 
         return dict_
 
-    @staticmethod
-    @Analyse.r(
-        b=[
-            AppP.name.clone().null(),
-            AppP.info.clone().null(),
-            AppP.desc.clone().null(),
-            AppP.redirect_uri.clone().null(),
-            AppP.scopes.clone().null(),
-            AppP.premises.clone().null(),
-            AppP.test_redirect_uri.clone().null(),
-            AppP.max_user_num,
-        ],
-        a=[AppP.app],
+    @analyse.body(
+        AppParams.name.copy().null(),
+        AppParams.info.copy().null(),
+        AppParams.desc.copy().null(),
+        AppParams.redirect_uri.copy().null(),
+        AppParams.scopes.copy().null(),
+        AppParams.premises.copy().null(),
+        AppParams.test_redirect_uri.copy().null(),
+        AppParams.max_user_num,
     )
+    @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
-    def put(r):
+    def put(self, request):
         """ PUT /api/app/:app_id
 
         修改应用信息
         """
-        user = r.user
-        app = r.d.app
+        user = request.user
+        app = request.argument.app
 
         if not app.belong(user):
-            raise AppError.APP_NOT_BELONG
+            raise AppErrors.APP_NOT_BELONG
 
-        app.modify(**r.d.dict('name', 'desc', 'info', 'redirect_uri', 'scopes', 'premises', 'max_user_num'))
-        app.modify_test_redirect_uri(r.d.test_redirect_uri)
+        app.modify(
+            name=request.body.name,
+            desc=request.body.desc,
+            info=request.body.info,
+            redirect_uri=request.body.redirect_uri,
+            scopes=request.body.scopes,
+            premises=request.body.premises,
+            max_user_num=request.body.max_user_num
+        )
+        app.modify_test_redirect_uri(request.body.test_redirect_uri)
         return app.d_user(user)
 
-    @staticmethod
-    @Analyse.r(a=[AppP.app])
+    @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
-    def delete(r):
+    def delete(self, request):
         """ DELETE /api/app/:app_id
 
         删除应用
         """
-        app = r.user
-        app = r.d.app
+        app = request.user
+        app = request.argument.app
 
         if not app.belong(app):
-            raise AppError.APP_NOT_BELONG
+            raise AppErrors.APP_NOT_BELONG
 
         app.delete()
 
 
-class ScopeV(View):
-    @staticmethod
-    def get(r):
-        return Scope.objects.dict(Scope.d)
+class ScopeView(View):
+    def get(self, request):
+        scopes = Scope.objects.all()
+        return [scope.d() for scope in scopes]
 
 
-class PremiseV(View):
-    @staticmethod
-    def get(r):
-        return Premise.objects.dict(Premise.d)
+class PremiseView(View):
+    def get(self, request):
+        premises = Premise.objects.all()
+        return [premise.d() for premise in premises]
 
 
-class AppLogo(View):
-    @staticmethod
-    @Analyse.r(q=[P('filename', '文件名'), AppP.app])
+class AppLogoView(View):
+    @analyse.query(Validator('filename', '文件名'), AppParams.app)
     @Auth.require_login(deny_auth_token=True)
-    def get(r):
+    def get(self, request):
         """ GET /api/app/logo
 
         获取七牛上传token
         """
-        user = r.user
+        user = request.user
 
-        filename = r.d.filename
-        app = r.d.app  # type: App
+        filename = request.query.filename
+        app = request.query.app  # type: App
 
         if app.owner != user:
-            raise AppError.APP_NOT_BELONG
+            raise AppErrors.APP_NOT_BELONG
 
-        import datetime
         crt_time = datetime.datetime.now().timestamp()
         key = 'app/%s/logo/%s/%s' % (app.id, crt_time, filename)
         qn_token, key = qn_public_manager.get_upload_token(key, Policy.logo(app.id))
         return dict(upload_token=qn_token, key=key)
 
-    @staticmethod
-    @Analyse.r([P('key', '七牛存储键'), AppP.app])
-    def post(r):
+    @analyse.body(Validator('key', '七牛存储键'), AppParams.app)
+    def post(self, request):
         """ POST /api/app/logo
 
         七牛上传应用logo回调函数
         """
-        qn_public_manager.auth_callback(r)
+        qn_public_manager.auth_callback(self, request)
 
-        key = r.d.key
-        app = r.d.app
+        key = request.body.key
+        app = request.body.app
         app.modify_logo(key)
         return app.d()
 
 
-class UserAppId(View):
-    @staticmethod
-    @Analyse.r(b=[AppP.secret.clone().rename('app_secret')], a=[AppP.user_app])
-    def post(r):
+class UserAppIdView(View):
+    @analyse.body(AppParams.secret.copy().rename('app_secret'))
+    @analyse.argument(AppParams.user_app)
+    def post(self, request):
         """ POST /api/app/user/:user_app_id
 
         通过app获取user信息
         """
 
-        app_secret = r.d.app_secret
-        user_app = r.d.user_app
+        app_secret = request.body.app_secret
+        user_app = request.argument.user_app
 
         if not user_app.app.authentication(app_secret):
-            raise AppError.APP_SECRET
+            raise AppErrors.APP_SECRET
 
         return user_app.user.d()
 
-    @staticmethod
-    @Analyse.r(b=[P('mark', '应用评分').process(int)], a=[AppP.user_app])
+    @analyse.body(Validator('mark', '应用评分').to(int))
+    @analyse.argument(AppParams.user_app)
     @Auth.require_login(deny_auth_token=True)
-    def put(r):
+    def put(self, request):
         """ PUT /api/app/user/:user_app_id
 
         给app评分
         """
-        user_app = r.d.user_app
-        mark = r.d.mark
-        if user_app.user.user_str_id != r.user.user_str_id:
-            raise AppError.ILLEGAL_ACCESS_RIGHT
+        user_app = request.argument.user_app
+        mark = request.body.mark
+        if user_app.user.user_str_id != request.user.user_str_id:
+            raise AppErrors.ILLEGAL_ACCESS_RIGHT
 
         user_app.do_mark(mark)
         return user_app.app.mark_as_list()
 
 
-@Analyse.r(method='GET')
-def refresh_frequent_score(r):
-    """ GET /api/app/refresh-frequent-score
+class FrequencyRefreshView(View):
+    def get(self, request):
+        """ GET /api/app/refresh-frequent-score
 
-    更新用户应用的使用频率度，判断是否为常用应用
-    """
-    UserApp.refresh_frequent_score()
-    return 0
+        更新用户应用的使用频率度，判断是否为常用应用
+        """
+        UserApp.refresh_frequent_score()
+        return OK
 
 
-@Analyse.r(method='GET')
-def fix_user_num(r):
-    for app in App.objects.all():
-        app.user_num = app.userapp_set.count()
-        app.save()
-    return 0
+class UserNumView(View):
+    def get(self, request):
+        for app in App.objects.all():
+            app.user_num = app.userapp_set.count()
+            app.save()
+        return OK

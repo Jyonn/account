@@ -1,36 +1,19 @@
-""" Adel Liu 180111
-
-用户类
-"""
-import datetime
-import re
-
-from SmartDjango import models, E, P
+from diq import Dictify
+from django.db import models
 from django.utils.crypto import get_random_string
 
-from Base.idcard import IDCardError
+from Base.idcard import IDCardErrors
+from User.validators import UserErrors, UserValidator
 
 
-@E.register(id_processor=E.idp_cls_prefix())
-class UserError:
-    CREATE_USER = E("存储用户错误")
-    PASSWORD = E("密码错误")
-    USER_NOT_FOUND = E("不存在的用户")
-    INVALID_QITIAN = E("齐天号只能包含字母数字以及下划线")
-    INVALID_PASSWORD = E("密码存在特殊字符")
-    INVALID_USERNAME_FIRST = E("用户名首字符只能是字母")
-    INVALID_USERNAME = E("用户名只能包含字母数字和下划线")
-    ERROR_DATE_FORMAT = E("日期格式错误")
-    BIRTHDAY_FORMAT = E("错误的生日时间")
-    PHONE_EXIST = E("手机号已注册")
-    QITIAN_EXIST = E("已存在此齐天号")
-
-
-class User(models.Model):
+class User(models.Model, Dictify):
     """
     用户类
     根超级用户id=1
     """
+
+    vldt = UserValidator
+
     ROOT_ID = 1
 
     VERIFY_STATUS_UNVERIFIED = 0
@@ -56,59 +39,71 @@ class User(models.Model):
         default=None,
         null=True,
         blank=True,
-        max_length=32,
+        max_length=vldt.MAX_USER_STR_ID_LENGTH,
         unique=True,
     )
+
     qitian = models.CharField(
         default=None,
         unique=True,
-        max_length=20,
-        min_length=4,
+        max_length=vldt.MAX_QITIAN_LENGTH,
+        validators=[vldt.qitian]
     )
+
     phone = models.CharField(
         default=None,
         unique=True,
-        max_length=20,
+        max_length=vldt.MAX_PHONE_LENGTH,
     )
+
     password = models.CharField(
-        max_length=32,
-        min_length=6,
+        max_length=vldt.MAX_PASSWORD_LENGTH,
+        validators=[vldt.password]
     )
+
     salt = models.CharField(
-        max_length=10,
+        max_length=vldt.MAX_SALT_LENGTH,
         default=None,
     )
+
     pwd_change_time = models.FloatField(
         null=True,
         blank=True,
         default=0,
     )
+
     avatar = models.CharField(
         default=None,
         null=True,
         blank=True,
-        max_length=1024,
+        max_length=vldt.MAX_AVATAR_LENGTH,
     )
+
     nickname = models.CharField(
-        max_length=10,
+        max_length=vldt.MAX_NICKNAME_LENGTH,
         default=None,
     )
+
     description = models.CharField(
-        max_length=20,
+        max_length=vldt.MAX_DESCRIPTION_LENGTH,
         default=None,
         blank=True,
         null=True,
     )
+
     qitian_modify_time = models.IntegerField(
         verbose_name='齐天号被修改的次数',
         help_text='一般只能修改一次',
         default=0,
     )
+
     birthday = models.DateField(
         verbose_name='生日',
         default=None,
         null=True,
+        validators=[vldt.birthday]
     )
+
     email = models.EmailField(
         verbose_name='邮箱',
         default=None,
@@ -120,42 +115,49 @@ class User(models.Model):
         default=0,
         choices=VERIFY_STATUS_TUPLE,
     )
+
     real_verify_type = models.SmallIntegerField(
         verbose_name='实名认证类型',
         default=None,
         null=True,
     )
+
     real_name = models.CharField(
         verbose_name='真实姓名',
         default=None,
-        max_length=32,
+        max_length=vldt.MAX_REAL_NAME_LENGTH,
         null=True,
     )
+
     male = models.BooleanField(
         verbose_name='是否为男性',
         default=None,
         null=True,
         blank=True,
     )
+
     idcard = models.CharField(
         verbose_name='身份证号',
         default=None,
-        max_length=18,
+        max_length=vldt.MAX_IDCARD_LENGTH,
         choices=VERIFY_TUPLE,
         null=True,
     )
+
     card_image_front = models.CharField(
         verbose_name='身份证正面照',
-        max_length=1024,
+        max_length=vldt.MAX_CARD_IMAGE_FRONT_LENGTH,
         default=None,
         null=True,
     )
+
     card_image_back = models.CharField(
         verbose_name='身份证背面照',
-        max_length=1024,
+        max_length=vldt.MAX_CARD_IMAGE_BACK_LENGTH,
         default=None,
         null=True,
     )
+
     is_dev = models.BooleanField(
         verbose_name='是否开发者',
         default=False,
@@ -164,54 +166,31 @@ class User(models.Model):
     @classmethod
     def get_unique_id(cls):
         while True:
-            user_str_id = get_random_string(length=6)
+            user_str_id = get_random_string(length=cls.vldt.DEFAULT_USER_STR_ID_LENGTH)
             try:
                 cls.get_by_str_id(user_str_id)
-            except E as e:
-                if e.eis(UserError.USER_NOT_FOUND):
-                    return user_str_id
+            except UserErrors.USER_NOT_FOUND:
+                return user_str_id
 
     @classmethod
     def get_unique_qitian(cls):
         while True:
-            qitian_id = get_random_string(length=8)
+            qitian_id = get_random_string(length=cls.vldt.DEFAULT_QITIAN_LENGTH)
             try:
                 cls.get_by_qitian(qitian_id)
-            except E as e:
-                if e.eis(UserError.USER_NOT_FOUND):
-                    return qitian_id
+            except UserErrors.USER_NOT_FOUND:
+                return qitian_id
 
-    @staticmethod
-    def _valid_qitian(qitian):
-        """验证齐天号合法"""
-        valid_chars = '^[A-Za-z0-9_]{4,20}$'
-        if re.match(valid_chars, qitian) is None:
-            raise UserError.INVALID_QITIAN
-
-    @staticmethod
-    def _valid_password(password):
-        """验证密码合法"""
-        valid_chars = '^[A-Za-z0-9!@#$%^&*()_+-=,.?;:]{6,16}$'
-        if re.match(valid_chars, password) is None:
-            raise UserError.INVALID_PASSWORD
-
-    @staticmethod
-    def _valid_birthday(birthday):
-        """验证生日是否合法"""
-        import datetime
-        if birthday > datetime.datetime.now().date():
-            raise UserError.BIRTHDAY_FORMAT
-
-    @staticmethod
-    def hash_password(raw_password, salt=None):
+    @classmethod
+    def hash_password(cls, raw_password, salt=None):
         if not salt:
-            salt = get_random_string(length=6)
+            salt = get_random_string(length=cls.vldt.DEFAULT_SALT_LENGTH)
         hash_password = User._hash(raw_password + salt)
         return salt, hash_password
 
     @classmethod
     def create(cls, phone, password):
-        salt, hashed_password = User.hash_password(password)
+        salt, hashed_password = cls.hash_password(password)
 
         User.exist_with_phone(phone)
 
@@ -232,7 +211,7 @@ class User(models.Model):
             )
             user.save()
         except Exception as err:
-            raise UserError.CREATE_USER(debug_message=err)
+            raise UserErrors.CREATE_USER(details=err)
         return user
 
     def modify_password(self, password):
@@ -244,7 +223,7 @@ class User(models.Model):
     def change_password(self, password, old_password):
         """修改密码"""
         if self.password != User._hash(old_password + self.salt):
-            raise UserError.PASSWORD
+            raise UserErrors.PASSWORD
         self.salt, self.password = User.hash_password(password)
         import datetime
         self.pwd_change_time = datetime.datetime.now().timestamp()
@@ -260,7 +239,7 @@ class User(models.Model):
         try:
             return cls.objects.get(user_str_id=user_str_id)
         except cls.DoesNotExist:
-            raise UserError.USER_NOT_FOUND
+            raise UserErrors.USER_NOT_FOUND
 
     @classmethod
     def get_by_phone(cls, phone):
@@ -268,7 +247,7 @@ class User(models.Model):
         try:
             return cls.objects.get(phone=phone)
         except cls.DoesNotExist:
-            raise UserError.USER_NOT_FOUND('手机号未注册')
+            raise UserErrors.USER_NOT_FOUND('手机号未注册')
 
     @classmethod
     def exist_with_phone(cls, phone):
@@ -276,14 +255,14 @@ class User(models.Model):
             cls.objects.get(phone=phone)
         except cls.DoesNotExist:
             return
-        raise UserError.PHONE_EXIST
+        raise UserErrors.PHONE_EXIST
 
     @classmethod
     def get_by_qitian(cls, qitian_id):
         try:
             return cls.objects.get(qitian=qitian_id)
         except cls.DoesNotExist:
-            raise UserError.USER_NOT_FOUND('不存在的齐天号')
+            raise UserErrors.USER_NOT_FOUND('不存在的齐天号')
 
     @classmethod
     def exist_with_qitian(cls, qitian_id):
@@ -291,7 +270,7 @@ class User(models.Model):
             cls.objects.get(qitian=qitian_id)
         except cls.DoesNotExist:
             return
-        raise UserError.QITIAN_EXIST
+        raise UserErrors.QITIAN_EXIST
 
     @classmethod
     def get_by_id(cls, user_id):
@@ -299,18 +278,18 @@ class User(models.Model):
         try:
             return cls.objects.get(pk=user_id)
         except cls.DoesNotExist:
-            raise UserError.USER_NOT_FOUND
+            raise UserErrors.USER_NOT_FOUND
 
     def allow_qitian_modify(self):
         return self.qitian_modify_time == 0
 
-    def _readable_avatar(self):
+    def _dictify_avatar(self):
         return self.get_avatar_url()
 
-    def _readable_birthday(self):
+    def _dictify_birthday(self):
         return self.birthday.strftime('%Y-%m-%d') if self.birthday else None
 
-    def _readable_allow_qitian_modify(self):
+    def _dictify_allow_qitian_modify(self):
         return int(self.allow_qitian_modify())
 
     def d_oauth(self):
@@ -335,7 +314,7 @@ class User(models.Model):
         salt, hashed_password = User.hash_password(password, user.salt)
         if hashed_password == user.password:
             return user
-        raise UserError.PASSWORD
+        raise UserErrors.PASSWORD
 
     def get_avatar_url(self, small=True):
         """获取用户头像地址"""
@@ -411,7 +390,7 @@ class User(models.Model):
         try:
             self.save()
         except Exception as err:
-            return IDCardError.AUTO_VERIFY_FAILED(debug_message=err)
+            return IDCardErrors.AUTO_VERIFY_FAILED(debug_message=err)
 
     def update_verify_status(self, status):
         self.verify_status = status
@@ -425,13 +404,13 @@ class User(models.Model):
         self.is_dev = True
         self.save()
 
-
-class UserP:
-    birthday, password, nickname, description, qitian, idcard, male, real_name = User.P(
-        'birthday', 'password', 'nickname', 'description', 'qitian', 'idcard', 'male',
-        'real_name')
-
-    user = P('user_id', '用户唯一ID', 'user').process(User.get_by_str_id)
-    back = P('back', '侧别').process(int)
-
-    birthday.process(lambda s: datetime.datetime.strptime(s, '%Y-%m-%d').date(), begin=True)
+#
+# class UserP:
+#     birthday, password, nickname, description, qitian, idcard, male, real_name = User.P(
+#         'birthday', 'password', 'nickname', 'description', 'qitian', 'idcard', 'male',
+#         'real_name')
+#
+#     user = P('user_id', '用户唯一ID', 'user').process(User.get_by_str_id)
+#     back = P('back', '侧别').process(int)
+#
+#     birthday.process(lambda s: datetime.datetime.strptime(s, '%Y-%m-%d').date(), begin=True)

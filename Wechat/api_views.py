@@ -1,18 +1,16 @@
-from SmartDjango import Analyse, P
 from django.views import View
+from smartdjango import Validator, analyse
 
 from Base.weixin import Weixin
 
 
 class WechatConfigView(View):
-    @staticmethod
-    @Analyse.r([P('url', '链接')])
-    def post(request):
-        url = request.d.url
+    @analyse.body(Validator('url', '链接'))
+    def post(self, request):
+        url = request.body.url
         return Weixin.get_config(url)
 
 
 class WechatAutoView(View):
-    @staticmethod
-    def get(request):
+    def get(self, request):
         return Weixin.update_access_token()

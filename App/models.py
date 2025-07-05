@@ -1,54 +1,32 @@
 import datetime
 
-from SmartDjango import models, E, BaseError, P
+from diq import Dictify
+from django.db import models
 from django.utils.crypto import get_random_string
+from smartdjango import OK, Error
 
+from App.validators import AppErrors, PremiseValidator, ScopeValidator, AppValidator, UserAppValidator
 from Base.jtoken import JWType, JWT
-from Base.premise_checker import PremiseCheckerError
+from Base.premise_checker import PremiseCheckerErrors
 from Config.models import CI
 
 
-@E.register(id_processor=E.idp_cls_prefix())
-class AppError:
-    PREMISE_NOT_FOUND = E("不存在的要求")
-    CREATE_PREMISE = E("创建要求错误")
+class Premise(models.Model, Dictify):
+    vldt = PremiseValidator
 
-    CREATE_SCOPE = E("创建权限错误")
-    SCOPE_NOT_FOUND = E("不存在的权限")
-
-    APP_NOT_FOUND = E("不存在的应用")
-    CREATE_APP = E("创建应用错误")
-    EXIST_APP_NAME = E("已存在此应用名")
-    APP_NOT_BELONG = E("不是你的应用")
-    MODIFY_APP = E("修改应用信息错误")
-    USER_FULL = E("用户注册数量达到上限")
-
-    USER_APP_NOT_FOUND = E("请仔细阅读应用所需权限")
-    BIND_USER_APP = E("无法绑定应用")
-    APP_UNBINDED = E("应用被用户解绑")
-
-    SCORE_REFRESHED = E("频率分数已经刷新")
-
-    MARK = E("评分失败")
-    APP_SECRET = E("错误的应用密钥")
-
-    ILLEGAL_ACCESS_RIGHT = E("非法访问权限")
-
-
-class Premise(models.Model):
     """要求类，不满足要求无法进入应用"""
     name = models.CharField(
         verbose_name='要求英文简短名称',
-        max_length=20,
+        max_length=vldt.MAX_NAME_LENGTH,
         unique=True,
     )
     desc = models.CharField(
         verbose_name='要求介绍',
-        max_length=20,
+        max_length=vldt.MAX_DESC_LENGTH,
     )
     detail = models.CharField(
         verbose_name='要求详细说明',
-        max_length=100,
+        max_length=vldt.MAX_DETAIL_LENGTH,
         default=None,
     )
 
@@ -57,14 +35,14 @@ class Premise(models.Model):
         try:
             return cls.objects.get(pk=pid)
         except cls.DoesNotExist:
-            raise AppError.PREMISE_NOT_FOUND
+            raise AppErrors.PREMISE_NOT_FOUND
 
     @classmethod
     def get_by_name(cls, name):
         try:
             return cls.objects.get(name=name)
         except Exception as err:
-            raise AppError.PREMISE_NOT_FOUND(debug_message=err)
+            raise AppErrors.PREMISE_NOT_FOUND(details=err)
 
     @classmethod
     def create(cls, name, desc, detail):
@@ -76,7 +54,7 @@ class Premise(models.Model):
             )
             premise.save()
         except Exception as err:
-            raise AppError.CREATE_PREMISE(debug_message=err)
+            raise AppErrors.CREATE_PREMISE(details=err)
         return premise
 
     def d(self):
@@ -112,16 +90,18 @@ class Premise(models.Model):
         return getattr(PremiseChecker, checker_name, None)
 
 
-class Scope(models.Model):
+class Scope(models.Model, Dictify):
+    vldt = ScopeValidator
+
     """权限类"""
     name = models.CharField(
         verbose_name='权限英文简短名称',
-        max_length=20,
+        max_length=vldt.MAX_NAME_LENGTH,
         unique=True,
     )
     desc = models.CharField(
         verbose_name='权限介绍',
-        max_length=20,
+        max_length=vldt.MAX_DESC_LENGTH,
     )
     always = models.BooleanField(
         null=True,
@@ -131,7 +111,7 @@ class Scope(models.Model):
     )
     detail = models.CharField(
         verbose_name='权限详细说明',
-        max_length=100,
+        max_length=vldt.MAX_DETAIL_LENGTH,
         default=None,
     )
 
@@ -140,14 +120,14 @@ class Scope(models.Model):
         try:
             return cls.objects.get(pk=sid)
         except cls.DoesNotExist:
-            raise AppError.SCOPE_NOT_FOUND
+            raise AppErrors.SCOPE_NOT_FOUND
 
     @classmethod
     def get_by_name(cls, name):
         try:
             return cls.objects.get(name=name)
         except Exception:
-            raise AppError.SCOPE_NOT_FOUND
+            raise AppErrors.SCOPE_NOT_FOUND
 
     @classmethod
     def create(cls, name, desc, detail):
@@ -160,7 +140,7 @@ class Scope(models.Model):
             )
             scope.save()
         except Exception:
-            raise AppError.CREATE_SCOPE
+            raise AppErrors.CREATE_SCOPE
         return scope
 
     def d(self):
@@ -174,7 +154,7 @@ class Scope(models.Model):
         for scope_name in scopes:
             try:
                 scope = cls.get_by_name(scope_name)
-                if scope.always != False:  # 此处不能将 != False 删除 因为要考虑None的情况
+                if scope.always is not False:  # 此处不能将 != False 删除 因为要考虑None的情况
                     scope_list.append(scope)
             except Exception:
                 pass
@@ -194,7 +174,9 @@ class Scope(models.Model):
         return final_list
 
 
-class App(models.Model):
+class App(models.Model, Dictify):
+    vldt = AppValidator
+
     R_USER = 'user'
     R_OWNER = 'owner'
     R_NONE = 'none'
@@ -202,26 +184,26 @@ class App(models.Model):
 
     name = models.CharField(
         verbose_name='应用名称',
-        max_length=32,
-        min_length=2,
+        max_length=vldt.MAX_NAME_LENGTH,
         unique=True,
+        validators=[vldt.name]
     )
     id = models.CharField(
         verbose_name='应用唯一ID',
-        max_length=32,
+        max_length=vldt.MAX_ID_LENGTH,
         primary_key=True,
     )
     secret = models.CharField(
         verbose_name='应用密钥',
-        max_length=32,
+        max_length=vldt.MAX_SECRET_LENGTH,
     )
     redirect_uri = models.URLField(
         verbose_name='应用跳转URI',
-        max_length=512,
+        max_length=vldt.MAX_REDIRECT_URI_LENGTH,
     )
     test_redirect_uri = models.URLField(
         verbose_name='测试环境下的应用跳转URI',
-        max_length=512,
+        max_length=vldt.MAX_TEST_REDIRECT_URI_LENGTH,
         default=None,
     )
     scopes = models.ManyToManyField(
@@ -243,14 +225,14 @@ class App(models.Model):
         default=0,
     )
     desc = models.CharField(
-        max_length=32,
+        max_length=vldt.MAX_DESC_LENGTH,
         default=None,
     )
     logo = models.CharField(
         default=None,
         null=True,
         blank=True,
-        max_length=1024,
+        max_length=vldt.MAX_LOGO_LENGTH,
     )
     mark = models.SlugField(
         default='0-0-0-0-0',
@@ -278,7 +260,7 @@ class App(models.Model):
         try:
             return cls.objects.get(name=name)
         except cls.DoesNotExist:
-            raise AppError.APP_NOT_FOUND
+            raise AppErrors.APP_NOT_FOUND
 
     @classmethod
     def exist_with_name(cls, name):
@@ -286,24 +268,23 @@ class App(models.Model):
             cls.objects.get(name=name)
         except cls.DoesNotExist:
             return
-        raise AppError.EXIST_APP_NAME
+        raise AppErrors.EXIST_APP_NAME
 
     @classmethod
     def get_by_id(cls, app_id):
         try:
             return cls.objects.get(pk=app_id)
         except cls.DoesNotExist:
-            raise AppError.APP_NOT_FOUND
+            raise AppErrors.APP_NOT_FOUND
 
     @classmethod
     def get_unique_app_id(cls):
         while True:
-            app_id = get_random_string(length=8)
+            app_id = get_random_string(length=cls.vldt.DEFAULT_ID_LENGTH)
             try:
                 cls.get_by_id(app_id)
-            except E as e:
-                if e.eis(AppError.APP_NOT_FOUND):
-                    return app_id
+            except AppErrors.APP_NOT_FOUND:
+                return app_id
 
     @classmethod
     def create(cls, name, desc, redirect_uri, test_redirect_uri, scopes, premises, owner):
@@ -315,7 +296,7 @@ class App(models.Model):
                 name=name,
                 desc=desc,
                 id=cls.get_unique_app_id(),
-                secret=get_random_string(length=32),
+                secret=get_random_string(length=cls.vldt.MAX_SECRET_LENGTH),
                 redirect_uri=redirect_uri,
                 test_redirect_uri=test_redirect_uri,
                 owner=owner,
@@ -328,7 +309,7 @@ class App(models.Model):
             app.premises.add(*premises)
             app.save()
         except Exception as err:
-            raise AppError.CREATE_APP(debug_message=err)
+            raise AppErrors.CREATE_APP(details=err)
         return app
 
     def modify_test_redirect_uri(self, test_redirect_uri):
@@ -352,44 +333,44 @@ class App(models.Model):
         try:
             self.save()
         except Exception as err:
-            raise AppError.MODIFY_APP(debug_message=err)
+            raise AppErrors.MODIFY_APP(details=err)
 
-    def _readable_app_name(self):
+    def _dictify_app_name(self):
         return self.name
 
-    def _readable_app_id(self):
+    def _dictify_app_id(self):
         return self.id
 
-    def _readable_app_desc(self):
+    def _dictify_app_desc(self):
         return self.desc
 
-    def _readable_logo(self, small=True):
+    def _dictify_logo(self, small=True):
         if self.logo is None:
             return None
         from Base.qn import qn_public_manager
         key = "%s-small" % self.logo if small else self.logo
         return qn_public_manager.get_resource_url(key)
 
-    def _readable_create_time(self):
+    def _dictify_create_time(self):
         return self.create_time.timestamp()
 
-    def _readable_app_info(self):
+    def _dictify_app_info(self):
         return self.info
 
-    def _readable_owner(self):
+    def _dictify_owner(self):
         return self.owner.d_base()
 
-    def _readable_mark(self):
+    def _dictify_mark(self):
         return list(map(int, self.mark.split('-')))
 
     def mark_as_list(self):
-        return self._readable_mark()
+        return self._dictify_mark()
 
-    def _readable_scopes(self):
+    def _dictify_scopes(self):
         scopes = self.scopes.all()
         return list(map(lambda s: s.d(), scopes))
 
-    def _readable_premises(self):
+    def _dictify_premises(self):
         premises = self.premises.all()
         return list(map(lambda p: p.d(), premises))
 
@@ -433,11 +414,11 @@ class App(models.Model):
             if checker and callable(checker):
                 try:
                     checker(user)
-                    raise BaseError.OK
-                except E as e:
+                    raise OK
+                except Error as e:
                     error = e
             else:
-                error = PremiseCheckerError.CHECKER_NOT_FOUND
+                error = PremiseCheckerErrors.CHECKER_NOT_FOUND
             p_dict = premise.d()
             p_dict['check'] = dict(
                 identifier=error.identifier,
@@ -448,10 +429,14 @@ class App(models.Model):
 
     @classmethod
     def list(cls):
-        return cls.objects.all().dict(cls.d_base)
+        # return cls.objects.all().dict(cls.d_base)
+        apps = cls.objects.all()
+        return [app.d_base() for app in apps]
 
 
-class UserApp(models.Model):
+class UserApp(models.Model, Dictify):
+    vldt = UserAppValidator
+
     """用户应用类"""
     user = models.ForeignKey(
         'User.User',
@@ -462,7 +447,7 @@ class UserApp(models.Model):
         on_delete=models.CASCADE,
     )
     user_app_id = models.CharField(
-        max_length=16,
+        max_length=vldt.MAX_USER_APP_ID_LENGTH,
         verbose_name='用户在这个app下的唯一ID',
         unique=True,
     )
@@ -473,7 +458,7 @@ class UserApp(models.Model):
     last_auth_code_time = models.CharField(
         default=None,
         verbose_name='上一次申请auth_code的时间，防止被多次使用',
-        max_length=20,
+        max_length=vldt.MAX_LAST_USER_APP_ID_LENGTH,
     )
     frequent_score = models.FloatField(
         verbose_name='频繁访问分数，按分值排序为常用应用',
@@ -482,14 +467,14 @@ class UserApp(models.Model):
     last_score_changed_time = models.CharField(
         default=None,
         verbose_name='上一次分数变化的时间',
-        max_length=20,
+        max_length=vldt.MAX_LAST_SCORE_CHANGED_TIME_LENGTH,
     )
     mark = models.PositiveSmallIntegerField(
         verbose_name='此用户的打分，0表示没打分',
         default=0,
     )
 
-    def _readable_rebind(self):
+    def _dictify_rebind(self):
         return float(self.last_auth_code_time) < self.app.field_change_time
 
     def d(self):
@@ -500,16 +485,16 @@ class UserApp(models.Model):
         try:
             return cls.objects.get(user=user, app=app)
         except Exception:
-            raise AppError.USER_APP_NOT_FOUND
+            raise AppErrors.USER_APP_NOT_FOUND
 
     @classmethod
     def get_by_id(cls, user_app_id, check_bind=False):
         try:
             user_app = cls.objects.get(user_app_id=user_app_id)
         except Exception:
-            raise AppError.USER_APP_NOT_FOUND
+            raise AppErrors.USER_APP_NOT_FOUND
         if check_bind and not user_app.bind:
-            raise AppError.APP_UNBINDED
+            raise AppErrors.APP_NOT_BOUND
         return user_app
 
     @classmethod
@@ -518,14 +503,13 @@ class UserApp(models.Model):
             user_app_id = get_random_string(length=8)
             try:
                 cls.get_by_id(user_app_id)
-            except E as e:
-                if e.eis(AppError.USER_APP_NOT_FOUND):
-                    return user_app_id
+            except AppErrors.USER_APP_NOT_FOUND:
+                return user_app_id
 
     @classmethod
     def do_bind(cls, user, app):
         if app.is_user_full():
-            raise AppError.USER_FULL
+            raise AppErrors.USER_FULL
 
         premise_list = app.check_premise(user)
         for premise in premise_list:
@@ -542,25 +526,22 @@ class UserApp(models.Model):
             user_app.frequent_score += 1
             user_app.last_score_changed_time = crt_timestamp
             user_app.save()
-        except E as e:
-            if e.eis(AppError.USER_APP_NOT_FOUND):
-                try:
-                    user_app = cls(
-                        user=user,
-                        app=app,
-                        user_app_id=cls.get_unique_id(),
-                        bind=True,
-                        last_auth_code_time=crt_timestamp,
-                        frequent_score=1,
-                        last_score_changed_time=crt_timestamp,
-                    )
-                    user_app.save()
-                    user_app.app.user_num += 1
-                    user_app.app.save()
-                except Exception as err:
-                    raise AppError.BIND_USER_APP(debug_message=err)
-            else:
-                raise e
+        except AppErrors.USER_APP_NOT_FOUND:
+            try:
+                user_app = cls(
+                    user=user,
+                    app=app,
+                    user_app_id=cls.get_unique_id(),
+                    bind=True,
+                    last_auth_code_time=crt_timestamp,
+                    frequent_score=1,
+                    last_score_changed_time=crt_timestamp,
+                )
+                user_app.save()
+                user_app.app.user_num += 1
+                user_app.app.save()
+            except Exception as err:
+                raise AppErrors.BIND_USER_APP(details=err)
         return JWT.encrypt(dict(
             user_app_id=user_app.user_app_id,
             type=JWType.AUTH_CODE,
@@ -584,7 +565,7 @@ class UserApp(models.Model):
         last_date = datetime.datetime.strptime(last_date, '%Y-%m-%d').date()
 
         if last_date >= crt_date:
-            raise AppError.SCORE_REFRESHED
+            raise AppErrors.SCORE_REFRESHED
 
         from OAuth.views import OAUTH_TOKEN_EXPIRE_TIME
 
@@ -599,7 +580,7 @@ class UserApp(models.Model):
 
     def do_mark(self, mark):
         if mark < 1 or mark > 5:
-            raise AppError.MARK
+            raise AppErrors.MARK
         original_mark = self.mark
         self.mark = mark
         self.save()
@@ -611,12 +592,12 @@ class UserApp(models.Model):
         self.app.mark = '-'.join(map(str, mark_list))
         self.app.save()
 
-
-class AppP:
-    name, info, desc, redirect_uri, test_redirect_uri, secret, max_user_num = App.P(
-        'name', 'info', 'desc', 'redirect_uri', 'test_redirect_uri', 'secret', 'max_user_num')
-    scopes = P('scopes', '应用权限列表').process(Scope.list_to_scope_list)
-    premises = P('premises', '应用要求列表').process(Premise.list_to_premise_list)
-
-    app = P('app_id', '应用ID', 'app').process(App.get_by_id)
-    user_app = P('user_app_id', '用户绑定应用ID', 'user_app').process(UserApp.get_by_id)
+#
+# class AppP:
+#     name, info, desc, redirect_uri, test_redirect_uri, secret, max_user_num = App.P(
+#         'name', 'info', 'desc', 'redirect_uri', 'test_redirect_uri', 'secret', 'max_user_num')
+#     scopes = P('scopes', '应用权限列表').process(Scope.list_to_scope_list)
+#     premises = P('premises', '应用要求列表').process(Premise.list_to_premise_list)
+#
+#     app = P('app_id', '应用ID', 'app').process(App.get_by_id)
+#     user_app = P('user_app_id', '用户绑定应用ID', 'user_app').process(UserApp.get_by_id)

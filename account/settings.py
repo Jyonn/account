@@ -58,7 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'SmartDjango.middleware.HttpPackMiddleware',
+    'smartdjango.middleware.APIPacker',
 ]
 
 # 增加跨域

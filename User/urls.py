@@ -7,11 +7,11 @@ from django.urls import path
 from User import views
 
 urlpatterns = [
-    path('', views.UserV.as_view()),
-    path('token', views.Token.as_view()),
-    path('avatar', views.Avatar.as_view()),
-    path('idcard', views.IDCardV.as_view()),
-    path('verify', views.Verify.as_view()),
-    path('dev', views.Dev.as_view()),
-    path('phone', views.UserPhone.as_view()),
+    path('', views.UserView.as_view()),
+    path('token', views.TokenView.as_view()),
+    path('avatar', views.AvatarView.as_view()),
+    path('idcard', views.IDCardView.as_view()),
+    path('verify', views.VerifyView.as_view()),
+    path('dev', views.DevView.as_view()),
+    path('phone', views.UserPhoneView.as_view()),
 ]
