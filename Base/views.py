@@ -1,5 +1,5 @@
 from django.views import View
-from smartdjango import Validator, analyse, Error
+from smartdjango import Validator, analyse, Error, Code
 
 from Base import country
 from Base.auth import Auth
@@ -9,6 +9,11 @@ from User.models import User
 
 PM_PHONE = Validator('phone', '手机号')
 PM_PWD = Validator('pwd', '密码')
+
+
+@Error.register
+class BaseErrors:
+    FORMAT = Error("格式错误", code=Code.BadRequest)
 
 
 class ErrorView(View):
@@ -175,11 +180,11 @@ class ReCaptchaView(View):
         if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
             resp = request.body.response
             if not resp or not Recaptcha.verify(resp):
-                raise ModelError.FIELD_FORMAT(append_message='人机验证失败')
+                raise BaseErrors.FORMAT(details='人机验证失败')
         if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
             code = request.body.code
             if not code:
-                raise ModelError.FIELD_FORMAT
+                raise BaseErrors.FORMAT(details='验证码不能为空')
             request.phone = SendMobile.check_captcha(request, code)
 
         mode_handlers = [
