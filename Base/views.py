@@ -73,7 +73,10 @@ class ReCaptchaView(View):
         MODE_FIND_PWD_CODE,
     ]
 
-    @analyse.json(PM_PHONE)
+    @analyse.json(
+        PM_PHONE,
+        restrict_keys=False
+    )
     def login_phone_code_handler(self, request):
         phone = request.json.phone
 
@@ -92,7 +95,10 @@ class ReCaptchaView(View):
             toast_msg=toast_msg,
         )
 
-    @analyse.json(PM_PHONE)
+    @analyse.json(
+        PM_PHONE,
+        restrict_keys=False
+    )
     def register_handler(self, request):
         phone = request.json.phone
 
@@ -111,7 +117,10 @@ class ReCaptchaView(View):
             toast_msg=toast_msg,
         )
 
-    @analyse.json(PM_PHONE)
+    @analyse.json(
+        PM_PHONE,
+        restrict_keys=False
+    )
     def find_pwd_handler(self, request):
         phone = request.json.phone
         User.get_by_phone(phone)
@@ -121,7 +130,11 @@ class ReCaptchaView(View):
             toast_msg='',
         )
 
-    @analyse.json(PM_PHONE, PM_PWD)
+    @analyse.json(
+        PM_PHONE,
+        PM_PWD,
+        restrict_keys=False
+    )
     def login_phone_pwd_handler(self, request):
         phone = request.json.phone
         pwd = request.json.pwd
@@ -129,7 +142,11 @@ class ReCaptchaView(View):
         user = User.authenticate(None, phone, pwd)
         return Auth.get_login_token(user)
 
-    @analyse.json(Validator('qt', '齐天号'), PM_PWD)
+    @analyse.json(
+        Validator('qt', '齐天号'),
+        PM_PWD,
+        restrict_keys=False
+    )
     def login_qt_pwd_handler(self, request):
         qt = request.json.qt
         pwd = request.json.pwd
@@ -144,7 +161,10 @@ class ReCaptchaView(View):
 
         return Auth.get_login_token(user)
 
-    @analyse.json(PM_PWD)
+    @analyse.json(
+        PM_PWD,
+        restrict_keys=False
+    )
     def register_code_handler(self, request):
         phone = request.phone
         pwd = request.json.pwd
@@ -152,7 +172,10 @@ class ReCaptchaView(View):
 
         return Auth.get_login_token(user)
 
-    @analyse.json(PM_PWD)
+    @analyse.json(
+        PM_PWD,
+        restrict_keys=False
+    )
     def find_pwd_code_handler(self, request):
         phone = request.phone
         pwd = request.json.pwd
