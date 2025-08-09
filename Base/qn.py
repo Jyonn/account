@@ -84,7 +84,7 @@ class QnManager:
         if auth_header is None:
             raise QNErrors.UNAUTH_CALLBACK
         url = request.get_full_path()
-        body = request.body
+        body = request.json
         verified = self.auth.verify_callback(auth_header, url, body,
                                              content_type='application/json')
         if not verified:

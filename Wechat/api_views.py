@@ -5,9 +5,9 @@ from Base.weixin import Weixin
 
 
 class WechatConfigView(View):
-    @analyse.body(Validator('url', '链接'))
+    @analyse.json(Validator('url', '链接'))
     def post(self, request):
-        url = request.body.url
+        url = request.json.url
         return Weixin.get_config(url)
 
 

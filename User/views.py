@@ -33,14 +33,14 @@ class UserView(View):
         user = request.user
         return user.d_oauth() if request.type_ == JWType.AUTH_TOKEN else user.d()
 
-    @analyse.body(UserParams.password, Validator('code', '验证码'))
+    @analyse.json(UserParams.password, Validator('code', '验证码'))
     def post(self, request):
         """ POST /api/user/
 
         创建用户
         """
-        code = request.body.code
-        password = request.body.password
+        code = request.json.code
+        password = request.json.password
 
         phone = SendMobile.check_captcha(request, code)
 
@@ -48,7 +48,7 @@ class UserView(View):
         return Auth.get_login_token(user)
 
     @staticmethod
-    @analyse.body(
+    @analyse.json(
         UserParams.nickname.copy().null(),
         UserParams.description.copy().null(),
         UserParams.qitian.copy().null(),
@@ -62,7 +62,7 @@ class UserView(View):
         """
         user = request.user
 
-        user.modify_info(**request.body())
+        user.modify_info(**request.json())
         return user.d()
 
 
@@ -77,13 +77,13 @@ class UserPhoneView(View):
 
 
 class TokenView(View):
-    @analyse.body(UserParams.password)
+    @analyse.json(UserParams.password)
     def post(self, request):
         """ POST /api/user/token
 
         登录获取token
         """
-        password = request.body.password
+        password = request.json.password
         login_type = Session.load(request, SendMobile.LOGIN_TYPE, once_delete=False)
         if not login_type:
             raise SessionErrors.SESSION
@@ -114,7 +114,7 @@ class AvatarView(View):
         return dict(upload_token=qn_token, key=key)
 
     @staticmethod
-    @analyse.body(Validator('key', '七牛存储键'), UserParams.user)
+    @analyse.json(Validator('key', '七牛存储键'), UserParams.user)
     def post(self, request):
         """ POST /api/user/avatar
 
@@ -122,8 +122,8 @@ class AvatarView(View):
         """
         qn_public_manager.auth_callback(self, request)
 
-        key = request.body.key
-        user = request.body.user
+        key = request.json.key
+        user = request.json.user
         user.modify_avatar(key)
         return user.d()
 
@@ -154,7 +154,7 @@ class IDCardView(View):
         qn_token, key = qn_res_manager.get_upload_token(key, policy(user.user_str_id))
         return dict(upload_token=qn_token, key=key)
 
-    @analyse.body(Validator('key', '七牛存储键'), UserParams.user)
+    @analyse.json(Validator('key', '七牛存储键'), UserParams.user)
     @analyse.query(UserParams.back)
     def post(self, request):
         """ POST /api/user/idcard?back=[0, 1]
@@ -163,9 +163,9 @@ class IDCardView(View):
         """
         qn_public_manager.auth_callback(self, request)
 
-        key = request.body.key
-        back = request.body.back
-        user = request.body.user
+        key = request.json.key
+        back = request.json.back
+        user = request.json.user
 
         if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
             if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
@@ -218,7 +218,7 @@ class VerifyView(View):
         UserParams.male.copy().null(),
     ]
 
-    @analyse.body(
+    @analyse.json(
         *VERIFY_PARAMS,
         Validator('token', '认证口令').null(),
         Validator('auto', '自动认证').default(True).to(bool),
@@ -238,9 +238,9 @@ class VerifyView(View):
             else:
                 raise IDCardErrors.REAL_VERIFIED('无法继续确认')
 
-        if request.body.auto:
+        if request.json.auto:
             # 自动验证
-            token = request.body.token
+            token = request.json.token
             dict_ = JWT.decrypt(token)
             if 'user_id' not in dict_:
                 raise IDCardErrors.AUTO_VERIFY_FAILED
@@ -263,14 +263,14 @@ class VerifyView(View):
         else:
             # 人工验证
             for param in VerifyView.VERIFY_PARAMS:
-                if not request.body[param.name]:
+                if not request.json[param.name]:
                     return PError.NULL_NOT_ALLOW(param.name, param.read_name)
 
             user.update_card_info(
-                name=request.body.name,
-                birthday=request.body.birthday,
-                idcard=request.body.idcard,
-                male=request.body.male,
+                name=request.json.name,
+                birthday=request.json.birthday,
+                idcard=request.json.idcard,
+                male=request.json.male,
             )
             user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
             Email.real_verify(user, '')

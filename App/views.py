@@ -52,7 +52,7 @@ class AppView(View):
             # return list(map(lambda o: o.app.d_base(), apps))
             return [app.app.d_base() for app in apps]
 
-    @analyse.body(
+    @analyse.json(
         AppParams.name,
         AppParams.desc,
         AppParams.redirect_uri,
@@ -66,7 +66,7 @@ class AppView(View):
 
         创建我的app
         """
-        app = App.create(owner=request.user, **request.body())
+        app = App.create(owner=request.user, **request.json())
         return app.d_base()
 
 
@@ -118,7 +118,7 @@ class AppID(View):
 
         return dict_
 
-    @analyse.body(
+    @analyse.json(
         AppParams.name.copy().null(),
         AppParams.info.copy().null(),
         AppParams.desc.copy().null(),
@@ -142,15 +142,15 @@ class AppID(View):
             raise AppErrors.APP_NOT_BELONG
 
         app.modify(
-            name=request.body.name,
-            desc=request.body.desc,
-            info=request.body.info,
-            redirect_uri=request.body.redirect_uri,
-            scopes=request.body.scopes,
-            premises=request.body.premises,
-            max_user_num=request.body.max_user_num
+            name=request.json.name,
+            desc=request.json.desc,
+            info=request.json.info,
+            redirect_uri=request.json.redirect_uri,
+            scopes=request.json.scopes,
+            premises=request.json.premises,
+            max_user_num=request.json.max_user_num
         )
-        app.modify_test_redirect_uri(request.body.test_redirect_uri)
+        app.modify_test_redirect_uri(request.json.test_redirect_uri)
         return app.d_user(user)
 
     @analyse.argument(AppParams.app)
@@ -202,7 +202,7 @@ class AppLogoView(View):
         qn_token, key = qn_public_manager.get_upload_token(key, Policy.logo(app.id))
         return dict(upload_token=qn_token, key=key)
 
-    @analyse.body(Validator('key', '七牛存储键'), AppParams.app)
+    @analyse.json(Validator('key', '七牛存储键'), AppParams.app)
     def post(self, request):
         """ POST /api/app/logo
 
@@ -210,14 +210,14 @@ class AppLogoView(View):
         """
         qn_public_manager.auth_callback(self, request)
 
-        key = request.body.key
-        app = request.body.app
+        key = request.json.key
+        app = request.json.app
         app.modify_logo(key)
         return app.d()
 
 
 class UserAppIdView(View):
-    @analyse.body(AppParams.secret.copy().rename('app_secret'))
+    @analyse.json(AppParams.secret.copy().rename('app_secret'))
     @analyse.argument(AppParams.user_app)
     def post(self, request):
         """ POST /api/app/user/:user_app_id
@@ -225,7 +225,7 @@ class UserAppIdView(View):
         通过app获取user信息
         """
 
-        app_secret = request.body.app_secret
+        app_secret = request.json.app_secret
         user_app = request.argument.user_app
 
         if not user_app.app.authentication(app_secret):
@@ -233,7 +233,7 @@ class UserAppIdView(View):
 
         return user_app.user.d()
 
-    @analyse.body(Validator('mark', '应用评分').to(int))
+    @analyse.json(Validator('mark', '应用评分').to(int))
     @analyse.argument(AppParams.user_app)
     @Auth.require_login(deny_auth_token=True)
     def put(self, request):
@@ -242,7 +242,7 @@ class UserAppIdView(View):
         给app评分
         """
         user_app = request.argument.user_app
-        mark = request.body.mark
+        mark = request.json.mark
         if user_app.user.user_str_id != request.user.user_str_id:
             raise AppErrors.ILLEGAL_ACCESS_RIGHT
 

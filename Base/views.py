@@ -73,9 +73,9 @@ class ReCaptchaView(View):
         MODE_FIND_PWD_CODE,
     ]
 
-    @analyse.body(PM_PHONE)
+    @analyse.json(PM_PHONE)
     def login_phone_code_handler(self, request):
-        phone = request.body.phone
+        phone = request.json.phone
 
         try:
             User.get_by_phone(phone)
@@ -92,9 +92,9 @@ class ReCaptchaView(View):
             toast_msg=toast_msg,
         )
 
-    @analyse.body(PM_PHONE)
+    @analyse.json(PM_PHONE)
     def register_handler(self, request):
-        phone = request.body.phone
+        phone = request.json.phone
 
         try:
             User.get_by_phone(phone)
@@ -111,28 +111,28 @@ class ReCaptchaView(View):
             toast_msg=toast_msg,
         )
 
-    @analyse.body(PM_PHONE)
+    @analyse.json(PM_PHONE)
     def find_pwd_handler(self, request):
-        phone = request.body.phone
+        phone = request.json.phone
         User.get_by_phone(phone)
         SendMobile.send_captcha(request, phone, SendMobile.FIND_PWD)
         return dict(
-            next_mode=ReCaptchaView.MODE_FIND_PWD_CODE,
+            next_mode=self.MODE_FIND_PWD_CODE,
             toast_msg='',
         )
 
-    @analyse.body(PM_PHONE, PM_PWD)
+    @analyse.json(PM_PHONE, PM_PWD)
     def login_phone_pwd_handler(self, request):
-        phone = request.body.phone
-        pwd = request.body.pwd
+        phone = request.json.phone
+        pwd = request.json.pwd
 
         user = User.authenticate(None, phone, pwd)
         return Auth.get_login_token(user)
 
-    @analyse.body(Validator('qt', '齐天号'), PM_PWD)
+    @analyse.json(Validator('qt', '齐天号'), PM_PWD)
     def login_qt_pwd_handler(self, request):
-        qt = request.body.qt
-        pwd = request.body.pwd
+        qt = request.json.qt
+        pwd = request.json.pwd
 
         user = User.authenticate(qt, None, pwd)
 
@@ -144,39 +144,39 @@ class ReCaptchaView(View):
 
         return Auth.get_login_token(user)
 
-    @analyse.body(PM_PWD)
+    @analyse.json(PM_PWD)
     def register_code_handler(self, request):
         phone = request.phone
-        pwd = request.body.pwd
+        pwd = request.json.pwd
         user = User.create(phone, pwd)
 
         return Auth.get_login_token(user)
 
-    @analyse.body(PM_PWD)
+    @analyse.json(PM_PWD)
     def find_pwd_code_handler(self, request):
         phone = request.phone
-        pwd = request.body.pwd
+        pwd = request.json.pwd
 
         user = User.get_by_phone(phone)
         user.modify_password(pwd)
 
         return Auth.get_login_token(user)
 
-    @analyse.body(
+    @analyse.json(
         Validator('response', '人机验证码').null(),
         Validator('code', '短信验证码').null().default(None),
         Validator('mode', '登录模式').bool(lambda x: x in ReCaptchaView.MODE_LIST),
         restrict_keys=False,
     )
     def post(self, request):
-        mode = request.body.mode
+        mode = request.json.mode
 
         if mode in ReCaptchaView.MODE_REQUIRE_CAPTCHA_LIST:
-            resp = request.body.response
+            resp = request.json.response
             if not resp or not Recaptcha.verify(resp):
                 raise BaseErrors.FORMAT(details='人机验证失败')
         if mode in ReCaptchaView.MODE_CHECK_CODE_LIST:
-            code = request.body.code
+            code = request.json.code
             if not code:
                 raise BaseErrors.FORMAT(details='验证码不能为空')
             request.phone = SendMobile.check_captcha(request, code)

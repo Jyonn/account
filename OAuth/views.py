@@ -29,7 +29,7 @@ class OAuth(View):
         else:
             raise AppErrors.APP_NOT_BOUND
 
-    @analyse.body(AppParams.app)
+    @analyse.json(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
     def post(self, request):
         """POST /api/oauth/
@@ -37,20 +37,20 @@ class OAuth(View):
         授权应用
         """
         user = request.user
-        app = request.body.app
+        app = request.json.app
 
         encode_str, dict_ = UserApp.do_bind(user, app)
         return dict(auth_code=encode_str, redirect_uri=app.redirect_uri)
 
 
 class OAuthToken(View):
-    @analyse.body(
+    @analyse.json(
         Validator('code', '授权码'),
         AppParams.secret.copy().rename('app_secret')
     )
     def post(self, request):
         """POST /api/oauth/token"""
-        code = request.body.code
+        code = request.json.code
         dict_ = JWT.decrypt(code)
         if dict_['type'] != JWType.AUTH_CODE:
             raise AuthErrors.REQUIRE_AUTH_CODE
