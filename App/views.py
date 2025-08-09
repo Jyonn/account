@@ -23,7 +23,7 @@ class AppView(View):
         Validator('relation').default(App.R_USER).to(relation_process),
         Validator('frequent').null().default(None),
         Validator('count').default(3).to(int),
-        Validator('last_time').null().to(float).to(datetime.datetime.fromtimestamp)
+        Validator('last_time').null().to(float).to(datetime.datetime.fromtimestamp).default(None),
     )
     @Auth.require_login([SI.read_app_list])
     def get(self, request):
