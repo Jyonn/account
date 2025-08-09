@@ -344,12 +344,18 @@ class App(models.Model, Dictify):
     def _dictify_app_desc(self):
         return self.desc
 
-    def _dictify_logo(self, small=True):
+    def _get_logo_url(self, small=True):
         if self.logo is None:
             return None
         from Base.qn import qn_public_manager
         key = "%s-small" % self.logo if small else self.logo
         return qn_public_manager.get_resource_url(key)
+
+    def _dictify_logo(self):
+        return self._get_logo_url()
+
+    def _dictify_large_logo(self):
+        return self._get_logo_url(small=False)
 
     def _dictify_create_time(self):
         return self.create_time.timestamp()
@@ -376,7 +382,7 @@ class App(models.Model, Dictify):
 
     def d(self):
         return self.dictify(
-            'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', ('logo', False),
+            'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', 'large_logo->logo',
             'redirect_uri', 'create_time', 'owner', 'mark', 'scopes', 'premises',
             'test_redirect_uri', 'max_user_num')
 
@@ -513,9 +519,10 @@ class UserApp(models.Model, Dictify):
 
         premise_list = app.check_premise(user)
         for premise in premise_list:
-            error = E.sid2e[premise['check']['identifier']]
-            if not error.ok:
-                raise error
+            errors = Error.all()
+            for error in errors:
+                if error.identifier == premise['check']['identifier'] and error != OK:
+                    raise error
 
         crt_timestamp = datetime.datetime.now().timestamp()
 
