@@ -164,7 +164,7 @@ class ReCaptchaView(View):
 
     @analyse.body(
         Validator('response', '人机验证码').null(),
-        Validator('code', '短信验证码').null(),
+        Validator('code', '短信验证码').null().default(None),
         Validator('mode', '登录模式').bool(lambda x: x in ReCaptchaView.MODE_LIST),
         restrict_keys=False,
     )
