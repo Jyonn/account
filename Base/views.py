@@ -186,7 +186,7 @@ class ReCaptchaView(View):
         return Auth.get_login_token(user)
 
     @analyse.json(
-        Validator('response', '人机验证码').null(),
+        Validator('response', '人机验证码').null().default(None),
         Validator('code', '短信验证码').null().default(None),
         Validator('mode', '登录模式').bool(lambda x: x in ReCaptchaView.MODE_LIST),
         restrict_keys=False,

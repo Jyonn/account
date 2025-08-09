@@ -49,10 +49,10 @@ class UserView(View):
 
     @staticmethod
     @analyse.json(
-        UserParams.nickname.copy().null(),
-        UserParams.description.copy().null(),
-        UserParams.qitian.copy().null(),
-        UserParams.birthday.copy().null(),
+        UserParams.nickname.copy().null().default(None),
+        UserParams.description.copy().null().default(None),
+        UserParams.qitian.copy().null().default(None),
+        UserParams.birthday.copy().null().default(None),
     )
     @Auth.require_login(deny_auth_token=True)
     def put(self, request):
@@ -213,14 +213,14 @@ class VerifyView(View):
 
     VERIFY_PARAMS = [
         UserParams.real_name.copy().rename('name'),
-        UserParams.birthday.copy().null(),
-        UserParams.idcard.copy().null(),
-        UserParams.male.copy().null(),
+        UserParams.birthday.copy().null().default(None),
+        UserParams.idcard.copy().null().default(None),
+        UserParams.male.copy().null().default(None),
     ]
 
     @analyse.json(
         *VERIFY_PARAMS,
-        Validator('token', '认证口令').null(),
+        Validator('token', '认证口令').null().default(None),
         Validator('auto', '自动认证').default(True).to(bool),
     )
     @Auth.require_login(deny_auth_token=True)

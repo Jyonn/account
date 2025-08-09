@@ -21,7 +21,7 @@ def relation_process(relation):
 class AppView(View):
     @analyse.query(
         Validator('relation').default(App.R_USER).to(relation_process),
-        Validator('frequent').null(),
+        Validator('frequent').null().default(None),
         Validator('count').default(3).to(int),
         Validator('last_time').null().to(float).to(datetime.datetime.fromtimestamp)
     )
@@ -119,13 +119,13 @@ class AppID(View):
         return dict_
 
     @analyse.json(
-        AppParams.name.copy().null(),
-        AppParams.info.copy().null(),
-        AppParams.desc.copy().null(),
-        AppParams.redirect_uri.copy().null(),
-        AppParams.scopes.copy().null(),
-        AppParams.premises.copy().null(),
-        AppParams.test_redirect_uri.copy().null(),
+        AppParams.name.copy().null().default(None),
+        AppParams.info.copy().null().default(None),
+        AppParams.desc.copy().null().default(None),
+        AppParams.redirect_uri.copy().null().default(None),
+        AppParams.scopes.copy().null().default(None),
+        AppParams.premises.copy().null().default(None),
+        AppParams.test_redirect_uri.copy().null().default(None),
         AppParams.max_user_num,
     )
     @analyse.argument(AppParams.app)
