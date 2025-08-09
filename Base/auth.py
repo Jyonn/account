@@ -1,5 +1,7 @@
 from functools import wraps
 
+from smartdjango import analyse
+
 from smartdjango import Error, Code
 
 from Base.jtoken import JWT, JWType
@@ -22,8 +24,8 @@ class AuthErrors:
 
 class Auth:
     @staticmethod
-    def validate_token(r):
-        jwt_str = r.META.get('HTTP_TOKEN')
+    def _parse_token(request):
+        jwt_str = request.META.get('HTTP_TOKEN')
         if jwt_str is None:
             raise AuthErrors.REQUIRE_LOGIN
         return JWT.decrypt(jwt_str)
@@ -39,10 +41,10 @@ class Auth:
         return dict_
 
     @classmethod
-    def _extract_user(cls, r):
-        r.user = None
+    def _extract_user(cls, request):
+        request.user = None
 
-        dict_ = Auth.validate_token(r)
+        dict_ = Auth._parse_token(request)
 
         ctime = dict_.get('ctime')
         if not ctime:
@@ -71,49 +73,55 @@ class Auth:
             if float(user_app.app.field_change_time) > ctime:
                 raise AuthErrors.APP_FIELD_CHANGE
             user = user_app.user
-            r.user_app = user_app
+            request.user_app = user_app
         else:
             raise AuthErrors.ERROR_TOKEN_TYPE
 
         if float(user.pwd_change_time) > ctime:
             raise AuthErrors.PASSWORD_CHANGED
 
-        r.user = user
-        r.type_ = type_
+        request.user = user
+        request.type_ = type_
 
     @classmethod
-    def require_login(cls, scope_list=None, deny_auth_token=False, allow_no_login=False,
-                      require_root=False):
+    def require_login(
+            cls,
+            scope_list=None,
+            deny_auth_token=False,
+            allow_no_login=False,
+            require_root=False
+    ):
         def decorator(func):
             @wraps(func)
-            def wrapper(r, *args, **kwargs):
+            def wrapper(*args, **kwargs):
                 _scope_list = scope_list or []
+                request = analyse.get_request(*args)
 
                 try:
-                    cls._extract_user(r)
+                    cls._extract_user(request)
                 except Exception as err:
                     if allow_no_login and not require_root:
-                        return func(r, *args, **kwargs)
+                        return func(*args, **kwargs)
                     else:
-                        raise AuthErrors.REQUIRE_LOGIN(debug_message=err)
+                        raise AuthErrors.REQUIRE_LOGIN(details=err)
 
                 if require_root:
-                    user = r.user
+                    user = request.user
                     from User.models import User
                     if user.pk != User.ROOT_ID:
                         raise AuthErrors.REQUIRE_ROOT
 
-                if r.type_ != JWType.AUTH_TOKEN:
-                    return func(r, *args, **kwargs)
+                if request.type_ != JWType.AUTH_TOKEN:
+                    return func(*args, **kwargs)
 
                 if deny_auth_token:
                     raise AuthErrors.DENY_ALL_AUTH_TOKEN
 
-                app = r.user_app.app
+                app = request.user_app.app
                 for score in _scope_list:
                     if score not in app.scopes.all():
                         raise AuthErrors.SCOPE_NOT_SATISFIED(desc=score.desc)
-                return func(r, *args, **kwargs)
+                return func(*args, **kwargs)
 
             return wrapper
         return decorator
