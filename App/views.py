@@ -80,7 +80,7 @@ class AppListView(View):
 class AppIDSecret(View):
     @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
-    def get(self, request):
+    def get(self, request, **kwargs):
         """ GET /api/app/:app_id/secret"""
         user = request.user
         app = request.argument.app
@@ -94,7 +94,7 @@ class AppIDSecret(View):
 class AppID(View):
     @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True, allow_no_login=True)
-    def get(self, request):
+    def get(self, request, **kwargs):
         """ GET /api/app/:app_id
 
         获取应用信息以及用户与应用的关系（属于、绑定、打分，仅限用户登录时）
@@ -130,7 +130,7 @@ class AppID(View):
     )
     @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
-    def put(self, request):
+    def put(self, request, **kwargs):
         """ PUT /api/app/:app_id
 
         修改应用信息
@@ -155,7 +155,7 @@ class AppID(View):
 
     @analyse.argument(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
-    def delete(self, request):
+    def delete(self, request, **kwargs):
         """ DELETE /api/app/:app_id
 
         删除应用
@@ -219,7 +219,7 @@ class AppLogoView(View):
 class UserAppIdView(View):
     @analyse.json(AppParams.secret.copy().rename('app_secret'))
     @analyse.argument(AppParams.user_app)
-    def post(self, request):
+    def post(self, request, **kwargs):
         """ POST /api/app/user/:user_app_id
 
         通过app获取user信息
@@ -236,7 +236,7 @@ class UserAppIdView(View):
     @analyse.json(Validator('mark', '应用评分').to(int))
     @analyse.argument(AppParams.user_app)
     @Auth.require_login(deny_auth_token=True)
-    def put(self, request):
+    def put(self, request, **kwargs):
         """ PUT /api/app/user/:user_app_id
 
         给app评分
