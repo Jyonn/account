@@ -292,6 +292,9 @@ class User(models.Model, Dictify):
     def _dictify_allow_qitian_modify(self):
         return int(self.allow_qitian_modify())
 
+    def _dictify_verify_type(self):
+        return self.real_verify_type
+
     def d_oauth(self):
         return self.dictify('avatar', 'nickname', 'description')
 
