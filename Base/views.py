@@ -16,13 +16,6 @@ class BaseErrors:
     FORMAT = Error("格式错误", code=Code.BadRequest)
 
 
-class ErrorView(View):
-    @staticmethod
-    def get(_):
-        errors = Error.all()
-        return [error.jsonl() for error in errors]
-
-
 def process_lang(lang):
     """format language"""
     if lang not in ['cn', 'en']:
@@ -173,6 +166,7 @@ class ReCaptchaView(View):
         Validator('response', '人机验证码').null(),
         Validator('code', '短信验证码').null(),
         Validator('mode', '登录模式').bool(lambda x: x in ReCaptchaView.MODE_LIST),
+        restrict_keys=False,
     )
     def post(self, request):
         mode = request.body.mode
