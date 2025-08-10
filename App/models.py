@@ -519,10 +519,10 @@ class UserApp(models.Model, Dictify):
 
         premise_list = app.check_premise(user)
         for premise in premise_list:
-            errors = Error.all()
-            for error in errors:
-                if error.identifier == premise['check']['identifier'] and error != OK:
-                    raise error
+            errors = Error.all()  # type: dict[str, Error]
+            for identifier in errors:
+                if identifier == premise['check']['identifier'] and identifier != OK.identifier:
+                    raise errors[identifier]
 
         crt_timestamp = datetime.datetime.now().timestamp()
 
