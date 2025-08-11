@@ -3,9 +3,17 @@ from functools import wraps
 from smartdjango import analyse
 
 from smartdjango import Error, Code
+from smartdjango.analyse import Request as BaseRequest
 
+from App.models import UserApp
 from Base.jtoken import JWT, JWType
 from User.models import User
+
+
+class Request(BaseRequest):
+    user: User
+    userapp: UserApp
+    type: str
 
 
 @Error.register
@@ -81,7 +89,7 @@ class Auth:
             raise AuthErrors.PASSWORD_CHANGED
 
         request.user = user
-        request.type_ = type_
+        request.type = type_
 
     @classmethod
     def require_login(
@@ -111,7 +119,7 @@ class Auth:
                     if user.pk != User.ROOT_ID:
                         raise AuthErrors.REQUIRE_ROOT
 
-                if request.type_ != JWType.AUTH_TOKEN:
+                if request.type != JWType.AUTH_TOKEN:
                     return func(*args, **kwargs)
 
                 if deny_auth_token:

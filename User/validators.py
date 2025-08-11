@@ -19,6 +19,7 @@ class UserErrors:
     QITIAN_EXIST = Error("已存在此齐天号", code=Code.BadRequest)
     QITIAN_TOO_SHORT = Error("齐天号长度不能小于 {length}", code=Code.BadRequest)
     PASSWORD_TOO_SHORT = Error("密码长度不能小于 {length}", code=Code.BadRequest)
+    MISSING = Error("{key} 不允许为空", code=Code.BadRequest)
 
 
 class UserValidator:

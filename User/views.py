@@ -6,9 +6,8 @@ import datetime
 
 from django.views import View
 from smartdjango import analyse, Validator
-from smartify import PError
 
-from Base.auth import Auth
+from Base.auth import Auth, Request
 from Base.idcard import IDCard, IDCardErrors
 from Base.mail import Email
 from Base.premise_checker import PremiseCheckerErrors
@@ -21,20 +20,24 @@ from Base.session import Session, SessionErrors
 
 from User.models import User
 from User.params import UserParams
+from User.validators import UserErrors
 
 
 class UserView(View):
     @Auth.require_login([SI.read_base_info])
-    def get(self, request):
+    def get(self, request: Request):
         """ GET /api/user/
 
         获取我的信息
         """
         user = request.user
-        return user.d_oauth() if request.type_ == JWType.AUTH_TOKEN else user.d()
+        return user.d_oauth() if request.type == JWType.AUTH_TOKEN else user.d()
 
-    @analyse.json(UserParams.password, Validator('code', '验证码'))
-    def post(self, request):
+    @analyse.json(
+        UserParams.password.copy().null().default(None),
+        Validator('code', '验证码')
+    )
+    def post(self, request: Request):
         """ POST /api/user/
 
         创建用户
@@ -55,7 +58,7 @@ class UserView(View):
         UserParams.birthday.copy().null().default(None),
     )
     @Auth.require_login(deny_auth_token=True)
-    def put(self, request):
+    def put(self, request: Request):
         """ PUT /api/user/
 
         修改用户信息
@@ -68,7 +71,7 @@ class UserView(View):
 
 class UserPhoneView(View):
     @Auth.require_login([SI.read_phone])
-    def get(self, request):
+    def get(self, request: Request):
         """ GET /api/user/phone
 
         获取用户手机号
@@ -78,7 +81,7 @@ class UserPhoneView(View):
 
 class TokenView(View):
     @analyse.json(UserParams.password)
-    def post(self, request):
+    def post(self, request: Request):
         """ POST /api/user/token
 
         登录获取token
@@ -100,7 +103,7 @@ class TokenView(View):
 class AvatarView(View):
     @analyse.query(Validator('filename', '文件名'))
     @Auth.require_login(deny_auth_token=True)
-    def get(self, request):
+    def get(self, request: Request):
         """ GET /api/user/avatar
 
         获取七牛上传token
@@ -115,7 +118,7 @@ class AvatarView(View):
 
     @staticmethod
     @analyse.json(Validator('key', '七牛存储键'), UserParams.user)
-    def post(self, request):
+    def post(self, request: Request):
         """ POST /api/user/avatar
 
         七牛上传用户头像回调函数
@@ -131,7 +134,7 @@ class AvatarView(View):
 class IDCardView(View):
     @analyse.query(Validator('filename', '文件名'), UserParams.back)
     @Auth.require_login(deny_auth_token=True)
-    def get(self, request):
+    def get(self, request: Request):
         """ GET /api/user/idcard?back=[0, 1]
 
         获取七牛上传token
@@ -156,7 +159,7 @@ class IDCardView(View):
 
     @analyse.json(Validator('key', '七牛存储键'), UserParams.user)
     @analyse.query(UserParams.back)
-    def post(self, request):
+    def post(self, request: Request):
         """ POST /api/user/idcard?back=[0, 1]
 
         七牛上传用户实名认证回调函数
@@ -182,7 +185,7 @@ class IDCardView(View):
 
 class VerifyView(View):
     @Auth.require_login(deny_auth_token=True)
-    def get(self, request):
+    def get(self, request: Request):
         """ GET /api/user/verify
 
         自动识别身份信息
@@ -211,7 +214,7 @@ class VerifyView(View):
         user.update_verify_type(User.VERIFY_CHINA)
         return verify_info
 
-    VERIFY_PARAMS = [
+    VERIFY_VALIDATORS = [
         UserParams.real_name.copy().rename('name'),
         UserParams.birthday.copy().null().default(None),
         UserParams.idcard.copy().null().default(None),
@@ -219,12 +222,12 @@ class VerifyView(View):
     ]
 
     @analyse.json(
-        *VERIFY_PARAMS,
+        *VERIFY_VALIDATORS,
         Validator('token', '认证口令').null().default(None),
         Validator('auto', '自动认证').default(True).to(bool),
     )
     @Auth.require_login(deny_auth_token=True)
-    def post(self, request):
+    def post(self, request: Request):
         """ POST /api/user/verify
 
         确认认证信息
@@ -262,12 +265,12 @@ class VerifyView(View):
             user.update_verify_status(User.VERIFY_STATUS_DONE)
         else:
             # 人工验证
-            for param in VerifyView.VERIFY_PARAMS:
-                if not request.json[param.name]:
-                    return PError.NULL_NOT_ALLOW(param.name, param.read_name)
+            for validator in VerifyView.VERIFY_VALIDATORS:
+                if not request.json[validator.key]:
+                    return UserErrors.MISSING(validator.key)
 
             user.update_card_info(
-                name=request.json.name,
+                real_name=request.json.name,
                 birthday=request.json.birthday,
                 idcard=request.json.idcard,
                 male=request.json.male,
@@ -279,15 +282,9 @@ class VerifyView(View):
 
 class DevView(View):
     @Auth.require_login(deny_auth_token=True)
-    def post(self, request):
+    def post(self, request: Request):
         user = request.user
         if user.verify_status != User.VERIFY_STATUS_DONE:
             return PremiseCheckerErrors.REQUIRE_REAL_VERIFY
         user.developer()
         return user.d()
-
-
-# def set_unique_user_str_id(_):
-#     for user in User.objects.all():
-#         user.user_str_id = User.get_unique_id()
-#         user.save()
