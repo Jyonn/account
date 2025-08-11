@@ -126,9 +126,9 @@ class Auth:
                     raise AuthErrors.DENY_ALL_AUTH_TOKEN
 
                 app = request.user_app.app
-                for score in _scope_list:
-                    if score not in app.scopes.all():
-                        raise AuthErrors.SCOPE_NOT_SATISFIED(desc=score.desc)
+                for scope in _scope_list:
+                    if scope not in app.scopes.all():
+                        raise AuthErrors.SCOPE_NOT_SATISFIED(desc=scope.desc)
                 return func(*args, **kwargs)
 
             return wrapper
