@@ -2,25 +2,16 @@
 
 用户API处理函数
 """
-import datetime
 
 from django.views import View
 from smartdjango import analyse, Validator
 
 from Base.auth import Auth, Request
-from Base.idcard import IDCard, IDCardErrors
-from Base.mail import Email
-from Base.premise_checker import PremiseCheckerErrors
+from Base.idcard import IDCardErrors
 from Base.scope import SI
-from Base.jtoken import JWType, JWT
-from Base.policy import Policy
-from Base.qn import qn_public_manager, qn_res_manager
-from Base.send_mobile import SendMobile
-from Base.session import Session, SessionErrors
-
-from User.models import User
+from Base.qn import qn_public_manager
+from User.services import UserAccountService, UserVerificationService
 from User.params import UserParams
-from User.validators import UserErrors
 
 
 class UserView(View):
@@ -30,8 +21,7 @@ class UserView(View):
 
         获取我的信息
         """
-        user = request.user
-        return user.d_oauth() if request.type == JWType.AUTH_TOKEN else user.d()
+        return UserAccountService.get_profile(request.user, request.type)
 
     @analyse.json(
         UserParams.password.copy().null().default(None),
@@ -42,13 +32,7 @@ class UserView(View):
 
         创建用户
         """
-        code = request.json.code
-        password = request.json.password
-
-        phone = SendMobile.check_captcha(request, code)
-
-        user = User.create(phone, password)
-        return Auth.get_login_token(user)
+        return UserAccountService.register(request, request.json.password, request.json.code)
 
     @staticmethod
     @analyse.json(
@@ -63,10 +47,7 @@ class UserView(View):
 
         修改用户信息
         """
-        user = request.user
-
-        user.modify_info(**request.json())
-        return user.d()
+        return UserAccountService.update_profile(request.user, request.json())
 
 
 class UserPhoneView(View):
@@ -76,7 +57,7 @@ class UserPhoneView(View):
 
         获取用户手机号
         """
-        return request.user.phone
+        return UserAccountService.get_phone(request.user)
 
 
 class TokenView(View):
@@ -86,18 +67,7 @@ class TokenView(View):
 
         登录获取token
         """
-        password = request.json.password
-        login_type = Session.load(request, SendMobile.LOGIN_TYPE, once_delete=False)
-        if not login_type:
-            raise SessionErrors.SESSION
-        login_value = Session.load(request, login_type, once_delete=False)
-        if not login_value:
-            raise SessionErrors.SESSION
-        if login_type == SendMobile.PHONE_NUMBER:
-            user = User.authenticate(None, login_value, password)
-        else:
-            user = User.authenticate(login_value, None, password)
-        return Auth.get_login_token(user)
+        return UserAccountService.login_from_session(request, request.json.password)
 
 
 class AvatarView(View):
@@ -108,13 +78,7 @@ class AvatarView(View):
 
         获取七牛上传token
         """
-        user = request.user
-        filename = request.query.filename
-
-        crt_time = datetime.datetime.now().timestamp()
-        key = 'user/%s/avatar/%s/%s' % (user.user_str_id, crt_time, filename)
-        qn_token, key = qn_public_manager.get_upload_token(key, Policy.avatar(user.user_str_id))
-        return dict(upload_token=qn_token, key=key)
+        return UserAccountService.get_avatar_upload_token(request.user, request.query.filename)
 
     @staticmethod
     @analyse.json(Validator('key', '七牛存储键'), UserParams.user)
@@ -125,10 +89,7 @@ class AvatarView(View):
         """
         qn_public_manager.auth_callback(self, request)
 
-        key = request.json.key
-        user = request.json.user
-        user.modify_avatar(key)
-        return user.d()
+        return UserAccountService.update_avatar(request.json.user, request.json.key)
 
 
 class IDCardView(View):
@@ -139,23 +100,11 @@ class IDCardView(View):
 
         获取七牛上传token
         """
-        user = request.user
-        filename = request.query.filename
-        back = request.query.back
-
-        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
-                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                raise IDCardErrors.VERIFYING('无法重新上传')
-            else:
-                raise IDCardErrors.REAL_VERIFIED('无法重新上传')
-
-        crt_time = datetime.datetime.now().timestamp()
-        key = 'user/%s/card/%s/%s/%s' % (user.user_str_id,
-                                         ['front', 'back'][back], crt_time, filename)
-        policy = Policy.verify_back if back else Policy.verify_front
-        qn_token, key = qn_res_manager.get_upload_token(key, policy(user.user_str_id))
-        return dict(upload_token=qn_token, key=key)
+        return UserVerificationService.get_idcard_upload_token(
+            user=request.user,
+            filename=request.query.filename,
+            back=request.query.back,
+        )
 
     @analyse.json(Validator('key', '七牛存储键'), UserParams.user)
     @analyse.query(UserParams.back)
@@ -166,21 +115,11 @@ class IDCardView(View):
         """
         qn_public_manager.auth_callback(self, request)
 
-        key = request.json.key
-        back = request.json.back
-        user = request.json.user
-
-        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
-                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                raise IDCardErrors.VERIFYING('无法重新上传')
-            else:
-                raise IDCardErrors.REAL_VERIFIED('无法重新上传')
-
-        if back:
-            return user.upload_verify_back(key)
-        else:
-            return user.upload_verify_front(key)
+        return UserVerificationService.update_idcard_image(
+            user=request.json.user,
+            key=request.json.key,
+            back=request.json.back,
+        )
 
 
 class VerifyView(View):
@@ -190,29 +129,7 @@ class VerifyView(View):
 
         自动识别身份信息
         """
-        user = request.user
-
-        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
-                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                raise IDCardErrors.VERIFYING('无法继续识别')
-            else:
-                raise IDCardErrors.REAL_VERIFIED('无法继续识别')
-
-        urls = user.get_card_urls()
-        if not urls['front'] or not urls['back']:
-            raise IDCardErrors.CARD_NOT_COMPLETE
-
-        front_info = IDCard.detect_front(urls['front'])
-        back_info = IDCard.detect_back(urls['back'])
-
-        back_info.update(front_info)
-        back_info['type'] = 'idcard-verify'
-        back_info['user_id'] = user.user_str_id
-        token, verify_info = JWT.encrypt(back_info, expire_second=60 * 5)
-        verify_info['token'] = token
-        user.update_verify_type(User.VERIFY_CHINA)
-        return verify_info
+        return UserVerificationService.auto_verify(request.user)
 
     VERIFY_VALIDATORS = [
         UserParams.real_name.copy().rename('name'),
@@ -232,59 +149,14 @@ class VerifyView(View):
 
         确认认证信息
         """
-        user = request.user
-
-        if user.verify_status != User.VERIFY_STATUS_UNVERIFIED:
-            if user.verify_status == User.VERIFY_STATUS_UNDER_AUTO or \
-                    user.verify_status == User.VERIFY_STATUS_UNDER_MANUAL:
-                raise IDCardErrors.VERIFYING('无法继续确认')
-            else:
-                raise IDCardErrors.REAL_VERIFIED('无法继续确认')
-
-        if request.json.auto:
-            # 自动验证
-            token = request.json.token
-            dict_ = JWT.decrypt(token)
-            if 'user_id' not in dict_:
-                raise IDCardErrors.AUTO_VERIFY_FAILED
-            if user.user_str_id != dict_['user_id']:
-                raise IDCardErrors.AUTO_VERIFY_FAILED
-
-            crt_time = datetime.datetime.now().timestamp()
-            valid_start = datetime.datetime.strptime(dict_['valid_start'], '%Y-%m-%d').timestamp()
-            valid_end = datetime.datetime.strptime(dict_['valid_end'], '%Y-%m-%d').timestamp()
-            if valid_start > crt_time or crt_time > valid_end:
-                raise IDCardErrors.CARD_VALID_EXPIRED
-
-            user.update_card_info(
-                dict_['name'],
-                dict_['male'],
-                dict_['idcard'],
-                datetime.datetime.strptime(dict_['birthday'], '%Y-%m-%d').date(),
-            )
-            user.update_verify_status(User.VERIFY_STATUS_DONE)
-        else:
-            # 人工验证
-            for validator in VerifyView.VERIFY_VALIDATORS:
-                if not request.json[validator.key]:
-                    return UserErrors.MISSING(validator.key)
-
-            user.update_card_info(
-                real_name=request.json.name,
-                birthday=request.json.birthday,
-                idcard=request.json.idcard,
-                male=request.json.male,
-            )
-            user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
-            Email.real_verify(user, '')
-        return user.d()
+        return UserVerificationService.confirm_verify(
+            user=request.user,
+            payload=request.json(),
+            required_keys=[validator.key for validator in VerifyView.VERIFY_VALIDATORS],
+        )
 
 
 class DevView(View):
     @Auth.require_login(deny_auth_token=True)
     def post(self, request: Request):
-        user = request.user
-        if user.verify_status != User.VERIFY_STATUS_DONE:
-            return PremiseCheckerErrors.REQUIRE_REAL_VERIFY
-        user.developer()
-        return user.d()
+        return UserAccountService.apply_developer(request.user)
