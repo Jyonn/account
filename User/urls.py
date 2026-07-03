@@ -14,4 +14,5 @@ urlpatterns = [
     path('verify', views.VerifyView.as_view()),
     path('dev', views.DevView.as_view()),
     path('phone', views.UserPhoneView.as_view()),
+    path('qitian', views.UserQitianView.as_view()),
 ]

@@ -60,6 +60,16 @@ class UserPhoneView(View):
         return UserAccountService.get_phone(request.user)
 
 
+class UserQitianView(View):
+    @analyse.query(UserParams.qitian)
+    def get(self, request: Request):
+        """ GET /api/user/qitian?qitian=[qitian]
+
+        检测齐天号是否存在
+        """
+        return UserAccountService.ensure_qitian_exists(request.query.qitian)
+
+
 class TokenView(View):
     @analyse.json(UserParams.password)
     def post(self, request: Request):

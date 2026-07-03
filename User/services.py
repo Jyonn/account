@@ -15,6 +15,11 @@ from User.validators import UserErrors
 
 class UserAccountService:
     @staticmethod
+    def ensure_qitian_exists(qitian):
+        User.get_by_qitian(qitian)
+        return dict(exists=True, qitian=qitian)
+
+    @staticmethod
     def get_profile(user, request_type):
         return user.d_oauth() if request_type == JWType.AUTH_TOKEN else user.d()
 
