@@ -8,3 +8,4 @@ pyjwt
 requests>=2.32.4
 smartdjango>=4.1.0
 diq
+notificator

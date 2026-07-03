@@ -86,6 +86,9 @@ class ConfigInstance:
     WEIXIN_JSAPI_TICKET = 'weixin-jsapi-ticket'
 
     YUNPIAN_APPKEY = 'yunpian-appkey'
+    NOTIFICATOR_NAME = 'notificator-name'
+    NOTIFICATOR_TOKEN = 'notificator-token'
+    NOTIFICATOR_HOST = 'notificator-host'
 
 
 CI = ConfigInstance
