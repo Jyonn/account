@@ -1,6 +1,7 @@
 from diq import Dictify
 from django.db import models
 from django.utils.crypto import get_random_string
+from smartdjango import Error
 
 from Base.idcard import IDCardErrors
 from User.validators import UserErrors, UserValidator
@@ -169,7 +170,9 @@ class User(models.Model, Dictify):
             user_str_id = get_random_string(length=cls.vldt.DEFAULT_USER_STR_ID_LENGTH)
             try:
                 cls.get_by_str_id(user_str_id)
-            except UserErrors.USER_NOT_FOUND:
+            except Error as e:
+                if not e.equals(UserErrors.USER_NOT_FOUND):
+                    raise e
                 return user_str_id
 
     @classmethod
@@ -178,7 +181,9 @@ class User(models.Model, Dictify):
             qitian_id = get_random_string(length=cls.vldt.DEFAULT_QITIAN_LENGTH)
             try:
                 cls.get_by_qitian(qitian_id)
-            except UserErrors.USER_NOT_FOUND:
+            except Error as e:
+                if not e.equals(UserErrors.USER_NOT_FOUND):
+                    raise e
                 return qitian_id
 
     @classmethod

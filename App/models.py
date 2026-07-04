@@ -283,7 +283,9 @@ class App(models.Model, Dictify):
             app_id = get_random_string(length=cls.vldt.DEFAULT_ID_LENGTH)
             try:
                 cls.get_by_id(app_id)
-            except AppErrors.APP_NOT_FOUND:
+            except Error as e:
+                if not e.equals(AppErrors.APP_NOT_FOUND):
+                    raise e
                 return app_id
 
     @classmethod
@@ -509,7 +511,9 @@ class UserApp(models.Model, Dictify):
             user_app_id = get_random_string(length=8)
             try:
                 cls.get_by_id(user_app_id)
-            except AppErrors.USER_APP_NOT_FOUND:
+            except Error as e:
+                if not e.equals(AppErrors.USER_APP_NOT_FOUND):
+                    raise e
                 return user_app_id
 
     @classmethod
@@ -533,7 +537,9 @@ class UserApp(models.Model, Dictify):
             user_app.frequent_score += 1
             user_app.last_score_changed_time = crt_timestamp
             user_app.save()
-        except AppErrors.USER_APP_NOT_FOUND:
+        except Error as e:
+            if not e.equals(AppErrors.USER_APP_NOT_FOUND):
+                raise e
             try:
                 user_app = cls(
                     user=user,
