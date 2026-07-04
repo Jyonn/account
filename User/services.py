@@ -15,6 +15,16 @@ from User.validators import UserErrors
 
 class UserAccountService:
     @staticmethod
+    def get_phone_status(phone):
+        try:
+            User.get_by_phone(phone)
+            registered = True
+        except UserErrors.USER_NOT_FOUND:
+            registered = False
+
+        return dict(registered=registered, phone=phone)
+
+    @staticmethod
     def ensure_qitian_exists(qitian):
         User.get_by_qitian(qitian)
         return dict(exists=True, qitian=qitian)

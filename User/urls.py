@@ -15,4 +15,5 @@ urlpatterns = [
     path('dev', views.DevView.as_view()),
     path('phone', views.UserPhoneView.as_view()),
     path('qitian', views.UserQitianView.as_view()),
+    path('phone-status', views.UserPhoneStatusView.as_view()),
 ]

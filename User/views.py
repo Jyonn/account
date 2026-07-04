@@ -70,6 +70,16 @@ class UserQitianView(View):
         return UserAccountService.ensure_qitian_exists(request.query.qitian)
 
 
+class UserPhoneStatusView(View):
+    @analyse.query(Validator('phone', '手机号'))
+    def get(self, request: Request):
+        """ GET /api/user/phone-status?phone=[phone]
+
+        检测手机号是否已注册
+        """
+        return UserAccountService.get_phone_status(request.query.phone)
+
+
 class TokenView(View):
     @analyse.json(UserParams.password)
     def post(self, request: Request):
