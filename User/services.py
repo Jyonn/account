@@ -1,5 +1,7 @@
 import datetime
 
+from smartdjango import Error
+
 from Base.auth import Auth
 from Base.idcard import IDCard, IDCardErrors
 from Base.jtoken import JWType, JWT
@@ -19,7 +21,9 @@ class UserAccountService:
         try:
             User.get_by_phone(phone)
             registered = True
-        except UserErrors.USER_NOT_FOUND:
+        except Error as e:
+            if not e.equals(UserErrors.USER_NOT_FOUND):
+                raise e
             registered = False
 
         return dict(registered=registered, phone=phone)
