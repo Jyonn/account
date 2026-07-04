@@ -16,7 +16,10 @@ class AppService:
             return [app.d_base() for app in apps]
 
         if relation == App.R_NONE:
-            apps = App.objects.filter(create_time__gt=last_time).order_by('create_time')[:count]
+            apps = App.objects.all()
+            if last_time is not None:
+                apps = apps.filter(create_time__gt=last_time)
+            apps = apps.order_by('create_time')[:count]
             return [app.d_base() for app in apps]
 
         apps = UserApp.objects.filter(user=user, bind=True)
