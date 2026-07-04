@@ -1,19 +1,19 @@
 import datetime
+import json
 
-from qcloud_image import CIUrls
-from qcloud_image import Client
 from smartdjango import Error
+from tencentcloud.common import credential
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
+from tencentcloud.common.profile.client_profile import ClientProfile
+from tencentcloud.common.profile.http_profile import HttpProfile
+from tencentcloud.ocr.v20181119 import models, ocr_client
 
 from Config.models import CI, Config
 
-APP_ID = Config.get_value_by_key(CI.QCLOUD_APP_ID)
 SECRET_ID = Config.get_value_by_key(CI.QCLOUD_SECRET_ID)
 SECRET_KEY = Config.get_value_by_key(CI.QCLOUD_SECRET_KEY)
-
-BUCKET = 'BUCKET'
-client = Client(APP_ID, SECRET_ID, SECRET_KEY, BUCKET)
-client.use_http()
-client.set_timeout(30)
+OCR_REGION = 'ap-guangzhou'
+OCR_ENDPOINT = 'ocr.tencentcloudapi.com'
 
 
 @Error.register
@@ -29,29 +29,41 @@ class IDCardErrors:
 class IDCard:
     @staticmethod
     def detect_front(link):
-        payload = IDCard._extract_payload(client.idcard_detect(CIUrls([link]), 0))
+        response, payload = IDCard._request('FRONT', link)
 
         try:
-            birth = IDCard._parse_date_str(IDCard._field_value(payload.get('birth') or payload.get('Birth')))
+            birth = IDCard._parse_date_str(response.Birth)
         except Exception as err:
-            raise IDCardErrors.IDCARD_DETECT_ERROR('生日验证错误', debug_message=err)
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details=f'生日验证错误: {err}')
+
+        try:
+            male = IDCard._parse_gender(response.Sex)
+        except Exception as err:
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details=f'性别验证错误: {err}')
+
+        name = (response.Name or '').strip()
+        idcard = (response.IdNum or '').strip()
+        if not name or not idcard:
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details=payload)
 
         return dict(
-            male=IDCard._parse_gender(IDCard._field_value(payload.get('sex') or payload.get('Sex'))),
-            name=IDCard._field_value(payload.get('name') or payload.get('Name')),
-            idcard=IDCard._field_value(payload.get('id') or payload.get('IdNum')),
+            male=male,
+            name=name,
+            idcard=idcard,
             birthday=birth,
         )
 
     @staticmethod
     def detect_back(link):
-        payload = IDCard._extract_payload(client.idcard_detect(CIUrls([link]), 1))
-        valid_date = IDCard._field_value(payload.get('valid_date') or payload.get('ValidDate'))
+        response, payload = IDCard._request('BACK', link)
 
         try:
-            valid_start, valid_end = IDCard._parse_valid_date(valid_date)
+            valid_start, valid_end = IDCard._parse_valid_date(response.ValidDate)
         except Exception as err:
-            raise IDCardErrors.IDCARD_DETECT_ERROR('有效期验证错误', debug_message=err)
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details=f'有效期验证错误: {err}')
+
+        if not valid_start or not valid_end:
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details=payload)
 
         return dict(
             valid_start=valid_start,
@@ -59,47 +71,36 @@ class IDCard:
         )
 
     @staticmethod
-    def _extract_payload(resp):
-        if not isinstance(resp, dict):
-            raise IDCardErrors.IDCARD_DETECT_ERROR('身份证识别返回格式异常', debug_message=resp)
+    def _request(card_side, link):
+        request = models.IDCardOCRRequest()
+        request.from_json_string(json.dumps({
+            'ImageUrl': link,
+            'CardSide': card_side,
+        }))
 
-        response = resp.get('Response')
-        if isinstance(response, dict):
-            error = response.get('Error')
-            if error:
-                raise IDCardErrors.IDCARD_DETECT_ERROR(
-                    error.get('Message') or error.get('Code') or '腾讯云身份证识别失败',
-                    debug_message=resp,
-                )
-            return response
+        try:
+            response = IDCard._client().IDCardOCR(request)
+        except TencentCloudSDKException as err:
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details=str(err))
+        except Exception as err:
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details=err)
 
-        httpcode = resp.get('httpcode')
-        result_list = resp.get('result_list')
-        if isinstance(result_list, list) and result_list:
-            item = result_list[0]
-            if httpcode is not None and httpcode != 200:
-                raise IDCardErrors.IDCARD_DETECT_ERROR(
-                    item.get('message') or resp.get('message') or '腾讯云身份证识别失败',
-                    debug_message=resp,
-                )
-            if item.get('code') != 0:
-                raise IDCardErrors.IDCARD_DETECT_ERROR(
-                    item.get('msg') or item.get('message') or '腾讯云身份证识别失败',
-                    debug_message=resp,
-                )
-            return item.get('data') or {}
+        payload = json.loads(response.to_json_string())
+        return response, payload
 
-        # 兼容直接返回 OCR 字段的响应结构
-        if any(key in resp for key in ['Name', 'Birth', 'IdNum', 'ValidDate', 'name', 'birth', 'id', 'valid_date']):
-            return resp
+    @staticmethod
+    def _client():
+        if not SECRET_ID or not SECRET_KEY:
+            raise IDCardErrors.IDCARD_DETECT_ERROR(details='缺少腾讯云 OCR 配置')
 
-        if httpcode is not None and httpcode != 200:
-            raise IDCardErrors.IDCARD_DETECT_ERROR(
-                resp.get('message') or resp.get('msg') or f'腾讯云身份证识别失败({httpcode})',
-                debug_message=resp,
-            )
+        cred = credential.Credential(SECRET_ID, SECRET_KEY)
+        http_profile = HttpProfile()
+        http_profile.endpoint = OCR_ENDPOINT
 
-        raise IDCardErrors.IDCARD_DETECT_ERROR('身份证识别返回格式异常', debug_message=resp)
+        client_profile = ClientProfile()
+        client_profile.httpProfile = http_profile
+
+        return ocr_client.OcrClient(cred, OCR_REGION, client_profile)
 
     @staticmethod
     def _parse_date_str(value):
@@ -107,7 +108,7 @@ class IDCard:
             raise ValueError('empty date')
 
         normalized = str(value).strip()
-        for splitter in ['年', '月', '.','/','-']:
+        for splitter in ['年', '月', '.', '/', '-']:
             normalized = normalized.replace(splitter, '-')
         normalized = normalized.replace('日', '')
         normalized = normalized.replace('--', '-')
@@ -144,17 +145,10 @@ class IDCard:
     def _parse_gender(value):
         if value in [True, False]:
             return value
+
         normalized = str(value).strip().lower()
         if normalized in ['男', 'male', 'm', '1', 'true']:
             return True
         if normalized in ['女', 'female', 'f', '0', 'false']:
             return False
-        raise IDCardErrors.IDCARD_DETECT_ERROR('性别识别结果异常', debug_message=value)
-
-    @staticmethod
-    def _field_value(value):
-        if isinstance(value, dict):
-            for key in ['String', 'Value', 'Text']:
-                if key in value:
-                    return value[key]
-        return value
+        raise ValueError(normalized)
