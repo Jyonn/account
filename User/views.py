@@ -8,8 +8,8 @@ from smartdjango import analyse, Validator
 
 from Base.auth import Auth, Request
 from Base.idcard import IDCardErrors
+from Base.qn import qn_public_manager, qn_res_manager
 from Base.scope import SI
-from Base.qn import qn_public_manager
 from User.services import UserAccountService, UserVerificationService
 from User.params import UserParams
 
@@ -107,7 +107,7 @@ class AvatarView(View):
 
         七牛上传用户头像回调函数
         """
-        qn_public_manager.auth_callback(self, request)
+        qn_public_manager.auth_callback(request)
 
         return UserAccountService.update_avatar(request.json.user, request.json.key)
 
@@ -133,12 +133,12 @@ class IDCardView(View):
 
         七牛上传用户实名认证回调函数
         """
-        qn_public_manager.auth_callback(self, request)
+        qn_res_manager.auth_callback(request)
 
         return UserVerificationService.update_idcard_image(
             user=request.json.user,
             key=request.json.key,
-            back=request.json.back,
+            back=request.query.back,
         )
 
 

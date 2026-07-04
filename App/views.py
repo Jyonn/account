@@ -145,7 +145,7 @@ class AppLogoView(View):
 
         七牛上传应用logo回调函数
         """
-        qn_public_manager.auth_callback(self, request)
+        qn_public_manager.auth_callback(request)
 
         key = request.json.key
         app = request.json.app
