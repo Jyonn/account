@@ -1,5 +1,7 @@
 import datetime
+import hashlib
 
+from django.core import signing
 from django.utils.crypto import get_random_string
 from django.views import View
 from smartdjango import Error, Code, Validator, analyse
@@ -27,65 +29,70 @@ class AuthV2Errors:
     QITIAN_REQUIRED = Error('请输入齐天号', code=Code.BadRequest)
     FLOW_PHONE_MISMATCH = Error('验证码手机号不匹配，请重新开始', code=Code.BadRequest)
     RECOVER_PHONE_ONLY = Error('找回密码仅支持手机号', code=Code.BadRequest)
+    CODE_INVALID = Error('验证失败', code=Code.BadRequest)
+    CODE_EXPIRED = Error('验证码过期，请重试', code=Code.BadRequest)
 
 
 class AuthV2Flow:
-    SESSION_KEY = 'auth_v2_flows'
+    SALT = 'auth-v2-flow'
     EXPIRE_SECONDS = 60 * 10
 
     @staticmethod
-    def create(request, payload):
-        token = get_random_string(length=24)
-        flows = AuthV2Flow._load_all(request)
-        flows[token] = {
+    def create(payload):
+        return AuthV2Flow._dump({
             **payload,
             'captcha_passed': False,
             'code_sent': False,
             'code_verified': False,
             'created_at': int(datetime.datetime.now().timestamp()),
-        }
-        AuthV2Flow._save_all(request, flows)
-        return token
+        })
 
     @staticmethod
-    def get(request, token):
-        flows = AuthV2Flow._load_all(request)
-        flow = flows.get(token)
-        if not flow:
+    def get(token):
+        try:
+            return signing.loads(token, salt=AuthV2Flow.SALT, max_age=AuthV2Flow.EXPIRE_SECONDS)
+        except signing.SignatureExpired:
+            raise AuthV2Errors.FLOW_EXPIRED
+        except signing.BadSignature:
             raise AuthV2Errors.INVALID_FLOW
 
-        current = int(datetime.datetime.now().timestamp())
-        if current - flow['created_at'] > AuthV2Flow.EXPIRE_SECONDS:
-            del flows[token]
-            AuthV2Flow._save_all(request, flows)
-            raise AuthV2Errors.FLOW_EXPIRED
-
-        return flow
-
     @staticmethod
-    def update(request, token, **changes):
-        flows = AuthV2Flow._load_all(request)
-        flow = AuthV2Flow.get(request, token)
+    def update(token, **changes):
+        flow = AuthV2Flow.get(token)
         flow.update(changes)
-        flows[token] = flow
-        AuthV2Flow._save_all(request, flows)
-        return flow
+        return AuthV2Flow._dump(flow)
 
     @staticmethod
-    def drop(request, token):
-        flows = AuthV2Flow._load_all(request)
-        if token in flows:
-            del flows[token]
-            AuthV2Flow._save_all(request, flows)
+    def issue_code(token, phone):
+        code = get_random_string(length=6, allowed_chars='1234567890')
+        SendMobile._send_sms(phone, code)
+        return AuthV2Flow.update(
+            token,
+            code_sent=True,
+            code_verified=False,
+            code_digest=AuthV2Flow._build_code_digest(phone, code),
+            code_created_at=int(datetime.datetime.now().timestamp()),
+        )
 
     @staticmethod
-    def _load_all(request):
-        return request.session.get(AuthV2Flow.SESSION_KEY, {})
+    def verify_code(flow, code):
+        current_time = int(datetime.datetime.now().timestamp())
+        code_created_at = flow.get('code_created_at')
+        code_digest = flow.get('code_digest')
+        if not code_created_at or not code_digest:
+            raise AuthV2Errors.CODE_INVALID
+        if current_time - code_created_at > SendMobile.CAPTCHA_EXPIRE_MINUTES * 60:
+            raise AuthV2Errors.CODE_EXPIRED
+        if code_digest != AuthV2Flow._build_code_digest(flow.get('phone'), code):
+            raise AuthV2Errors.CODE_INVALID
 
     @staticmethod
-    def _save_all(request, flows):
-        request.session[AuthV2Flow.SESSION_KEY] = flows
-        request.session.modified = True
+    def _build_code_digest(phone, code):
+        return hashlib.sha256(f'{AuthV2Flow.SALT}:{phone}:{code}'.encode('utf-8')).hexdigest()
+
+    @staticmethod
+    def _dump(payload):
+        return signing.dumps(payload, salt=AuthV2Flow.SALT, compress=True)
 
 
 class AuthV2BaseView(View):
@@ -150,7 +157,7 @@ class AuthV2SessionView(AuthV2BaseView):
                 user_state = 'existing' if registered else 'new'
                 allowed_methods = [self.METHOD_PASSWORD, self.METHOD_CODE] if registered else [self.METHOD_CODE]
 
-            flow_token = AuthV2Flow.create(request, dict(
+            flow_token = AuthV2Flow.create(dict(
                 identity_type=identity_type,
                 identity_value=phone,
                 phone=phone,
@@ -176,7 +183,7 @@ class AuthV2SessionView(AuthV2BaseView):
             raise AuthV2Errors.QITIAN_REQUIRED
 
         User.get_by_qitian(qitian)
-        flow_token = AuthV2Flow.create(request, dict(
+        flow_token = AuthV2Flow.create(dict(
             identity_type=identity_type,
             identity_value=qitian,
             phone=None,
@@ -207,7 +214,8 @@ class AuthV2CaptchaView(AuthV2BaseView):
         if not response or not Recaptcha.verify(response):
             raise AuthV2Errors.FORMAT(details='人机验证失败')
 
-        flow = AuthV2Flow.update(request, flow_token, captcha_passed=True)
+        flow_token = AuthV2Flow.update(flow_token, captcha_passed=True)
+        flow = AuthV2Flow.get(flow_token)
         return dict(
             flow_token=flow_token,
             purpose=flow['purpose'],
@@ -224,7 +232,7 @@ class AuthV2PasswordView(AuthV2BaseView):
     def post(self, request: Request):
         flow_token = self.require_flow_token(request)
         password = request.json.password
-        flow = AuthV2Flow.get(request, flow_token)
+        flow = AuthV2Flow.get(flow_token)
 
         if flow['purpose'] == self.PURPOSE_LOGIN:
             if self.METHOD_PASSWORD not in flow['allowed_methods']:
@@ -233,7 +241,6 @@ class AuthV2PasswordView(AuthV2BaseView):
                 raise AuthV2Errors.CAPTCHA_REQUIRED
 
             user = User.authenticate(flow.get('qitian'), flow.get('phone'), password)
-            AuthV2Flow.drop(request, flow_token)
             return Auth.get_login_token(user)
 
         if not flow['code_verified']:
@@ -241,13 +248,11 @@ class AuthV2PasswordView(AuthV2BaseView):
 
         if flow['purpose'] == self.PURPOSE_REGISTER:
             user = User.create(flow['phone'], password)
-            AuthV2Flow.drop(request, flow_token)
             return Auth.get_login_token(user)
 
         if flow['purpose'] == self.PURPOSE_RESET:
             user = User.get_by_phone(flow['phone'])
             user.modify_password(password)
-            AuthV2Flow.drop(request, flow_token)
             return Auth.get_login_token(user)
 
         raise AuthV2Errors.INVALID_INTENT
@@ -260,20 +265,14 @@ class AuthV2CodeSendView(AuthV2BaseView):
     )
     def post(self, request: Request):
         flow_token = self.require_flow_token(request)
-        flow = AuthV2Flow.get(request, flow_token)
+        flow = AuthV2Flow.get(flow_token)
 
         if self.METHOD_CODE not in flow['allowed_methods']:
             raise AuthV2Errors.METHOD_NOT_ALLOWED
         if not flow['captcha_passed']:
             raise AuthV2Errors.CAPTCHA_REQUIRED
 
-        send_type = {
-            self.PURPOSE_LOGIN: SendMobile.LOGIN,
-            self.PURPOSE_REGISTER: SendMobile.REGISTER,
-            self.PURPOSE_RESET: SendMobile.FIND_PWD,
-        }[flow['purpose']]
-        SendMobile.send_captcha(request, flow['phone'], send_type)
-        AuthV2Flow.update(request, flow_token, code_sent=True)
+        flow_token = AuthV2Flow.issue_code(flow_token, flow['phone'])
         return dict(flow_token=flow_token, sent=True)
 
 
@@ -286,19 +285,19 @@ class AuthV2CodeVerifyView(AuthV2BaseView):
     def post(self, request: Request):
         flow_token = self.require_flow_token(request)
         code = request.json.code
-        flow = AuthV2Flow.get(request, flow_token)
+        flow = AuthV2Flow.get(flow_token)
 
         if not flow['code_sent']:
             raise AuthV2Errors.CODE_REQUIRED
 
-        phone = SendMobile.check_captcha(request, code)
-        if phone != flow['phone']:
-            raise AuthV2Errors.FLOW_PHONE_MISMATCH
+        AuthV2Flow.verify_code(flow, code)
 
         if flow['purpose'] == self.PURPOSE_LOGIN:
             user = User.get_by_phone(flow['phone'])
-            AuthV2Flow.drop(request, flow_token)
             return Auth.get_login_token(user)
 
-        AuthV2Flow.update(request, flow_token, code_verified=True)
+        flow_token = AuthV2Flow.update(
+            flow_token,
+            code_verified=True,
+        )
         return dict(flow_token=flow_token, next_step='password')
