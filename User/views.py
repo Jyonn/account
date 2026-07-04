@@ -4,7 +4,7 @@
 """
 
 from django.views import View
-from smartdjango import analyse, Validator
+from smartdjango import analyse, Validator, OK
 
 from Base.auth import Auth, Request
 from Base.idcard import IDCardErrors
@@ -134,13 +134,17 @@ class IDCardView(View):
         七牛上传用户实名认证回调函数
         """
         qn_res_manager.auth_callback(request)
-        print('here')
 
-        return UserVerificationService.update_idcard_image(
-            user=request.json.user,
-            key=request.json.key,
-            back=request.query.back,
-        )
+        try:
+            return UserVerificationService.update_idcard_image(
+                user=request.json.user,
+                key=request.json.key,
+                back=request.query.back,
+            )
+        except Exception as e:
+            print(e)
+        return OK
+
 
 
 class VerifyView(View):
