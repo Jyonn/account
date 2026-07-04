@@ -134,6 +134,7 @@ class IDCardView(View):
         七牛上传用户实名认证回调函数
         """
         qn_res_manager.auth_callback(request)
+        print('here')
 
         return UserVerificationService.update_idcard_image(
             user=request.json.user,

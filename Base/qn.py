@@ -82,12 +82,16 @@ class QnManager:
         """七牛callback认证校验"""
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         if auth_header is None:
+            print('header none')
             raise QNErrors.UNAUTH_CALLBACK
         url = request.get_full_path()
-        body = request.json
+        body = request.json()
+        print(url)
+        print(body)
         verified = self.auth.verify_callback(auth_header, url, body,
                                              content_type='application/json')
         if not verified:
+            print('not verified')
             raise QNErrors.UNAUTH_CALLBACK
 
     def get_resource_url(self, key, expires=3600, small=False):
