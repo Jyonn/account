@@ -121,6 +121,7 @@ class User(models.Model, Dictify):
         verbose_name='实名认证类型',
         default=None,
         null=True,
+        choices=VERIFY_TUPLE,
     )
 
     real_name = models.CharField(
@@ -141,7 +142,6 @@ class User(models.Model, Dictify):
         verbose_name='身份证号',
         default=None,
         max_length=vldt.MAX_IDCARD_LENGTH,
-        choices=VERIFY_TUPLE,
         null=True,
     )
 
