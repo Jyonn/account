@@ -175,7 +175,7 @@ class VerifyView(View):
         return UserVerificationService.confirm_verify(
             user=request.user,
             payload=request.json(),
-            required_keys=[validator.key for validator in VerifyView.VERIFY_VALIDATORS],
+            required_keys=['name', 'birthday', 'idcard', 'male'],
         )
 
 
