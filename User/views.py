@@ -152,9 +152,9 @@ class VerifyView(View):
     def get(self, request: Request):
         """ GET /api/user/verify
 
-        自动识别身份信息
+        当前仅支持人工审核
         """
-        return UserVerificationService.auto_verify(request.user)
+        raise IDCardErrors.MANUAL_VERIFY_ONLY
 
     VERIFY_VALIDATORS = [
         UserParams.real_name.copy().rename('name'),
@@ -165,14 +165,12 @@ class VerifyView(View):
 
     @analyse.json(
         *VERIFY_VALIDATORS,
-        Validator('token', '认证口令').null().default(None),
-        Validator('auto', '自动认证').default(True).to(bool),
     )
     @Auth.require_login(deny_auth_token=True)
     def post(self, request: Request):
         """ POST /api/user/verify
 
-        确认认证信息
+        提交人工认证信息
         """
         return UserVerificationService.confirm_verify(
             user=request.user,

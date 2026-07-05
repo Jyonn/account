@@ -3,9 +3,9 @@ import datetime
 from smartdjango import Error
 
 from Base.auth import Auth
-from Base.idcard import IDCard, IDCardErrors
-from Base.jtoken import JWType, JWT
-from Base.mail import Email
+from Base.idcard import IDCardErrors
+from Base.jtoken import JWType
+from Base.notificator_client import NotificatorClient
 from Base.policy import Policy
 from Base.premise_checker import PremiseCheckerErrors
 from Base.qn import qn_public_manager, qn_res_manager
@@ -120,57 +120,12 @@ class UserVerificationService:
         return user.upload_verify_front(key)
 
     @staticmethod
-    def auto_verify(user):
-        UserVerificationService.ensure_unverified(
-            user,
-            verifying_message='无法继续识别',
-            verified_message='无法继续识别',
-        )
-
-        urls = user.get_card_urls()
-        if not urls['front'] or not urls['back']:
-            raise IDCardErrors.CARD_NOT_COMPLETE
-
-        front_info = IDCard.detect_front(urls['front'])
-        back_info = IDCard.detect_back(urls['back'])
-
-        back_info.update(front_info)
-        back_info['type'] = 'idcard-verify'
-        back_info['user_id'] = user.user_str_id
-        token, verify_info = JWT.encrypt(back_info, expire_second=60 * 5)
-        verify_info['token'] = token
-        user.update_verify_type(User.VERIFY_CHINA)
-        return verify_info
-
-    @staticmethod
     def confirm_verify(user, payload, required_keys):
         UserVerificationService.ensure_unverified(
             user,
             verifying_message='无法继续确认',
             verified_message='无法继续确认',
         )
-
-        if payload['auto']:
-            dict_ = JWT.decrypt(payload['token'])
-            if 'user_id' not in dict_:
-                raise IDCardErrors.AUTO_VERIFY_FAILED
-            if user.user_str_id != dict_['user_id']:
-                raise IDCardErrors.AUTO_VERIFY_FAILED
-
-            crt_time = datetime.datetime.now().timestamp()
-            valid_start = datetime.datetime.strptime(dict_['valid_start'], '%Y-%m-%d').timestamp()
-            valid_end = datetime.datetime.strptime(dict_['valid_end'], '%Y-%m-%d').timestamp()
-            if valid_start > crt_time or crt_time > valid_end:
-                raise IDCardErrors.CARD_VALID_EXPIRED
-
-            user.update_card_info(
-                dict_['name'],
-                dict_['male'],
-                dict_['idcard'],
-                datetime.datetime.strptime(dict_['birthday'], '%Y-%m-%d').date(),
-            )
-            user.update_verify_status(User.VERIFY_STATUS_DONE)
-            return user.d()
 
         for key in required_keys:
             if not payload[key]:
@@ -182,8 +137,9 @@ class UserVerificationService:
             idcard=payload['idcard'],
             male=payload['male'],
         )
+        user.update_verify_type(User.VERIFY_CHINA)
         user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
-        Email.real_verify(user, '')
+        NotificatorClient.send_real_verify_notice(user)
         return user.d()
 
     @staticmethod
