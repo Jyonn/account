@@ -45,7 +45,7 @@ class Auth:
             user_id=user.user_str_id,
         ))
         dict_['token'] = token
-        dict_['user'] = user.d()
+        dict_['user'] = user.json()
         return dict_
 
     @classmethod

@@ -1,9 +1,9 @@
 import datetime
 
-from diq import Dictify
 from django.db import models
 from django.utils.crypto import get_random_string
 from smartdjango import OK, Error
+from smartdjango.models import Model
 
 from App.validators import AppErrors, PremiseValidator, ScopeValidator, AppValidator, UserAppValidator
 from Base.jtoken import JWType, JWT
@@ -11,7 +11,7 @@ from Base.premise_checker import PremiseCheckerErrors
 from Config.models import CI
 
 
-class Premise(models.Model, Dictify):
+class Premise(Model):
     vldt = PremiseValidator
 
     """要求类，不满足要求无法进入应用"""
@@ -57,7 +57,7 @@ class Premise(models.Model, Dictify):
             raise AppErrors.CREATE_PREMISE(details=err)
         return premise
 
-    def d(self):
+    def json(self):
         return self.dictify('name', 'desc', 'detail')
 
     @classmethod
@@ -90,7 +90,7 @@ class Premise(models.Model, Dictify):
         return getattr(PremiseChecker, checker_name, None)
 
 
-class Scope(models.Model, Dictify):
+class Scope(Model):
     vldt = ScopeValidator
 
     """权限类"""
@@ -143,7 +143,7 @@ class Scope(models.Model, Dictify):
             raise AppErrors.CREATE_SCOPE
         return scope
 
-    def d(self):
+    def json(self):
         return self.dictify('name', 'desc', 'always', 'detail')
 
     @classmethod
@@ -174,7 +174,7 @@ class Scope(models.Model, Dictify):
         return final_list
 
 
-class App(models.Model, Dictify):
+class App(Model):
     vldt = AppValidator
 
     R_USER = 'user'
@@ -366,7 +366,7 @@ class App(models.Model, Dictify):
         return self.info
 
     def _dictify_owner(self):
-        return self.owner.d_base()
+        return self.owner.jsonl()
 
     def _dictify_mark(self):
         return list(map(int, self.mark.split('-')))
@@ -376,24 +376,24 @@ class App(models.Model, Dictify):
 
     def _dictify_scopes(self):
         scopes = self.scopes.all()
-        return list(map(lambda s: s.d(), scopes))
+        return list(map(lambda scope: scope.json(), scopes))
 
     def _dictify_premises(self):
         premises = self.premises.all()
-        return list(map(lambda p: p.d(), premises))
+        return list(map(lambda premise: premise.json(), premises))
 
-    def d(self):
+    def json(self):
         return self.dictify(
             'app_name', 'app_id', 'app_desc', 'app_info', 'user_num', 'large_logo->logo',
             'redirect_uri', 'create_time', 'owner', 'mark', 'scopes', 'premises',
             'test_redirect_uri', 'max_user_num')
 
-    def d_user(self, user):
-        dict_ = self.d()
+    def json_user(self, user):
+        dict_ = self.json()
         dict_.update(dict(premises=self.check_premise(user)))
         return dict_
 
-    def d_base(self):
+    def jsonl(self):
         return self.dictify('app_name', 'app_id', 'logo', 'app_desc', 'user_num', 'create_time')
 
     def modify_logo(self, logo):
@@ -427,7 +427,7 @@ class App(models.Model, Dictify):
                     error = e
             else:
                 error = PremiseCheckerErrors.CHECKER_NOT_FOUND
-            p_dict = premise.d()
+            p_dict = premise.json()
             p_dict['check'] = dict(
                 identifier=error.identifier,
                 msg=error.message,
@@ -439,10 +439,10 @@ class App(models.Model, Dictify):
     def list(cls):
         # return cls.objects.all().dict(cls.d_base)
         apps = cls.objects.all()
-        return [app.d_base() for app in apps]
+        return [app.jsonl() for app in apps]
 
 
-class UserApp(models.Model, Dictify):
+class UserApp(Model):
     vldt = UserAppValidator
 
     """用户应用类"""
@@ -485,7 +485,7 @@ class UserApp(models.Model, Dictify):
     def _dictify_rebind(self):
         return float(self.last_auth_code_time) < self.app.field_change_time
 
-    def d(self):
+    def json(self):
         return self.dictify('bind', 'mark', 'rebind', 'user_app_id')
 
     @classmethod

@@ -35,7 +35,7 @@ class UserAccountService:
 
     @staticmethod
     def get_profile(user, request_type):
-        return user.d_oauth() if request_type == JWType.AUTH_TOKEN else user.d()
+        return user.json_oauth() if request_type == JWType.AUTH_TOKEN else user.json()
 
     @staticmethod
     def register(request, password, code):
@@ -46,7 +46,7 @@ class UserAccountService:
     @staticmethod
     def update_profile(user, payload):
         user.modify_info(**payload)
-        return user.d()
+        return user.json()
 
     @staticmethod
     def get_phone(user):
@@ -78,14 +78,14 @@ class UserAccountService:
     @staticmethod
     def update_avatar(user, key):
         user.modify_avatar(key)
-        return user.d()
+        return user.json()
 
     @staticmethod
     def apply_developer(user):
         if user.verify_status != User.VERIFY_STATUS_DONE:
             return PremiseCheckerErrors.REQUIRE_REAL_VERIFY
         user.developer()
-        return user.d()
+        return user.json()
 
 
 class UserVerificationService:
@@ -141,7 +141,7 @@ class UserVerificationService:
         user.update_verify_type(User.VERIFY_CHINA)
         user.update_verify_status(User.VERIFY_STATUS_UNDER_MANUAL)
         NotificatorClient.send_real_verify_notice(user)
-        return user.d()
+        return user.json()
 
     @staticmethod
     def ensure_unverified(user, verifying_message, verified_message):

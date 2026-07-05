@@ -116,13 +116,13 @@ class AppID(View):
 class ScopeView(View):
     def get(self, request):
         scopes = Scope.objects.all()
-        return [scope.d() for scope in scopes]
+        return [scope.json() for scope in scopes]
 
 
 class PremiseView(View):
     def get(self, request):
         premises = Premise.objects.all()
-        return [premise.d() for premise in premises]
+        return [premise.json() for premise in premises]
 
 
 class AppLogoView(View):

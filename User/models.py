@@ -1,13 +1,13 @@
-from diq import Dictify
 from django.db import models
 from django.utils.crypto import get_random_string
 from smartdjango import Error
+from smartdjango.models import Model
 
 from Base.idcard import IDCardErrors
 from User.validators import UserErrors, UserValidator
 
 
-class User(models.Model, Dictify):
+class User(Model):
     """
     用户类
     根超级用户id=1
@@ -300,13 +300,13 @@ class User(models.Model, Dictify):
     def _dictify_verify_type(self):
         return self.real_verify_type
 
-    def d_oauth(self):
+    def json_oauth(self):
         return self.dictify('avatar', 'nickname', 'description')
 
-    def d_base(self):
+    def jsonl(self):
         return self.dictify('user_str_id', 'avatar', 'nickname', 'description')
 
-    def d(self):
+    def json(self):
         return self.dictify('birthday', 'user_str_id', 'qitian', 'avatar', 'nickname',
                             'description', 'allow_qitian_modify', 'verify_status',
                             'verify_type', 'is_dev')
