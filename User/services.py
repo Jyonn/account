@@ -130,7 +130,7 @@ class UserVerificationService:
         for key in required_keys:
             value = payload.get(key)
             if value is None or (isinstance(value, str) and not value.strip()):
-                return UserErrors.MISSING(key)
+                return UserErrors.MISSING(key=key)
 
         user.update_card_info(
             real_name=payload['name'],
