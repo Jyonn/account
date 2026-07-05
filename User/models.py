@@ -411,14 +411,3 @@ class User(Model):
     def developer(self):
         self.is_dev = True
         self.save()
-
-#
-# class UserP:
-#     birthday, password, nickname, description, qitian, idcard, male, real_name = User.P(
-#         'birthday', 'password', 'nickname', 'description', 'qitian', 'idcard', 'male',
-#         'real_name')
-#
-#     user = P('user_id', '用户唯一ID', 'user').process(User.get_by_str_id)
-#     back = P('back', '侧别').process(int)
-#
-#     birthday.process(lambda s: datetime.datetime.strptime(s, '%Y-%m-%d').date(), begin=True)

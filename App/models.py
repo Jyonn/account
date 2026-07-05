@@ -437,7 +437,6 @@ class App(Model):
 
     @classmethod
     def list(cls):
-        # return cls.objects.all().dict(cls.d_base)
         apps = cls.objects.all()
         return [app.jsonl() for app in apps]
 
@@ -604,13 +603,3 @@ class UserApp(Model):
         mark_list[mark - 1] += 1
         self.app.mark = '-'.join(map(str, mark_list))
         self.app.save()
-
-#
-# class AppP:
-#     name, info, desc, redirect_uri, test_redirect_uri, secret, max_user_num = App.P(
-#         'name', 'info', 'desc', 'redirect_uri', 'test_redirect_uri', 'secret', 'max_user_num')
-#     scopes = P('scopes', '应用权限列表').process(Scope.list_to_scope_list)
-#     premises = P('premises', '应用要求列表').process(Premise.list_to_premise_list)
-#
-#     app = P('app_id', '应用ID', 'app').process(App.get_by_id)
-#     user_app = P('user_app_id', '用户绑定应用ID', 'user_app').process(UserApp.get_by_id)
