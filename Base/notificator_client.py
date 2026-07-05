@@ -4,8 +4,6 @@ from Config.models import CI, Config
 
 
 class NotificatorClient:
-    ADMIN_VERIFY_EMAIL = 'liu@qijiong.work'
-
     @staticmethod
     def client():
         return Notificator(
@@ -13,6 +11,10 @@ class NotificatorClient:
             token=Config.get_value_by_key(CI.NOTIFICATOR_TOKEN),
             host=Config.get_value_by_key(CI.NOTIFICATOR_HOST),
         )
+
+    @staticmethod
+    def admin_verify_email():
+        return Config.get_value_by_key(CI.ADMIN_VERIFY_EMAIL)
 
     @staticmethod
     def send_real_verify_notice(user):
@@ -25,7 +27,7 @@ class NotificatorClient:
             f'手机号：{user.phone or "未绑定"}',
         ])
         return NotificatorClient.client().prepare_mail(
-            NotificatorClient.ADMIN_VERIFY_EMAIL,
+            NotificatorClient.admin_verify_email(),
             recipient_name='管理员',
         ).send(
             format='text',

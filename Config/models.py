@@ -89,6 +89,7 @@ class ConfigInstance:
     NOTIFICATOR_NAME = 'notificator-name'
     NOTIFICATOR_TOKEN = 'notificator-token'
     NOTIFICATOR_HOST = 'notificator-host'
+    ADMIN_VERIFY_EMAIL = 'admin-verify-email'
 
 
 CI = ConfigInstance
