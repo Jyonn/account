@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 from django.utils.crypto import get_random_string
 from smartdjango import Error
@@ -411,3 +413,182 @@ class User(Model):
     def developer(self):
         self.is_dev = True
         self.save()
+
+
+class CLIDeviceGrant(Model):
+    STATUS_PENDING = 0
+    STATUS_APPROVED = 1
+    STATUS_DENIED = 2
+    STATUS_CONSUMED = 3
+    STATUS_TUPLE = (
+        (STATUS_PENDING, 'pending'),
+        (STATUS_APPROVED, 'approved'),
+        (STATUS_DENIED, 'denied'),
+        (STATUS_CONSUMED, 'consumed'),
+    )
+
+    DEFAULT_EXPIRE_SECONDS = 10 * 60
+    DEFAULT_INTERVAL_SECONDS = 3
+    DEVICE_CODE_LENGTH = 48
+    USER_CODE_LENGTH = 8
+    USER_CODE_GROUP_LENGTH = 4
+    USER_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+    client_name = models.CharField(
+        verbose_name='CLI客户端名称',
+        max_length=64,
+        default='qt-cli',
+    )
+
+    device_code = models.CharField(
+        verbose_name='设备码',
+        max_length=64,
+        unique=True,
+    )
+
+    user_code = models.CharField(
+        verbose_name='用户确认码',
+        max_length=16,
+        unique=True,
+    )
+
+    status = models.SmallIntegerField(
+        verbose_name='授权状态',
+        choices=STATUS_TUPLE,
+        default=STATUS_PENDING,
+    )
+
+    user = models.ForeignKey(
+        'User',
+        verbose_name='授权用户',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        default=None,
+    )
+
+    create_time = models.FloatField(
+        verbose_name='创建时间',
+        default=0,
+    )
+
+    expire_time = models.FloatField(
+        verbose_name='过期时间',
+        default=0,
+    )
+
+    interval = models.IntegerField(
+        verbose_name='轮询间隔',
+        default=DEFAULT_INTERVAL_SECONDS,
+    )
+
+    approved_time = models.FloatField(
+        verbose_name='批准时间',
+        null=True,
+        blank=True,
+        default=None,
+    )
+
+    token_issued_time = models.FloatField(
+        verbose_name='令牌签发时间',
+        null=True,
+        blank=True,
+        default=None,
+    )
+
+    @classmethod
+    def _now(cls):
+        return datetime.datetime.now().timestamp()
+
+    @classmethod
+    def _format_user_code(cls, raw_code):
+        return '-'.join(
+            raw_code[index:index + cls.USER_CODE_GROUP_LENGTH]
+            for index in range(0, len(raw_code), cls.USER_CODE_GROUP_LENGTH)
+        )
+
+    @classmethod
+    def normalize_user_code(cls, user_code):
+        if not user_code:
+            return ''
+        return user_code.replace('-', '').replace(' ', '').upper()
+
+    @classmethod
+    def generate_device_code(cls):
+        return get_random_string(length=cls.DEVICE_CODE_LENGTH)
+
+    @classmethod
+    def generate_user_code(cls):
+        raw_code = get_random_string(
+            length=cls.USER_CODE_LENGTH,
+            allowed_chars=cls.USER_CODE_CHARS,
+        )
+        return cls._format_user_code(raw_code)
+
+    @classmethod
+    def create_grant(cls, client_name='qt-cli', expire_seconds=None, interval=None):
+        expire_seconds = expire_seconds or cls.DEFAULT_EXPIRE_SECONDS
+        interval = interval or cls.DEFAULT_INTERVAL_SECONDS
+
+        while True:
+            device_code = cls.generate_device_code()
+            if not cls.objects.filter(device_code=device_code).exists():
+                break
+
+        while True:
+            user_code = cls.generate_user_code()
+            if not cls.objects.filter(user_code=user_code).exists():
+                break
+
+        now = cls._now()
+        return cls.objects.create(
+            client_name=client_name or 'qt-cli',
+            device_code=device_code,
+            user_code=user_code,
+            status=cls.STATUS_PENDING,
+            create_time=now,
+            expire_time=now + expire_seconds,
+            interval=interval,
+        )
+
+    @classmethod
+    def get_by_device_code(cls, device_code):
+        return cls.objects.get(device_code=device_code)
+
+    @classmethod
+    def get_by_user_code(cls, user_code):
+        normalized = cls.normalize_user_code(user_code)
+        for candidate in cls.objects.filter(user_code__contains='-'):
+            if cls.normalize_user_code(candidate.user_code) == normalized:
+                return candidate
+        return cls.objects.get(user_code=normalized)
+
+    def is_expired(self):
+        return self._now() >= self.expire_time
+
+    def expires_in(self):
+        return max(0, int(self.expire_time - self._now()))
+
+    def approve(self, user):
+        self.user = user
+        self.status = self.STATUS_APPROVED
+        self.approved_time = self._now()
+        self.save(update_fields=['user', 'status', 'approved_time'])
+
+    def deny(self):
+        self.status = self.STATUS_DENIED
+        self.save(update_fields=['status'])
+
+    def consume(self):
+        self.status = self.STATUS_CONSUMED
+        self.token_issued_time = self._now()
+        self.save(update_fields=['status', 'token_issued_time'])
+
+    def status_key(self):
+        mapping = {
+            self.STATUS_PENDING: 'pending',
+            self.STATUS_APPROVED: 'approved',
+            self.STATUS_DENIED: 'denied',
+            self.STATUS_CONSUMED: 'consumed',
+        }
+        return mapping[self.status]
