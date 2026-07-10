@@ -416,6 +416,13 @@ class User(Model):
 
 
 class CLIDeviceGrant(Model):
+    REQUEST_LOGIN = 'login'
+    REQUEST_OAUTH = 'oauth'
+    REQUEST_TYPE_TUPLE = (
+        (REQUEST_LOGIN, 'login'),
+        (REQUEST_OAUTH, 'oauth'),
+    )
+
     STATUS_PENDING = 0
     STATUS_APPROVED = 1
     STATUS_DENIED = 2
@@ -438,6 +445,21 @@ class CLIDeviceGrant(Model):
         verbose_name='CLI客户端名称',
         max_length=64,
         default='qt-cli',
+    )
+
+    request_type = models.CharField(
+        verbose_name='CLI请求类型',
+        max_length=16,
+        choices=REQUEST_TYPE_TUPLE,
+        default=REQUEST_LOGIN,
+    )
+
+    app_id = models.CharField(
+        verbose_name='OAuth应用ID',
+        max_length=32,
+        null=True,
+        blank=True,
+        default=None,
     )
 
     device_code = models.CharField(
@@ -496,6 +518,20 @@ class CLIDeviceGrant(Model):
         default=None,
     )
 
+    auth_code = models.TextField(
+        verbose_name='OAuth授权码',
+        null=True,
+        blank=True,
+        default=None,
+    )
+
+    redirect_uri = models.TextField(
+        verbose_name='OAuth跳转地址',
+        null=True,
+        blank=True,
+        default=None,
+    )
+
     @classmethod
     def _now(cls):
         return datetime.datetime.now().timestamp()
@@ -526,7 +562,7 @@ class CLIDeviceGrant(Model):
         return cls._format_user_code(raw_code)
 
     @classmethod
-    def create_grant(cls, client_name='qt-cli', expire_seconds=None, interval=None):
+    def create_grant(cls, client_name='qt-cli', request_type=REQUEST_LOGIN, app_id=None, expire_seconds=None, interval=None):
         expire_seconds = expire_seconds or cls.DEFAULT_EXPIRE_SECONDS
         interval = interval or cls.DEFAULT_INTERVAL_SECONDS
 
@@ -543,6 +579,8 @@ class CLIDeviceGrant(Model):
         now = cls._now()
         return cls.objects.create(
             client_name=client_name or 'qt-cli',
+            request_type=request_type or cls.REQUEST_LOGIN,
+            app_id=app_id or None,
             device_code=device_code,
             user_code=user_code,
             status=cls.STATUS_PENDING,
@@ -575,6 +613,14 @@ class CLIDeviceGrant(Model):
         self.approved_time = self._now()
         self.save(update_fields=['user', 'status', 'approved_time'])
 
+    def approve_oauth(self, user, auth_code, redirect_uri):
+        self.user = user
+        self.status = self.STATUS_APPROVED
+        self.approved_time = self._now()
+        self.auth_code = auth_code
+        self.redirect_uri = redirect_uri
+        self.save(update_fields=['user', 'status', 'approved_time', 'auth_code', 'redirect_uri'])
+
     def deny(self):
         self.status = self.STATUS_DENIED
         self.save(update_fields=['status'])
@@ -592,3 +638,9 @@ class CLIDeviceGrant(Model):
             self.STATUS_CONSUMED: 'consumed',
         }
         return mapping[self.status]
+
+    def redirect_link(self):
+        if not self.redirect_uri or not self.auth_code:
+            return None
+        separator = '&' if '?' in self.redirect_uri else '?'
+        return '%s%scode=%s' % (self.redirect_uri, separator, self.auth_code)

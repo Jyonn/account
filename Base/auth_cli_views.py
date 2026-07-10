@@ -1,6 +1,7 @@
 from django.views import View
 from smartdjango import Code, Error, analyse, Validator
 
+from App.models import App, UserApp
 from Base.auth import Auth, Request
 from User.models import CLIDeviceGrant
 
@@ -16,6 +17,8 @@ class AuthCLIErrors:
     AUTHORIZATION_DENIED = Error('网页端已拒绝此次授权', code=Code.BadRequest)
     AUTHORIZATION_CONSUMED = Error('此次授权已被使用', code=Code.BadRequest)
     INVALID_DECISION = Error('不支持的授权操作', code=Code.BadRequest)
+    INVALID_REQUEST_TYPE = Error('不支持的 CLI 请求类型', code=Code.BadRequest)
+    APP_ID_REQUIRED = Error('缺少 OAuth 应用 ID', code=Code.BadRequest)
 
 
 class AuthCLIBaseView(View):
@@ -45,25 +48,55 @@ class AuthCLIBaseView(View):
 
     @staticmethod
     def serialize_grant(grant: CLIDeviceGrant):
-        return dict(
+        payload = dict(
             user_code=grant.user_code,
             client_name=grant.client_name,
+            request_type=grant.request_type,
+            app_id=grant.app_id,
             status=grant.status_key(),
             expires_in=grant.expires_in(),
         )
+        if grant.app_id:
+            try:
+                app = App.get_by_id(grant.app_id)
+                payload['app_name'] = app.name
+                payload['app_desc'] = app.desc
+            except Exception:
+                payload['app_name'] = None
+                payload['app_desc'] = None
+        if grant.redirect_uri:
+            payload['redirect_uri'] = grant.redirect_uri
+            payload['redirect_link'] = grant.redirect_link()
+        return payload
 
 
 class AuthCLIDeviceStartView(AuthCLIBaseView):
     @analyse.json(
         Validator('client_name', '客户端名称').null().default('qt-cli'),
+        Validator('request_type', 'CLI请求类型').null().default(CLIDeviceGrant.REQUEST_LOGIN),
+        Validator('app_id', 'OAuth应用ID').null().default(None),
         restrict_keys=False,
     )
     def post(self, request):
         client_name = (request.json.client_name or 'qt-cli').strip() or 'qt-cli'
-        grant = CLIDeviceGrant.create_grant(client_name=client_name)
+        request_type = request.json.request_type or CLIDeviceGrant.REQUEST_LOGIN
+        app_id = request.json.app_id
+        if request_type not in [CLIDeviceGrant.REQUEST_LOGIN, CLIDeviceGrant.REQUEST_OAUTH]:
+            raise AuthCLIErrors.INVALID_REQUEST_TYPE
+        if request_type == CLIDeviceGrant.REQUEST_OAUTH:
+            if not app_id:
+                raise AuthCLIErrors.APP_ID_REQUIRED
+            App.get_by_id(app_id)
+        grant = CLIDeviceGrant.create_grant(
+            client_name=client_name,
+            request_type=request_type,
+            app_id=app_id,
+        )
         return dict(
             device_code=grant.device_code,
             user_code=grant.user_code,
+            request_type=grant.request_type,
+            app_id=grant.app_id,
             verification_uri=CLI_VERIFICATION_URI,
             verification_uri_complete=f'{CLI_VERIFICATION_URI}?code={grant.user_code}',
             expires_in=grant.expires_in(),
@@ -86,7 +119,15 @@ class AuthCLIDevicePollView(AuthCLIBaseView):
         if grant.status == CLIDeviceGrant.STATUS_CONSUMED:
             raise AuthCLIErrors.AUTHORIZATION_CONSUMED
 
-        payload = Auth.get_login_token(grant.user)
+        if grant.request_type == CLIDeviceGrant.REQUEST_OAUTH:
+            payload = dict(
+                auth_code=grant.auth_code,
+                redirect_uri=grant.redirect_uri,
+                redirect_link=grant.redirect_link(),
+                app_id=grant.app_id,
+            )
+        else:
+            payload = Auth.get_login_token(grant.user)
         grant.consume()
         return payload
 
@@ -113,7 +154,12 @@ class AuthCLIDeviceConfirmView(AuthCLIBaseView):
         decision = request.json.decision
 
         if decision == 'approve':
-            grant.approve(request.user)
+            if grant.request_type == CLIDeviceGrant.REQUEST_OAUTH:
+                app = App.get_by_id(grant.app_id)
+                auth_code, _ = UserApp.do_bind(request.user, app)
+                grant.approve_oauth(request.user, auth_code, app.redirect_uri)
+            else:
+                grant.approve(request.user)
         elif decision == 'deny':
             grant.deny()
         else:

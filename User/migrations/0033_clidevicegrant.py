@@ -16,6 +16,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('client_name', models.CharField(default='qt-cli', max_length=64, verbose_name='CLI客户端名称')),
+                ('request_type', models.CharField(choices=[('login', 'login'), ('oauth', 'oauth')], default='login', max_length=16, verbose_name='CLI请求类型')),
+                ('app_id', models.CharField(blank=True, default=None, max_length=32, null=True, verbose_name='OAuth应用ID')),
                 ('device_code', models.CharField(max_length=64, unique=True, verbose_name='设备码')),
                 ('user_code', models.CharField(max_length=16, unique=True, verbose_name='用户确认码')),
                 ('status', models.SmallIntegerField(choices=[(0, 'pending'), (1, 'approved'), (2, 'denied'), (3, 'consumed')], default=0, verbose_name='授权状态')),
@@ -24,6 +26,8 @@ class Migration(migrations.Migration):
                 ('interval', models.IntegerField(default=3, verbose_name='轮询间隔')),
                 ('approved_time', models.FloatField(blank=True, default=None, null=True, verbose_name='批准时间')),
                 ('token_issued_time', models.FloatField(blank=True, default=None, null=True, verbose_name='令牌签发时间')),
+                ('auth_code', models.TextField(blank=True, default=None, null=True, verbose_name='OAuth授权码')),
+                ('redirect_uri', models.TextField(blank=True, default=None, null=True, verbose_name='OAuth跳转地址')),
                 ('user', models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='User.user', verbose_name='授权用户')),
             ],
         ),
