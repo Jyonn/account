@@ -67,6 +67,9 @@ class Premise(Model):
             return []
         for premise_name in premises:
             try:
+                if isinstance(premise_name, cls):
+                    premise_list.append(premise_name)
+                    continue
                 premise_list.append(cls.get_by_name(premise_name))
             except Exception:
                 pass
@@ -153,7 +156,10 @@ class Scope(Model):
             return []
         for scope_name in scopes:
             try:
-                scope = cls.get_by_name(scope_name)
+                if isinstance(scope_name, cls):
+                    scope = scope_name
+                else:
+                    scope = cls.get_by_name(scope_name)
                 if scope.always is not False:  # 此处不能将 != False 删除 因为要考虑None的情况
                     scope_list.append(scope)
             except Exception:
@@ -291,6 +297,8 @@ class App(Model):
     @classmethod
     def create(cls, name, desc, redirect_uri, test_redirect_uri, scopes, premises, owner):
         cls.exist_with_name(name)
+        scopes = Scope.list_to_scope_list(scopes)
+        premises = Premise.list_to_premise_list(premises)
 
         try:
             crt_time = datetime.datetime.now()
@@ -320,6 +328,8 @@ class App(Model):
 
     def modify(self, name, desc, info, redirect_uri, scopes, premises, max_user_num):
         """修改应用信息"""
+        scopes = Scope.list_to_scope_list(scopes)
+        premises = Premise.list_to_premise_list(premises)
         self.name = name
         self.desc = desc
         self.info = info
