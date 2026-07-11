@@ -98,11 +98,13 @@ class OAuthToken(View):
     def post(self, request):
         """POST /api/oauth/token"""
         code = request.json.code
+        raw_json = request.json()
+        app_secret = raw_json.get('app_secret')
         print(
             '[account-backend][oauth-token] request',
             dict(
                 code=_redact(code),
-                app_secret=_redact(request.json.app_secret),
+                app_secret=_redact(app_secret),
             ),
             flush=True,
         )
@@ -124,7 +126,7 @@ class OAuthToken(View):
             dict(
                 user_app_id=user_app.user_app_id,
                 app_id=user_app.app.id,
-                secret_match=request.json.app_secret == user_app.app.secret,
+                secret_match=app_secret == user_app.app.secret,
                 stored_last_auth_code_time=user_app.last_auth_code_time,
                 app_field_change_time=user_app.app.field_change_time,
             ),
