@@ -93,7 +93,7 @@ class OAuth(View):
 class OAuthToken(View):
     @analyse.json(
         Validator('code', '授权码'),
-        AppParams.secret.copy().rename('app_secret')
+        AppParams.secret.copy().rename('app_secret', final_name='app_secret'),
     )
     def post(self, request):
         """POST /api/oauth/token"""

@@ -157,7 +157,7 @@ class VerifyView(View):
         raise IDCardErrors.MANUAL_VERIFY_ONLY
 
     VERIFY_VALIDATORS = [
-        UserParams.real_name.copy().rename('name'),
+        UserParams.real_name.copy().rename('name', final_name='name'),
         UserParams.birthday.copy().null().default(None),
         UserParams.idcard.copy().null().default(None),
         UserParams.male.copy().null().default(None),
