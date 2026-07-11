@@ -1,3 +1,5 @@
+import json
+
 from django.views import View
 from smartdjango import analyse, Validator
 
@@ -10,11 +12,28 @@ from Base.jtoken import JWType, JWT
 OAUTH_TOKEN_EXPIRE_TIME = 30 * 24 * 60 * 60
 
 
+def _redact(value, keep_start=6, keep_end=4):
+    if value is None:
+        return None
+    text = str(value)
+    if len(text) <= keep_start + keep_end:
+        return text
+    return '%s...%s' % (text[:keep_start], text[-keep_end:])
+
+
 class OAuth(View):
     @analyse.query(AppParams.app)
     @Auth.require_login(deny_auth_token=True)
     def get(self, request):
         """GET /api/oauth/?app_id=:app_id"""
+        print(
+            '[account-backend][oauth] get',
+            dict(
+                user_id=getattr(request.user, 'user_str_id', None),
+                app_id=getattr(request.query.app, 'id', None),
+            ),
+            flush=True,
+        )
         # 可在新版本之后删除
         user = request.user
         app = request.query.app
@@ -25,6 +44,16 @@ class OAuth(View):
 
         if user_app.bind:
             encode_str, dict_ = UserApp.do_bind(user, app)
+            print(
+                '[account-backend][oauth] get-success',
+                dict(
+                    user_app_id=user_app.user_app_id,
+                    app_id=app.id,
+                    auth_code=_redact(encode_str),
+                    redirect_uri=app.redirect_uri,
+                ),
+                flush=True,
+            )
             return dict(auth_code=encode_str, redirect_uri=app.redirect_uri)
         else:
             raise AppErrors.APP_NOT_BOUND
@@ -36,10 +65,28 @@ class OAuth(View):
 
         授权应用
         """
+        print(
+            '[account-backend][oauth] post',
+            dict(
+                user_id=getattr(request.user, 'user_str_id', None),
+                app_id=getattr(request.json.app, 'id', None),
+            ),
+            flush=True,
+        )
         user = request.user
         app = request.json.app
 
         encode_str, dict_ = UserApp.do_bind(user, app)
+        print(
+            '[account-backend][oauth] post-success',
+            dict(
+                user_app_id=dict_.get('user_app_id'),
+                app_id=app.id,
+                auth_code=_redact(encode_str),
+                redirect_uri=app.redirect_uri,
+            ),
+            flush=True,
+        )
         return dict(auth_code=encode_str, redirect_uri=app.redirect_uri)
 
 
@@ -51,12 +98,38 @@ class OAuthToken(View):
     def post(self, request):
         """POST /api/oauth/token"""
         code = request.json.code
+        print(
+            '[account-backend][oauth-token] request',
+            dict(
+                code=_redact(code),
+                app_secret=_redact(request.json.app_secret),
+            ),
+            flush=True,
+        )
         dict_ = JWT.decrypt(code)
+        print(
+            '[account-backend][oauth-token] decoded',
+            dict(
+                payload=json.dumps(dict_, ensure_ascii=False, default=str),
+            ),
+            flush=True,
+        )
         if dict_['type'] != JWType.AUTH_CODE:
             raise AuthErrors.REQUIRE_AUTH_CODE
 
         user_app_id = dict_['user_app_id']
         user_app = UserApp.get_by_id(user_app_id, check_bind=True)
+        print(
+            '[account-backend][oauth-token] user-app',
+            dict(
+                user_app_id=user_app.user_app_id,
+                app_id=user_app.app.id,
+                secret_match=request.json.app_secret == user_app.app.secret,
+                stored_last_auth_code_time=user_app.last_auth_code_time,
+                app_field_change_time=user_app.app.field_change_time,
+            ),
+            flush=True,
+        )
 
         ctime = dict_['ctime']
         if user_app.app.field_change_time > ctime:
@@ -74,5 +147,14 @@ class OAuthToken(View):
         )
         dict_['token'] = token
         dict_['avatar'] = user_app.user.get_avatar_url()
+        print(
+            '[account-backend][oauth-token] success',
+            dict(
+                user_app_id=user_app.user_app_id,
+                app_id=user_app.app.id,
+                token=_redact(token),
+            ),
+            flush=True,
+        )
 
         return dict_
