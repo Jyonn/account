@@ -19,6 +19,7 @@ def sync_cli_device_grant_columns(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    atomic = False
 
     dependencies = [
         ('User', '0033_clidevicegrant'),
